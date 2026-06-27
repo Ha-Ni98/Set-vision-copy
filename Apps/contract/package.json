@@ -1,0 +1,20 @@
+{
+  "name": "@my-app/contract",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "cycles": "madge --circular --extensions ts src"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "madge": "^8.0.0"
+  }
+}
