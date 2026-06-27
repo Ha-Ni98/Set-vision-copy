@@ -10,3 +10,6 @@ export * from './modules/log';
 export * from './modules/subscription-plan';
 export * from './modules/geography';
 export * from './modules/delivery-company';
+export * from './modules/distributor';
+export * from './modules/set';
+export * from './modules/lot';
