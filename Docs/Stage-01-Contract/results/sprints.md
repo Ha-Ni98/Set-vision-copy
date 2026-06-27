@@ -108,32 +108,32 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 3: Payment & Log   — Status: ⬜ Pending
+### Sprint 3: Payment & Log   — Status: ✅ Complete
 
 **Goals**
 - Land the two ledger/audit modules. Payment owns the activator-credit financial surface; Log owns the immutable read-only audit feed. Both are small and have no domain dependencies beyond `common`.
 
 **Tasks**
-- [ ] Create `src/modules/payment/payment.routes.ts` — `PAYMENT_ROUTES` (`BASE: '/payments'`, `GET_ALL`, `CREATE`, `DELETE`).
-- [ ] Create `src/modules/payment/payment.command.ts` — `RecordPaymentSchema` / `RecordPaymentCommand` (`amount: number.positive().multipleOf(0.01)`, optional `date: iso.datetime`).
-- [ ] Create `src/modules/payment/payment.query.ts` — `GetPaymentsQuerySchema` (incl. `includeDeleted?: coerce.boolean`), `PaymentIdParamsSchema`.
-- [ ] Create `src/modules/payment/payment.dtos.ts` — `PaymentResponseSchema` / `PaymentDTO` (incl. resolved `recordedByName`), paginated wrapper.
-- [ ] Create `src/modules/payment/index.ts`.
-- [ ] Create `src/modules/log/log.enums.ts` — `LogActionType` enum, 13 values verbatim from `schema.prisma`.
-- [ ] Create `src/modules/log/log.routes.ts` — `LOG_ROUTES` (`BASE: '/logs'`, `GET_ALL` only — writes are internal).
-- [ ] Create `src/modules/log/log.query.ts` — `GetLogsQuerySchema` (filters: `userId`, `actionType`, `dateFrom`, `dateTo`, `search`).
-- [ ] Create `src/modules/log/log.dtos.ts` — `LogResponseSchema` / `LogDTO` (resolved `userName`), paginated wrapper.
-- [ ] Create `src/modules/log/index.ts`.
-- [ ] Update `src/index.ts` to re-export both modules.
+- [x] Create `src/modules/payment/payment.routes.ts` — `PAYMENT_ROUTES` (`BASE: '/payments'`, `GET_ALL`, `CREATE`, `DELETE`).
+- [x] Create `src/modules/payment/payment.command.ts` — `RecordPaymentSchema` / `RecordPaymentCommand` (`amount: number.positive().multipleOf(0.01)`, optional `date: iso.datetime`).
+- [x] Create `src/modules/payment/payment.query.ts` — `GetPaymentsQuerySchema` (incl. `includeDeleted?: coerce.boolean`), `PaymentIdParamsSchema`.
+- [x] Create `src/modules/payment/payment.dtos.ts` — `PaymentResponseSchema` / `PaymentDTO` (incl. resolved `recordedByName`), paginated wrapper.
+- [x] Create `src/modules/payment/index.ts`.
+- [x] Create `src/modules/log/log.enums.ts` — `LogActionType` enum, 13 values verbatim from `schema.prisma`.
+- [x] Create `src/modules/log/log.routes.ts` — `LOG_ROUTES` (`BASE: '/logs'`, `GET_ALL` only — writes are internal).
+- [x] Create `src/modules/log/log.query.ts` — `GetLogsQuerySchema` (filters: `userId`, `actionType`, `dateFrom`, `dateTo`, `search`).
+- [x] Create `src/modules/log/log.dtos.ts` — `LogResponseSchema` / `LogDTO` (resolved `userName`), paginated wrapper.
+- [x] Create `src/modules/log/index.ts`.
+- [x] Update `src/index.ts` to re-export both modules.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
