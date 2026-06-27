@@ -29,26 +29,26 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 0: Common Foundation   — Status: ⬜ Pending
+### Sprint 0: Common Foundation   — Status: ✅ Complete
 
 **Goals**
 - Stand up the `@my-app/contract` workspace skeleton (`package.json`, `tsconfig.json`, `src/index.ts` stub).
 - Implement the dependency-free `common/` files so every later sprint has the envelope, error codes, and pagination factory available.
 
 **Tasks**
-- [ ] Initialise the workspace at `Apps/contract` with `package.json` (deps: `zod`; devDeps: `typescript`, `madge`) and the strict `tsconfig.json` baseline from `plan.md` Part 3 / `contract-rules.md §3.8`.
-- [ ] Create `src/common/types.ts` — `ApiResponse<T = null>` discriminated union, `PaginationMetaSchema` / `PaginationMeta`, `paginated()` factory, `PaginatedResult<T>` companion type (per `plan.md §1.1`).
-- [ ] Create `src/common/errors.ts` — `ErrorCode` enum with exactly the seven values in `plan.md §1.2` (`AUTH_INVALID_CREDENTIALS`, `AUTH_UNAUTHORIZED`, `AUTH_FORBIDDEN`, `VALIDATION_ERROR`, `RESOURCE_NOT_FOUND`, `RESOURCE_CONFLICT`, `INTERNAL_SERVER_ERROR`).
-- [ ] Update `src/index.ts` to re-export everything in `src/common/` (defer the `common/auth` re-export to Sprint 1 when the file exists).
+- [x] Initialise the workspace at `Apps/contract` with `package.json` (deps: `zod`; devDeps: `typescript`, `madge`) and the strict `tsconfig.json` baseline from `plan.md` Part 3 / `contract-rules.md §3.8`.
+- [x] Create `src/common/types.ts` — `ApiResponse<T = null>` discriminated union, `PaginationMetaSchema` / `PaginationMeta`, `paginated()` factory, `PaginatedResult<T>` companion type (per `plan.md §1.1`).
+- [x] Create `src/common/errors.ts` — `ErrorCode` enum with exactly the seven values in `plan.md §1.2` (`AUTH_INVALID_CREDENTIALS`, `AUTH_UNAUTHORIZED`, `AUTH_FORBIDDEN`, `VALIDATION_ERROR`, `RESOURCE_NOT_FOUND`, `RESOURCE_CONFLICT`, `INTERNAL_SERVER_ERROR`).
+- [x] Update `src/index.ts` to re-export everything in `src/common/` (defer the `common/auth` re-export to Sprint 1 when the file exists).
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
