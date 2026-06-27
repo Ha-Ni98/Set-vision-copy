@@ -5,3 +5,5 @@ export * from './modules/user';
 export * from './modules/auth';
 export * from './modules/admin';
 export * from './modules/activator';
+export * from './modules/payment';
+export * from './modules/log';
