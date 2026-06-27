@@ -79,32 +79,32 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 2: Admin & Activator   — Status: ⬜ Pending
+### Sprint 2: Admin & Activator   — Status: ✅ Complete
 
 **Goals**
 - Implement the two admin-managed identity modules. Both depend on `user.enums` and `common/paginated`; they share the §0.1.1 sanctioned `generatedPassword` exposure pattern.
 
 **Tasks**
-- [ ] Create `src/modules/admin/admin.routes.ts` — `ADMIN_ROUTES` (`BASE: '/admins'`, the 7 routes per `plan.md::admin`).
-- [ ] Create `src/modules/admin/admin.command.ts` — `CreateAdminSchema` / `CreateAdminCommand`, `UpdateAdminSchema` / `UpdateAdminCommand` (all fields optional per `exactOptionalPropertyTypes`).
-- [ ] Create `src/modules/admin/admin.query.ts` — `GetAdminsQuerySchema` / `GetAdminsQuery` (use `z.coerce` for `page`/`limit`, `min(1).max(100).default(10)`), `AdminIdParamsSchema` / `AdminIdParams`.
-- [ ] Create `src/modules/admin/admin.dtos.ts` — `AdminResponseSchema` / `AdminDTO`, `AdminWithCredentialsResponseSchema` / `AdminWithCredentialsDTO` (§0.1.1), `GeneratedPasswordResponseSchema` / `GeneratedPasswordDTO` (§0.1.1), paginated wrapper.
-- [ ] Create `src/modules/admin/index.ts`.
-- [ ] Create `src/modules/activator/activator.routes.ts` — `ACTIVATOR_ROUTES` (`BASE: '/activators'`, the 9 routes including `PERFORMANCE` and `MY_STATS`).
-- [ ] Create `src/modules/activator/activator.command.ts` — `CreateActivatorSchema` / `CreateActivatorCommand` (incl. optional `initialCredits`), `UpdateActivatorSchema` / `UpdateActivatorCommand`.
-- [ ] Create `src/modules/activator/activator.query.ts` — `GetActivatorsQuerySchema`, `ActivatorIdParamsSchema`, `ActivatorPerformanceQuerySchema` (`days?: int.min(1).default(30)`).
-- [ ] Create `src/modules/activator/activator.dtos.ts` — `ActivatorResponseSchema` / `ActivatorDTO`, `ActivatorDetailResponseSchema` / `ActivatorDetailDTO` (via `.extend`), `ActivatorWithCredentialsResponseSchema` / `ActivatorWithCredentialsDTO` (§0.1.1), local `GeneratedPasswordResponseSchema` / `GeneratedPasswordDTO` (decision in `plan.md` — keep per-module, do not re-export from admin), `ActivatorPerformanceResponseSchema` / `ActivatorPerformanceDTO`, `ActivatorDashboardResponseSchema` / `ActivatorDashboardDTO`, paginated wrapper.
-- [ ] Create `src/modules/activator/index.ts`.
-- [ ] Update `src/index.ts` to re-export both modules.
+- [x] Create `src/modules/admin/admin.routes.ts` — `ADMIN_ROUTES` (`BASE: '/admins'`, the 7 routes per `plan.md::admin`).
+- [x] Create `src/modules/admin/admin.command.ts` — `CreateAdminSchema` / `CreateAdminCommand`, `UpdateAdminSchema` / `UpdateAdminCommand` (all fields optional per `exactOptionalPropertyTypes`).
+- [x] Create `src/modules/admin/admin.query.ts` — `GetAdminsQuerySchema` / `GetAdminsQuery` (use `z.coerce` for `page`/`limit`, `min(1).max(100).default(10)`), `AdminIdParamsSchema` / `AdminIdParams`.
+- [x] Create `src/modules/admin/admin.dtos.ts` — `AdminResponseSchema` / `AdminDTO`, `AdminWithCredentialsResponseSchema` / `AdminWithCredentialsDTO` (§0.1.1), `AdminGeneratedPasswordResponseSchema` / `AdminGeneratedPasswordDTO` (§0.1.1, prefixed to avoid root-barrel collision), paginated wrapper.
+- [x] Create `src/modules/admin/index.ts`.
+- [x] Create `src/modules/activator/activator.routes.ts` — `ACTIVATOR_ROUTES` (`BASE: '/activators'`, the 9 routes including `PERFORMANCE` and `MY_STATS`).
+- [x] Create `src/modules/activator/activator.command.ts` — `CreateActivatorSchema` / `CreateActivatorCommand` (incl. optional `initialCredits`), `UpdateActivatorSchema` / `UpdateActivatorCommand`.
+- [x] Create `src/modules/activator/activator.query.ts` — `GetActivatorsQuerySchema`, `ActivatorIdParamsSchema`, `ActivatorPerformanceQuerySchema` (`days?: int.min(1).default(30)`).
+- [x] Create `src/modules/activator/activator.dtos.ts` — `ActivatorResponseSchema` / `ActivatorDTO`, `ActivatorDetailResponseSchema` / `ActivatorDetailDTO` (via `.extend`), `ActivatorWithCredentialsResponseSchema` / `ActivatorWithCredentialsDTO` (§0.1.1), `ActivatorGeneratedPasswordResponseSchema` / `ActivatorGeneratedPasswordDTO` (§0.1.1, kept local, prefixed), `ActivatorPerformanceResponseSchema` / `ActivatorPerformanceDTO`, `ActivatorDashboardResponseSchema` / `ActivatorDashboardDTO`, paginated wrapper.
+- [x] Create `src/modules/activator/index.ts`.
+- [x] Update `src/index.ts` to re-export both modules.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
