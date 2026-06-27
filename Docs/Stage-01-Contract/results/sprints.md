@@ -237,29 +237,29 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 7: Activation   — Status: ⬜ Pending
+### Sprint 7: Activation   — Status: ✅ Complete
 
 **Goals**
 - Land the largest module — two route exports, six content files, three audiences, and the §0.1.2 sanctioned exposure on `ActiveRequestDTO`. Isolated in its own sprint because it depends on everything before and concentrates the strictest exposure rules.
 
 **Tasks**
-- [ ] Create `src/modules/activation/activation.enums.ts` — `ActivationStat` (10 values), `AccountInformation` (6 values), contract-owned `ClientActivationStatus` (9 values).
-- [ ] Create `src/modules/activation/activation.routes.ts` — **two** exports: `KEY_ROUTES` (`BASE: '/keys'`, 5 routes) and `ACTIVATION_ROUTES` (`BASE: '/activations'`, 15 routes).
-- [ ] Create `src/modules/activation/activation.command.ts` — shared subschemas (`AccountFieldSchema`, `AccountFieldsSchema`), public commands (`VerifyKeySchema`, `SubmitActivationSchema`, `UpdateActivationSchema`, `SubmitAdditionalInfoSchema`), activator commands (`FlagWrongInfoSchema`, `RequestAdditionalInfoSchema`, `FreezeRequestSchema`), admin command (`SetActivatorPriceSchema`).
-- [ ] Create `src/modules/activation/activation.query.ts` — both `ActivationIdParamsSchema` (uses `:activationId`) and `ActivationActionParamsSchema` (uses `:id`) to mirror the two route segments, `GetActivationsQuerySchema` (admin filters), `GetActivatorHistoryQuerySchema` (incl. closed `sortBy` enum).
-- [ ] Create `src/modules/activation/activation.dtos.ts` — helper subshapes (`ClientBlockSchema`, `DistributorBlockSchema`, `AccountFieldValueSchema`, `TimelineEntrySchema`, `CardHistoryEntrySchema` importing `CardStat` from `../card`), client DTOs (`KeyVerificationDTO`, `ClientActivationStatusDTO`), activator DTOs (`PendingActivationDTO`, `ActiveRequestDTO` — sanctioned §0.1.2, `ActivatorHistoryItemDTO`, `RecentActivationDTO`), admin DTOs (`AdminActivationDTO`, `ActivationDetailDTO`), paginated wrappers for `GET_ALL` + `GET_MY_HISTORY`.
-- [ ] Create `src/modules/activation/activation.events.ts` — `ActivationEvents` typed map + payload schemas for the six emissions (`activation:created`, `:taken`, `:client-updated`, `:frozen`, `:resolved`, `:status-changed`). `:resolved` `outcome` narrowed to `ACTIVATED_BY_ADMIN | CANCELLED_BY_ADMIN`.
-- [ ] Create `src/modules/activation/index.ts` — re-export all six content files.
-- [ ] Update `src/index.ts` to re-export the activation module.
+- [x] Create `src/modules/activation/activation.enums.ts` — `ActivationStat` (10 values), `AccountInformation` (6 values), contract-owned `ClientActivationStatus` (9 values).
+- [x] Create `src/modules/activation/activation.routes.ts` — **two** exports: `KEY_ROUTES` (`BASE: '/keys'`, 5 routes) and `ACTIVATION_ROUTES` (`BASE: '/activations'`, 15 routes).
+- [x] Create `src/modules/activation/activation.command.ts` — shared subschemas (`AccountFieldSchema`, `AccountFieldsSchema`), public commands (`VerifyKeySchema`, `SubmitActivationSchema`, `UpdateActivationSchema`, `SubmitAdditionalInfoSchema`), activator commands (`FlagWrongInfoSchema`, `RequestAdditionalInfoSchema`, `FreezeRequestSchema`), admin command (`SetActivatorPriceSchema`).
+- [x] Create `src/modules/activation/activation.query.ts` — both `ActivationIdParamsSchema` (uses `:activationId`) and `ActivationActionParamsSchema` (uses `:id`) to mirror the two route segments, `GetActivationsQuerySchema` (admin filters), `GetActivatorHistoryQuerySchema` (incl. closed `sortBy` enum).
+- [x] Create `src/modules/activation/activation.dtos.ts` — helper subshapes (`ClientBlockSchema`, `DistributorBlockSchema`, `AccountFieldValueSchema`, `TimelineEntrySchema`, `CardHistoryEntrySchema` importing `CardStat` from `../card`), client DTOs (`KeyVerificationDTO`, `ClientActivationStatusDTO`), activator DTOs (`PendingActivationDTO`, `ActiveRequestDTO` — sanctioned §0.1.2, `ActivatorHistoryItemDTO`, `RecentActivationDTO`), admin DTOs (`AdminActivationDTO`, `ActivationDetailDTO`), paginated wrappers for `GET_ALL` + `GET_MY_HISTORY`.
+- [x] Create `src/modules/activation/activation.events.ts` — `ActivationEvents` typed map + payload schemas for the six emissions (`activation:created`, `:taken`, `:client-updated`, `:frozen`, `:resolved`, `:status-changed`). `:resolved` `outcome` narrowed to `ACTIVATED_BY_ADMIN | CANCELLED_BY_ADMIN`.
+- [x] Create `src/modules/activation/index.ts` — re-export all six content files.
+- [x] Update `src/index.ts` to re-export the activation module.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
