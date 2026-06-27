@@ -1,0 +1,12 @@
+export enum OrderStat {
+  PENDING_DELIVERY = 'PENDING_DELIVERY',
+  IN_DELIVERY = 'IN_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  RETURNED = 'RETURNED',
+}
+
+export enum DeliveryType {
+  HOME = 'HOME',
+  PICKUP_POINT = 'PICKUP_POINT',
+  STORE = 'STORE',
+}

@@ -13,3 +13,5 @@ export * from './modules/delivery-company';
 export * from './modules/distributor';
 export * from './modules/set';
 export * from './modules/lot';
+export * from './modules/order';
+export * from './modules/card';
