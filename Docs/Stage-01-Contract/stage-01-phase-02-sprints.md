@@ -12,7 +12,7 @@ Turn `plan.md` into an ordered sequence of sprints so that foundational types ex
 
 ## Context & Inputs
 
-- **The plan:** `/docs/stage-01-contract/plan.md`.
+- **The plan:** `/docs/stage-01-contract/results/plan.md`.
 - **Rules:** `contract-rules.md`.
 
 ---
@@ -63,4 +63,4 @@ Turn `plan.md` into an ordered sequence of sprints so that foundational types ex
 
 ## Expected Output
 
-- A single sprint plan file: **`/docs/stage-01-contract/sprints.md`**.
+- A single sprint plan file: **`/docs/stage-01-contract/results/sprints.md`**.
