@@ -137,37 +137,37 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 4: Catalog & Reference Data   — Status: ⬜ Pending
+### Sprint 4: Catalog & Reference Data   — Status: ✅ Complete
 
 **Goals**
 - Implement the three independent leaf modules that every inventory/order module reads from: `subscription-plan` (catalog + commission matrix), `geography` (read-only wilaya/commune lookup), `delivery-company`.
 
 **Tasks**
-- [ ] Create `src/modules/subscription-plan/subscription-plan.enums.ts` — `SubscriptionType` (`SNAPCHAT_PLUS`), `SubscriptionDuration` (8 values) verbatim from `schema.prisma`.
-- [ ] Create `src/modules/subscription-plan/subscription-plan.routes.ts` — `SUBSCRIPTION_PLAN_ROUTES` (the 6 routes).
-- [ ] Create `src/modules/subscription-plan/subscription-plan.command.ts` — `CreateSubscriptionPlanSchema` / `CreateSubscriptionPlanCommand`, `UpdateCommissionSchema` / `UpdateCommissionCommand`.
-- [ ] Create `src/modules/subscription-plan/subscription-plan.query.ts` — `GetSubscriptionPlansQuerySchema` (`active?: coerce.boolean`), `SubscriptionPlanIdParamsSchema`.
-- [ ] Create `src/modules/subscription-plan/subscription-plan.dtos.ts` — `SubscriptionPlanResponseSchema` / `SubscriptionPlanDTO`, `CommissionDurationResponseSchema` / `CommissionDurationDTO`, `CommissionCellResponseSchema` / `CommissionCellDTO`, `CommissionMatrixResponseSchema` / `CommissionMatrixDTO`.
-- [ ] Create `src/modules/subscription-plan/index.ts`.
-- [ ] Create `src/modules/geography/geography.routes.ts` — `GEOGRAPHY_ROUTES` (`GET_WILAYAS`, `GET_COMMUNES`).
-- [ ] Create `src/modules/geography/geography.query.ts` — `WilayaIdParamsSchema` / `WilayaIdParams` (will be re-imported by `statistics` in Sprint 8).
-- [ ] Create `src/modules/geography/geography.dtos.ts` — `WilayaResponseSchema` / `WilayaDTO`, `CommuneResponseSchema` / `CommuneDTO`.
-- [ ] Create `src/modules/geography/index.ts`.
-- [ ] Create `src/modules/delivery-company/delivery-company.routes.ts` — `DELIVERY_COMPANY_ROUTES` (`GET_ALL`, `CREATE`, `UPDATE`, `TOGGLE`; **no `DELETE`** by design).
-- [ ] Create `src/modules/delivery-company/delivery-company.command.ts` — `CreateDeliveryCompanySchema`, `UpdateDeliveryCompanySchema`.
-- [ ] Create `src/modules/delivery-company/delivery-company.query.ts` — `GetDeliveryCompaniesQuerySchema` (`active?: coerce.boolean`), `DeliveryCompanyIdParamsSchema`.
-- [ ] Create `src/modules/delivery-company/delivery-company.dtos.ts` — `DeliveryCompanyResponseSchema` / `DeliveryCompanyDTO`.
-- [ ] Create `src/modules/delivery-company/index.ts`.
-- [ ] Update `src/index.ts` to re-export the three modules.
+- [x] Create `src/modules/subscription-plan/subscription-plan.enums.ts` — `SubscriptionType` (`SNAPCHAT_PLUS`), `SubscriptionDuration` (8 values) verbatim from `schema.prisma`.
+- [x] Create `src/modules/subscription-plan/subscription-plan.routes.ts` — `SUBSCRIPTION_PLAN_ROUTES` (the 6 routes).
+- [x] Create `src/modules/subscription-plan/subscription-plan.command.ts` — `CreateSubscriptionPlanSchema` / `CreateSubscriptionPlanCommand`, `UpdateCommissionSchema` / `UpdateCommissionCommand`.
+- [x] Create `src/modules/subscription-plan/subscription-plan.query.ts` — `GetSubscriptionPlansQuerySchema` (`active?: coerce.boolean`), `SubscriptionPlanIdParamsSchema`.
+- [x] Create `src/modules/subscription-plan/subscription-plan.dtos.ts` — `SubscriptionPlanResponseSchema` / `SubscriptionPlanDTO`, `CommissionDurationResponseSchema` / `CommissionDurationDTO`, `CommissionCellResponseSchema` / `CommissionCellDTO`, `CommissionMatrixResponseSchema` / `CommissionMatrixDTO`.
+- [x] Create `src/modules/subscription-plan/index.ts`.
+- [x] Create `src/modules/geography/geography.routes.ts` — `GEOGRAPHY_ROUTES` (`GET_WILAYAS`, `GET_COMMUNES`).
+- [x] Create `src/modules/geography/geography.query.ts` — `WilayaIdParamsSchema` / `WilayaIdParams` (will be re-imported by `statistics` in Sprint 8).
+- [x] Create `src/modules/geography/geography.dtos.ts` — `WilayaResponseSchema` / `WilayaDTO`, `CommuneResponseSchema` / `CommuneDTO`.
+- [x] Create `src/modules/geography/index.ts`.
+- [x] Create `src/modules/delivery-company/delivery-company.routes.ts` — `DELIVERY_COMPANY_ROUTES` (`GET_ALL`, `CREATE`, `UPDATE`, `TOGGLE`; **no `DELETE`** by design).
+- [x] Create `src/modules/delivery-company/delivery-company.command.ts` — `CreateDeliveryCompanySchema`, `UpdateDeliveryCompanySchema`.
+- [x] Create `src/modules/delivery-company/delivery-company.query.ts` — `GetDeliveryCompaniesQuerySchema` (`active?: coerce.boolean`), `DeliveryCompanyIdParamsSchema`.
+- [x] Create `src/modules/delivery-company/delivery-company.dtos.ts` — `DeliveryCompanyResponseSchema` / `DeliveryCompanyDTO`.
+- [x] Create `src/modules/delivery-company/index.ts`.
+- [x] Update `src/index.ts` to re-export the three modules.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
