@@ -15,3 +15,4 @@ export * from './modules/set';
 export * from './modules/lot';
 export * from './modules/order';
 export * from './modules/card';
+export * from './modules/activation';
