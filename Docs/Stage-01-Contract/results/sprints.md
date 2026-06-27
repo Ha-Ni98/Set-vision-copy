@@ -52,30 +52,30 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 1: User Identity & Auth   — Status: ⬜ Pending
+### Sprint 1: User Identity & Auth   — Status: ✅ Complete
 
 **Goals**
 - Land the `user` module (the foundational identity primitives every other module reads from), close `common/` by adding `common/auth.ts`, and stand up the `auth` module on top.
 
 **Tasks**
-- [ ] Create `src/modules/user/user.enums.ts` — `UserRole` enum (`ADMIN`, `ACTIVATOR`) verbatim from `schema.prisma`.
-- [ ] Create `src/modules/user/user.dtos.ts` — `UserIdentityResponseSchema` → `UserIdentityDTO` per `plan.md::user`. Confirm `password`, `tokenHash`, `deletedAt` are absent.
-- [ ] Create `src/modules/user/index.ts` — re-export `user.enums` and `user.dtos`. (No `routes.ts` / `command.ts` / `query.ts` / `events.ts` for this module.)
-- [ ] Create `src/common/auth.ts` — `JWTPayloadSchema` / `JWTPayload` importing `UserRole` from `modules/user/user.enums`.
-- [ ] Create `src/modules/auth/auth.routes.ts` — `AUTH_ROUTES` (`BASE: '/auth'`, `LOGIN`, `REFRESH`, `LOGOUT`, `ME`).
-- [ ] Create `src/modules/auth/auth.command.ts` — `LoginSchema` / `LoginCommand`, `RefreshTokenSchema` / `RefreshTokenCommand`.
-- [ ] Create `src/modules/auth/auth.dtos.ts` — `AuthTokensResponseSchema` / `AuthTokensDTO` (sanctioned §0.1.3 exception with the `accessToken`/`refreshToken` exposure), `SessionUserResponseSchema` / `SessionUserDTO`.
-- [ ] Create `src/modules/auth/index.ts` — re-export `auth.routes`, `auth.command`, `auth.dtos`.
-- [ ] Update `src/index.ts` to re-export `common/auth`, `modules/user`, `modules/auth`.
+- [x] Create `src/modules/user/user.enums.ts` — `UserRole` enum (`ADMIN`, `ACTIVATOR`) verbatim from `schema.prisma`.
+- [x] Create `src/modules/user/user.dtos.ts` — `UserIdentityResponseSchema` → `UserIdentityDTO` per `plan.md::user`. Confirm `password`, `tokenHash`, `deletedAt` are absent.
+- [x] Create `src/modules/user/index.ts` — re-export `user.enums` and `user.dtos`. (No `routes.ts` / `command.ts` / `query.ts` / `events.ts` for this module.)
+- [x] Create `src/common/auth.ts` — `JWTPayloadSchema` / `JWTPayload` importing `UserRole` from `modules/user/user.enums`.
+- [x] Create `src/modules/auth/auth.routes.ts` — `AUTH_ROUTES` (`BASE: '/auth'`, `LOGIN`, `REFRESH`, `LOGOUT`, `ME`).
+- [x] Create `src/modules/auth/auth.command.ts` — `LoginSchema` / `LoginCommand`, `RefreshTokenSchema` / `RefreshTokenCommand`.
+- [x] Create `src/modules/auth/auth.dtos.ts` — `AuthTokensResponseSchema` / `AuthTokensDTO` (sanctioned §0.1.3 exception with the `accessToken`/`refreshToken` exposure), `SessionUserResponseSchema` / `SessionUserDTO`.
+- [x] Create `src/modules/auth/index.ts` — re-export `auth.routes`, `auth.command`, `auth.dtos`.
+- [x] Update `src/index.ts` to re-export `common/auth`, `modules/user`, `modules/auth`.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
