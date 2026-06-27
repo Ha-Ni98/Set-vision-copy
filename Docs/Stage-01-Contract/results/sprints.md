@@ -207,33 +207,33 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 6: Order & Card   — Status: ⬜ Pending
+### Sprint 6: Order & Card   — Status: ✅ Complete
 
 **Goals**
 - Compose Sprint 5's primitives into the order/card surface. `order` is the first module to import another module's enum (`LotStat`), so this is also where the cross-module re-export discipline gets exercised.
 
 **Tasks**
-- [ ] Create `src/modules/order/order.enums.ts` — `OrderStat` (4 values), `DeliveryType` (3 values).
-- [ ] Create `src/modules/order/order.routes.ts` — `ORDER_ROUTES` (5 routes).
-- [ ] Create `src/modules/order/order.command.ts` — `CreateOrderSchema` (`lotIds: array(uuid).nonempty()`, `orderPrice` / `deliverPrice` with `.multipleOf(0.01)`), `TransitionOrderSchema` (`to` narrowed to `IN_DELIVERY | DELIVERED | RETURNED`, optional `deliveredCount: int.nonnegative()`).
-- [ ] Create `src/modules/order/order.query.ts` — `GetOrdersQuerySchema` (incl. `dateFrom`/`dateTo` as `iso.datetime`), `OrderIdParamsSchema`.
-- [ ] Create `src/modules/order/order.dtos.ts` — `OrderResponseSchema` / `OrderDTO`, `OrderDetailResponseSchema` / `OrderDetailDTO` (imports `LotStat` from `../lot`), paginated wrapper.
-- [ ] Create `src/modules/order/index.ts`.
-- [ ] Create `src/modules/card/card.enums.ts` — `CardStat` (7 values verbatim) + contract-only `CardFlag` (`disabled`, `revoked`, lowercase per `plan.md`).
-- [ ] Create `src/modules/card/card.routes.ts` — `CARD_ROUTES` (7 routes incl. `DISABLE` / `ENABLE` / `REVOKE`).
-- [ ] Create `src/modules/card/card.query.ts` — `GetCardsQuerySchema` (incl. `flag?: CardFlag`), `GetAvailableCardsQuerySchema` (required `subscriptionPlanId: uuid`), `CardIdParamsSchema`. (No `card.command.ts` — admin actions are path-param only.)
-- [ ] Create `src/modules/card/card.dtos.ts` — `CardResponseSchema` / `CardDTO`, `CardDetailResponseSchema` / `CardDetailDTO` (with `distributionTimeline`), `AvailableCardResponseSchema` / `AvailableCardDTO`, paginated wrapper.
-- [ ] Create `src/modules/card/index.ts`.
-- [ ] Update `src/index.ts` to re-export both modules.
+- [x] Create `src/modules/order/order.enums.ts` — `OrderStat` (4 values), `DeliveryType` (3 values).
+- [x] Create `src/modules/order/order.routes.ts` — `ORDER_ROUTES` (5 routes).
+- [x] Create `src/modules/order/order.command.ts` — `CreateOrderSchema` (`lotIds: array(uuid).nonempty()`, `orderPrice` / `deliverPrice` with `.multipleOf(0.01)`), `TransitionOrderSchema` (`to` narrowed to `IN_DELIVERY | DELIVERED | RETURNED`, optional `deliveredCount: int.nonnegative()`).
+- [x] Create `src/modules/order/order.query.ts` — `GetOrdersQuerySchema` (incl. `dateFrom`/`dateTo` as `iso.datetime`), `OrderIdParamsSchema`.
+- [x] Create `src/modules/order/order.dtos.ts` — `OrderResponseSchema` / `OrderDTO`, `OrderDetailResponseSchema` / `OrderDetailDTO` (imports `LotStat` from `../lot`), paginated wrapper.
+- [x] Create `src/modules/order/index.ts`.
+- [x] Create `src/modules/card/card.enums.ts` — `CardStat` (7 values verbatim) + contract-only `CardFlag` (`disabled`, `revoked`, lowercase per `plan.md`).
+- [x] Create `src/modules/card/card.routes.ts` — `CARD_ROUTES` (7 routes incl. `DISABLE` / `ENABLE` / `REVOKE`).
+- [x] Create `src/modules/card/card.query.ts` — `GetCardsQuerySchema` (incl. `flag?: CardFlag`), `GetAvailableCardsQuerySchema` (required `subscriptionPlanId: uuid`), `CardIdParamsSchema`. (No `card.command.ts` — admin actions are path-param only.)
+- [x] Create `src/modules/card/card.dtos.ts` — `CardResponseSchema` / `CardDTO`, `CardDetailResponseSchema` / `CardDetailDTO` (with `distributionTimeline`), `AvailableCardResponseSchema` / `AvailableCardDTO`, paginated wrapper.
+- [x] Create `src/modules/card/index.ts`.
+- [x] Update `src/index.ts` to re-export both modules.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
