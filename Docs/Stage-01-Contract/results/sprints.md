@@ -263,24 +263,24 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 8: Statistics & Finalisation   — Status: ⬜ Pending
+### Sprint 8: Statistics & Finalisation   — Status: ✅ Complete
 
 **Goals**
 - Build the cross-cutting `statistics` module last so every enum it groups by already exists. Finish the package: confirm the root barrel re-exports the full surface, run the §6 validation across the whole repo, and tag the contract package ready for Stage 02.
 
 **Tasks**
-- [ ] Create `src/modules/statistics/statistics.routes.ts` — `STATISTICS_ROUTES` (9 routes).
-- [ ] Create `src/modules/statistics/statistics.query.ts` — `StatisticsPeriodSchema` (closed enum: `today`, `this_week`, `this_month`, `last_30d`, `last_90d`, `this_year`, `custom`), `StatisticsOverviewQuerySchema`, `WilayaHeatmapQuerySchema`, `WilayaDrilldownQuerySchema`. Re-import `WilayaIdParamsSchema` from `../geography` for the drilldown path param.
-- [ ] Create `src/modules/statistics/statistics.dtos.ts` — `DashboardStatsDTO`, `ActivatorsSummaryDTO`, `DistributorsSummaryDTO`, `InventorySummaryDTO` (composes `SetStat`/`LotStat`/`CardStat`), `OrdersSummaryDTO`, `ActivationsSummaryDTO` (composes `ActivationStat`), `StatisticsOverviewDTO` (six pre-aggregated series), `WilayaHeatmapDTO`, `WilayaDrilldownDTO`.
-- [ ] Create `src/modules/statistics/index.ts`.
-- [ ] Update `src/index.ts` to its final state — re-exports `common/*` and every module barrel in the order from `plan.md` Part 3 (foundation → identity → catalog → inventory → activation → cross-cutting).
-- [ ] Run final repo-wide checks (`tsc --noEmit`, `madge --circular src`, lint) and confirm the §6 Validation Commandments are satisfied across the whole package.
+- [x] Create `src/modules/statistics/statistics.routes.ts` — `STATISTICS_ROUTES` (9 routes).
+- [x] Create `src/modules/statistics/statistics.query.ts` — `StatisticsPeriodSchema` (closed enum: `today`, `this_week`, `this_month`, `last_30d`, `last_90d`, `this_year`, `custom`), `StatisticsOverviewQuerySchema`, `WilayaHeatmapQuerySchema`, `WilayaDrilldownQuerySchema`. `WilayaIdParamsSchema` is consumed from geography directly by the backend route handler — not duplicated.
+- [x] Create `src/modules/statistics/statistics.dtos.ts` — `DashboardStatsDTO`, `ActivatorsSummaryDTO`, `DistributorsSummaryDTO`, `InventorySummaryDTO` (composes `SetStat`/`LotStat`/`CardStat`), `OrdersSummaryDTO`, `ActivationsSummaryDTO` (composes `ActivationStat`), `StatisticsOverviewDTO` (six pre-aggregated series), `WilayaHeatmapDTO`, `WilayaDrilldownDTO`.
+- [x] Create `src/modules/statistics/index.ts`.
+- [x] Update `src/index.ts` to its final state — re-exports `common/*` and every module barrel in the order from `plan.md` Part 3 (foundation → identity → catalog → inventory → activation → cross-cutting).
+- [x] Run final repo-wide checks (`tsc --noEmit`, `madge --circular src`, lint) and confirm the §6 Validation Commandments are satisfied across the whole package.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
