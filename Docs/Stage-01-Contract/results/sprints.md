@@ -171,39 +171,39 @@ Each sprint ends by updating the relevant module barrels **and** the root `src/i
 
 ---
 
-### Sprint 5: Inventory Core — Distributor, Set, Lot   — Status: ⬜ Pending
+### Sprint 5: Inventory Core — Distributor, Set, Lot   — Status: ✅ Complete
 
 **Goals**
 - Land the three inventory primitives that `order` and `card` will compose with in Sprint 6. None import each other's types (FK ids are `uuid` strings at the contract layer), so all three fit cleanly in one sprint.
 
 **Tasks**
-- [ ] Create `src/modules/distributor/distributor.routes.ts` — `DISTRIBUTOR_ROUTES` (the 6 routes).
-- [ ] Create `src/modules/distributor/distributor.command.ts` — `CreateDistributorSchema`, `UpdateDistributorSchema`.
-- [ ] Create `src/modules/distributor/distributor.query.ts` — `GetDistributorsQuerySchema`, `DistributorIdParamsSchema`.
-- [ ] Create `src/modules/distributor/distributor.dtos.ts` — `DistributorResponseSchema` / `DistributorDTO` (incl. resolved `wilayaName`/`communeName` + derived counts), `DistributorDetailResponseSchema` / `DistributorDetailDTO` via `.extend({ soldKeys, ordersCount })`, paginated wrapper.
-- [ ] Create `src/modules/distributor/index.ts`.
-- [ ] Create `src/modules/set/set.enums.ts` — `SetStat` (`NOT_PRINTED`, `PENDING_PRINTING`, `PRINTED`).
-- [ ] Create `src/modules/set/set.routes.ts` — `SET_ROUTES` (4 routes).
-- [ ] Create `src/modules/set/set.command.ts` — `CreateSetSchema`, `TransitionSetSchema` (`to` narrowed to `PENDING_PRINTING | PRINTED`).
-- [ ] Create `src/modules/set/set.query.ts` — `GetSetsQuerySchema`, `SetIdParamsSchema`.
-- [ ] Create `src/modules/set/set.dtos.ts` — `SetResponseSchema` / `SetDTO`, paginated wrapper.
-- [ ] Create `src/modules/set/index.ts`.
-- [ ] Create `src/modules/lot/lot.enums.ts` — `LotStat` (`PENDING`, `IN_DELIVERY`, `DELIVERED`, `RETURNED`).
-- [ ] Create `src/modules/lot/lot.routes.ts` — `LOT_ROUTES` (4 routes incl. `GET_AVAILABLE_FOR_ORDER`).
-- [ ] Create `src/modules/lot/lot.command.ts` — `CreateLotSchema` (`cardIds: array(uuid).nonempty()`).
-- [ ] Create `src/modules/lot/lot.query.ts` — `GetLotsQuerySchema`, `GetAvailableLotsQuerySchema`, `LotIdParamsSchema`.
-- [ ] Create `src/modules/lot/lot.dtos.ts` — `LotResponseSchema` / `LotDTO`, paginated wrapper.
-- [ ] Create `src/modules/lot/index.ts`.
-- [ ] Update `src/index.ts` to re-export the three modules.
+- [x] Create `src/modules/distributor/distributor.routes.ts` — `DISTRIBUTOR_ROUTES` (the 6 routes).
+- [x] Create `src/modules/distributor/distributor.command.ts` — `CreateDistributorSchema`, `UpdateDistributorSchema`.
+- [x] Create `src/modules/distributor/distributor.query.ts` — `GetDistributorsQuerySchema`, `DistributorIdParamsSchema`.
+- [x] Create `src/modules/distributor/distributor.dtos.ts` — `DistributorResponseSchema` / `DistributorDTO` (incl. resolved `wilayaName`/`communeName` + derived counts), `DistributorDetailResponseSchema` / `DistributorDetailDTO` via `.extend({ soldKeys, ordersCount })`, paginated wrapper.
+- [x] Create `src/modules/distributor/index.ts`.
+- [x] Create `src/modules/set/set.enums.ts` — `SetStat` (`NOT_PRINTED`, `PENDING_PRINTING`, `PRINTED`).
+- [x] Create `src/modules/set/set.routes.ts` — `SET_ROUTES` (4 routes).
+- [x] Create `src/modules/set/set.command.ts` — `CreateSetSchema`, `TransitionSetSchema` (`to` narrowed to `PENDING_PRINTING | PRINTED`).
+- [x] Create `src/modules/set/set.query.ts` — `GetSetsQuerySchema`, `SetIdParamsSchema`.
+- [x] Create `src/modules/set/set.dtos.ts` — `SetResponseSchema` / `SetDTO`, paginated wrapper.
+- [x] Create `src/modules/set/index.ts`.
+- [x] Create `src/modules/lot/lot.enums.ts` — `LotStat` (`PENDING`, `IN_DELIVERY`, `DELIVERED`, `RETURNED`).
+- [x] Create `src/modules/lot/lot.routes.ts` — `LOT_ROUTES` (4 routes incl. `GET_AVAILABLE_FOR_ORDER`).
+- [x] Create `src/modules/lot/lot.command.ts` — `CreateLotSchema` (`cardIds: array(uuid).nonempty()`).
+- [x] Create `src/modules/lot/lot.query.ts` — `GetLotsQuerySchema`, `GetAvailableLotsQuerySchema`, `LotIdParamsSchema`.
+- [x] Create `src/modules/lot/lot.dtos.ts` — `LotResponseSchema` / `LotDTO`, paginated wrapper.
+- [x] Create `src/modules/lot/index.ts`.
+- [x] Update `src/index.ts` to re-export the three modules.
 
 **Validation**
-- [ ] `tsc --noEmit` is clean.
-- [ ] `madge --circular src` reports no cycles.
-- [ ] Lint is clean.
-- [ ] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
-- [ ] No sensitive field appears in any DTO.
-- [ ] No business logic / DB / Express imports.
-- [ ] Committed on green.
+- [x] `tsc --noEmit` is clean.
+- [x] `madge --circular src` reports no cycles.
+- [x] Lint is clean.
+- [x] Every type is `z.infer`'d from a schema; no `any`; dates are `z.iso.datetime()`.
+- [x] No sensitive field appears in any DTO.
+- [x] No business logic / DB / Express imports.
+- [x] Committed on green.
 
 ---
 
