@@ -7,3 +7,6 @@ export * from './modules/admin';
 export * from './modules/activator';
 export * from './modules/payment';
 export * from './modules/log';
+export * from './modules/subscription-plan';
+export * from './modules/geography';
+export * from './modules/delivery-company';
