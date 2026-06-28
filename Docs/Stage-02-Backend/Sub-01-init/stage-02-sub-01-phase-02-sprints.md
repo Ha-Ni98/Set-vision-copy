@@ -12,8 +12,8 @@ Turn `plan.md` into ordered sprints so each layer's dependencies (and tests) exi
 
 ## Context & Inputs
 
-- **Plan:** `/docs/stage-02-backend/sub-01-init/plan.md`.
-- **Rules:** `back-end-rules.md`, `test-rules.md`.
+- **Plan:** `/docs/stage-02-backend/sub-01-init/results/plan.md`.
+- **Rules:** `back-end-rules.md`, `test-rules.md`, and `realtime-rules.md`.
 
 ---
 
@@ -54,4 +54,4 @@ Suggested shape (adjust to the plan):
 
 ## Expected Output
 
-- **`/docs/stage-02-backend/sub-01-init/sprints.md`**.
+- **`/docs/stage-02-backend/sub-01-init/results/sprints.md`**.

@@ -12,15 +12,15 @@ Produce a running backend core (strict TS, Pino, single `requireAuth` guard, `Ap
 
 ## Context & Inputs
 
-- **Sprints:** `/docs/stage-02-backend/sub-01-init/sprints.md`.
-- **Plan:** `/docs/stage-02-backend/sub-01-init/plan.md`.
-- **Rules:** `back-end-rules.md`, `test-rules.md`.
+- **Sprints:** `/docs/stage-02-backend/sub-01-init/results/sprints.md`.
+- **Plan:** `/docs/stage-02-backend/sub-01-init/results/plan.md`.
+- **Rules:** `back-end-rules.md`, `test-rules.md` , and `realtime-rules.md`.
 
 ---
 
 ## Context Protocol
 
-One sprint per fresh session. Load only: `back-end-rules.md`, `test-rules.md`, `plan.md`, `sprints.md`. State lives on disk, so a fresh agent resumes cleanly.
+One sprint per fresh session. Load only: `back-end-rules.md`, `test-rules.md`, and `realtime-rules.md`, `plan.md`, `sprints.md`. State lives on disk, so a fresh agent resumes cleanly.
 
 ---
 
