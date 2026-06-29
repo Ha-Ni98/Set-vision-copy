@@ -8,13 +8,19 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "cycles": "madge --circular --extensions ts src"
+    "cycles": "madge --circular --extensions ts src",
+    "lint": "eslint src",
+    "test": "tsx --test src/__tests__/conformance.test.ts",
+    "validate": "npm run check && npm run cycles && npm run lint && npm run test"
   },
   "dependencies": {
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "eslint": "^10.6.0",
+    "madge": "^8.0.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.3",
-    "madge": "^8.0.0"
+    "typescript-eslint": "^8.62.0"
   }
 }

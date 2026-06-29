@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import type { ErrorCode } from './errors';
 
+// z.coerce.boolean() uses JS Boolean() which treats "false" as true (non-empty string).
+// Use this schema for any optional boolean query-string parameter instead.
+export const BooleanQuerySchema = z.preprocess(
+  (val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  },
+  z.boolean(),
+);
+
 // Generic API response envelope (type-only by design, discriminated on `success`)
 export type ApiResponse<T = null> =
   | { success: true; data: T; message?: string }
