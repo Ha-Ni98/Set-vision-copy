@@ -1,0 +1,500 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================
+// Enums (fixed, code-driven — mirror @my-app/contract z.enum())
+// ============================================================
+
+enum UserRole {
+  ADMIN
+  ACTIVATOR
+}
+
+enum SubscriptionType {
+  SNAPCHAT_PLUS
+}
+
+enum SubscriptionDuration {
+  ONE_DAY
+  ONE_WEEK
+  TWO_WEEK
+  ONE_MONTH
+  THREE_MONTH
+  SIXTH_MONTH
+  ONE_YEAR
+  UNLIMITED
+}
+
+enum CardStat {
+  IN_SET
+  PRINTED
+  IN_LOT
+  AT_DISTRIBUTOR
+  ACTIVATION_PROGRESS
+  ACTIVATED
+  ACTIVATION_FAILED
+}
+
+enum SetStat {
+  NOT_PRINTED
+  PENDING_PRINTING
+  PRINTED
+}
+
+enum LotStat {
+  PENDING
+  IN_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum OrderStat {
+  PENDING_DELIVERY
+  IN_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum ActivationStat {
+  PENDING
+  PROCESSING
+  WRONG_INFORMATION
+  ADDITIONAL_INFORMATION
+  FREEZE
+  ACTIVATED
+  ACTIVATED_BY_ADMIN
+  CANCELLED_BY_ACTIVATOR
+  REMOVED_FROM_ACTIVATOR
+  CANCELLED_BY_ADMIN
+}
+
+enum DeliveryType {
+  HOME
+  PICKUP_POINT
+  STORE
+}
+
+enum AccountInformation {
+  USERNAME
+  EMAIL
+  PHONE_NUMBER
+  OTP
+  BIRTHDAY
+  PASSWORD
+}
+
+enum LogActionType {
+  CHANGE_USER_PASSWORD
+  CHANGE_USER_STAT
+  CHANGE_USER_INFORMATION
+  SET_PAYMENT
+  DELETE_PAYMENT
+  ADD_DISTRIBUTOR
+  CHANGE_DISTRIBUTOR_INFORMATION
+  CHANGE_DISTRIBUTOR_STAT
+  CHANGE_ACTIVATION_COMMISSION
+  REMOVE_LOT
+  REMOVE_SET
+  REMOVE_CARD
+  REVOKE_CARD
+}
+
+// ============================================================
+// Identity & Access
+// ============================================================
+
+model User {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  password    String // SENSITIVE: hashed, never in a DTO
+  role        UserRole
+  lastLoginAt DateTime?
+  isEnabled   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  admin         Admin?
+  activator     Activator?
+  refreshTokens RefreshToken[]
+  logs          Log[]
+
+  @@index([role])
+  @@index([isEnabled])
+  @@index([deletedAt])
+}
+
+model Admin {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  fullName  String
+  phone     String
+  isEnabled Boolean @default(true)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+}
+
+model Activator {
+  id                       String  @id @default(uuid())
+  userId                   String  @unique
+  fullName                 String
+  phone                    String
+  totalEarning             Decimal @default(0) @db.Decimal(12, 2)
+  credits                  Decimal @default(0) @db.Decimal(12, 2)
+  nbOfActivation           Int     @default(0)
+  nbOfSuccessfulActivation Int     @default(0)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+  activations Activation[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique // SENSITIVE
+  expiredAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Log {
+  id                String        @id @default(uuid())
+  actionType        LogActionType
+  actionDescription String
+  userId            String
+  createdAt         DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([actionType])
+  @@index([createdAt])
+}
+
+// ============================================================
+// Finance
+// ============================================================
+
+model Payment {
+  id              String    @id @default(uuid())
+  adminId         String
+  activatorId     String
+  totalAmount     Decimal   @db.Decimal(12, 2)
+  previousCredits Decimal   @db.Decimal(12, 2)
+  paymentDate     DateTime  @default(now())
+  isDeleted       Boolean   @default(false)
+  deletedDate     DateTime?
+
+  admin     Admin     @relation(fields: [adminId], references: [id])
+  activator Activator @relation(fields: [activatorId], references: [id])
+
+  @@index([activatorId])
+  @@index([adminId])
+  @@index([isDeleted])
+}
+
+// ============================================================
+// Catalog (plans + tiered commission)
+// ============================================================
+
+model SubscriptionPlan {
+  id                   String               @id @default(uuid())
+  subscriptionType     SubscriptionType
+  subscriptionDuration SubscriptionDuration
+  isActive             Boolean              @default(true)
+
+  commissions SubscriptionPlanCommission[]
+  sets        Set[]
+  lots        Lot[]
+  cards       Card[]
+
+  @@unique([subscriptionType, subscriptionDuration])
+}
+
+model CommissionDuration {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  label       String
+  nbMinuteMin Int
+  nbMinuteMax Int? // null = catch-all (unbounded upper tier)
+  createdAt   DateTime @default(now())
+
+  commissions SubscriptionPlanCommission[]
+}
+
+model SubscriptionPlanCommission {
+  id                   String  @id @default(uuid())
+  subscriptionPlanId   String
+  commissionDurationId String
+  commission           Decimal @db.Decimal(12, 2)
+
+  subscriptionPlan   SubscriptionPlan   @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+  commissionDuration CommissionDuration @relation(fields: [commissionDurationId], references: [id])
+
+  @@unique([subscriptionPlanId, commissionDurationId])
+  @@index([subscriptionPlanId])
+}
+
+// ============================================================
+// Inventory (sets, lots, orders, cards)
+// ============================================================
+
+model Set {
+  id                 String    @id @default(uuid())
+  setNumber          String    @unique
+  subscriptionPlanId String
+  numberOfKeys       Int
+  setStat            SetStat   @default(NOT_PRINTED)
+  createdAt          DateTime  @default(now())
+  printedAt          DateTime?
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
+  cards            Card[]
+
+  @@index([setStat])
+  @@index([subscriptionPlanId])
+}
+
+model Lot {
+  id                 String    @id @default(uuid())
+  lotNumber          String    @unique
+  subscriptionPlanId String
+  lotStat            LotStat   @default(PENDING)
+  nbOfCards          Int       @default(0)
+  isReturned         Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  deliveryDate       DateTime?
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
+  cards            Card[]
+  orderLots        OrderLot[]
+
+  @@index([lotStat])
+  @@index([subscriptionPlanId])
+}
+
+model Order {
+  id                  String       @id @default(uuid())
+  orderNumber         String       @unique
+  distributorId       String
+  receivedName        String
+  receivedPhone       String
+  wilayaId            String
+  communeId           String
+  deliveryCompanyId   String
+  deliveryType        DeliveryType
+  orderPrice          Decimal      @db.Decimal(12, 2)
+  deliverPrice        Decimal      @db.Decimal(12, 2)
+  cardsDeliveredCount Int          @default(0)
+  orderStat           OrderStat    @default(PENDING_DELIVERY)
+  createdAt           DateTime     @default(now())
+  completedAt         DateTime?
+
+  distributor     Distributor     @relation(fields: [distributorId], references: [id])
+  wilaya          Wilaya          @relation(fields: [wilayaId], references: [id])
+  commune         Commune         @relation(fields: [communeId], references: [id])
+  deliveryCompany DeliveryCompany @relation(fields: [deliveryCompanyId], references: [id])
+  orderLots       OrderLot[]
+
+  @@index([distributorId])
+  @@index([orderStat])
+  @@index([wilayaId])
+  @@index([deliveryCompanyId])
+  @@index([createdAt])
+}
+
+model OrderLot {
+  id      String @id @default(uuid())
+  orderId String
+  lotId   String
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  lot   Lot   @relation(fields: [lotId], references: [id])
+
+  @@unique([orderId, lotId])
+  @@index([orderId])
+  @@index([lotId])
+}
+
+model Card {
+  id                 String    @id @default(uuid())
+  key                String    @unique
+  subscriptionPlanId String
+  setId              String
+  lotId              String?
+  distributorId      String?
+  cardStat           CardStat  @default(IN_SET)
+  isActive           Boolean   @default(false)
+  isDisabled         Boolean   @default(false)
+  isRevoked          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
+  set              Set              @relation(fields: [setId], references: [id])
+  lot              Lot?             @relation(fields: [lotId], references: [id])
+  distributor      Distributor?     @relation(fields: [distributorId], references: [id])
+  activations      Activation[]
+
+  @@index([cardStat])
+  @@index([distributorId])
+  @@index([lotId])
+  @@index([setId])
+  @@index([subscriptionPlanId])
+  @@index([isActive])
+}
+
+// ============================================================
+// Activation (EAV account data)
+// ============================================================
+
+model Activation {
+  id              String         @id @default(uuid())
+  cardId          String
+  activatorId     String?
+  activationStat  ActivationStat @default(PENDING)
+  clientFullName  String
+  clientPhone     String
+  clientEmail     String?
+  activationEmail String?
+  activationPrice Decimal?       @db.Decimal(12, 2)
+  freezReason     String?
+  requestedAt     DateTime       @default(now())
+  takenAt         DateTime?
+  completedAt     DateTime?
+
+  card        Card                    @relation(fields: [cardId], references: [id])
+  activator   Activator?              @relation(fields: [activatorId], references: [id])
+  information ActivationInformation[]
+  steps       ActivationStep[]
+
+  @@index([cardId])
+  @@index([activatorId])
+  @@index([activationStat])
+  @@index([requestedAt])
+  @@index([completedAt])
+}
+
+model ActivationInformation {
+  id            String             @id @default(uuid())
+  activationId  String
+  accountInform AccountInformation
+  value         String? // SENSITIVE: may hold password/OTP — activator-only exposure
+
+  activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+
+  @@unique([activationId, accountInform])
+  @@index([activationId])
+}
+
+model ActivationStep {
+  id             String         @id @default(uuid())
+  activationId   String
+  activationStat ActivationStat
+  createdAt      DateTime       @default(now())
+
+  activation            Activation              @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  wrongInformation      WrongInformation[]
+  additionalInformation AdditionalInformation[]
+
+  @@index([activationId])
+}
+
+model WrongInformation {
+  id               String             @id @default(uuid())
+  activationStepId String
+  accountInform    AccountInformation
+  value            String? // SENSITIVE: may hold a corrected password — activator-only exposure
+
+  activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
+
+  @@index([activationStepId])
+}
+
+model AdditionalInformation {
+  id               String             @id @default(uuid())
+  activationStepId String
+  accountInform    AccountInformation
+  value            String? // SENSITIVE: may hold an OTP — activator-only exposure
+
+  activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
+
+  @@index([activationStepId])
+}
+
+// ============================================================
+// Reference data (lookup tables)
+// ============================================================
+
+model Wilaya {
+  id         String @id @default(uuid())
+  wilayaCode String @unique
+  frName     String
+  arName     String
+
+  communes     Commune[]
+  distributors Distributor[]
+  orders       Order[]
+}
+
+model Commune {
+  id          String @id @default(uuid())
+  communeCode String @unique
+  wilayaId    String
+  frName      String
+  arName      String
+
+  wilaya       Wilaya        @relation(fields: [wilayaId], references: [id])
+  distributors Distributor[]
+  orders       Order[]
+
+  @@index([wilayaId])
+}
+
+model DeliveryCompany {
+  id             String  @id @default(uuid())
+  name           String
+  registeredName String
+  isActive       Boolean @default(true)
+
+  orders Order[]
+}
+
+// ============================================================
+// Distributor (references reference data above)
+// ============================================================
+
+model Distributor {
+  id              String    @id @default(uuid())
+  fullName        String
+  storeName       String
+  wilayaId        String
+  communeId       String
+  isEnabled       Boolean   @default(true)
+  nbOfActiveCards Int       @default(0)
+  nbOfActivation  Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  wilaya  Wilaya  @relation(fields: [wilayaId], references: [id])
+  commune Commune @relation(fields: [communeId], references: [id])
+  cards   Card[]
+  orders  Order[]
+
+  @@index([wilayaId])
+  @@index([communeId])
+  @@index([isEnabled])
+}
+
