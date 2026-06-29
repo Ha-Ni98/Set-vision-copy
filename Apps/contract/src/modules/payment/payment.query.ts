@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { BooleanQuerySchema } from '../../common/types';
 
 export const GetPaymentsQuerySchema = z.object({
   activatorId: z.uuid().optional(),
-  includeDeleted: z.coerce.boolean().optional(),
+  includeDeleted: BooleanQuerySchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });

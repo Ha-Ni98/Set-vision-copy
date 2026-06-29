@@ -46,3 +46,12 @@ export type ActivationEvents = {
   'activation:resolved': ActivationResolvedPayload;
   'activation:status-changed': ActivationStatusChangedPayload;
 };
+
+// Socket.io-compatible gateway interfaces for Stage 2 WebSocket wiring.
+// ServerToClientEvents: events the server emits to connected clients.
+// ClientToServerEvents: events the client emits to the server (none in Stage 1).
+export type ServerToClientEvents = {
+  [K in keyof ActivationEvents]: (payload: ActivationEvents[K]) => void;
+};
+
+export type ClientToServerEvents = Record<string, never>;

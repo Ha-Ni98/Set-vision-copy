@@ -29,6 +29,8 @@ export const DistributorsSummaryResponseSchema = z.object({
 });
 export type DistributorsSummaryDTO = z.infer<typeof DistributorsSummaryResponseSchema>;
 
+// Stats with zero items are omitted from the arrays — consumers must treat a missing stat as 0,
+// not undefined. Array form avoids Record<Stat,number> + noUncheckedIndexedAccess complexity.
 export const InventorySummaryResponseSchema = z.object({
   sets: z.array(z.object({ stat: z.enum(SetStat), count: z.number().int() })),
   lots: z.array(z.object({ stat: z.enum(LotStat), count: z.number().int() })),

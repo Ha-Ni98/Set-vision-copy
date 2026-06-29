@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { BooleanQuerySchema } from '../../common/types';
 
 export const GetSubscriptionPlansQuerySchema = z.object({
-  active: z.coerce.boolean().optional(),
+  active: BooleanQuerySchema.optional(),
 });
 export type GetSubscriptionPlansQuery = z.infer<typeof GetSubscriptionPlansQuerySchema>;
 
