@@ -15,7 +15,7 @@
 | 2 | Auth — Foundation (mapper + interface) | S1 | ✅ Done |
 | 3 | Auth — Logic (service) | S2, FC-1/2/3 | ✅ Done |
 | 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ✅ Done |
-| 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
+| 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ⬜ Pending |
 | 7 | Admin — API (controller + wiring) | S6, FC-6 | ⬜ Pending |
 | 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
@@ -135,7 +135,7 @@
 
 ---
 
-### Sprint 5: Admin — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 5: Admin — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - Admin mapper (composes `Admin`+`User`, credential responses) and `IAdminService`.
