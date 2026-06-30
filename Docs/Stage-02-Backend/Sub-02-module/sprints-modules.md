@@ -12,7 +12,7 @@
 |---|--------|-----------|--------|
 | 0 | Framework Foundation Corrections (FC-1…FC-6) | Sub-01 | ✅ Done |
 | 1 | User — shared mapper | S0 (FC-1 only for context) | ✅ Done |
-| 2 | Auth — Foundation (mapper + interface) | S1 | ⬜ Pending |
+| 2 | Auth — Foundation (mapper + interface) | S1 | ✅ Done |
 | 3 | Auth — Logic (service) | S2, FC-1/2/3 | ⬜ Pending |
 | 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ⬜ Pending |
 | 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
@@ -74,7 +74,7 @@
 
 ---
 
-### Sprint 2: Auth — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 2: Auth — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - Auth mapper (token + session DTO assembly) and `IAuthService` contract. No service logic yet.
