@@ -184,7 +184,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 6: Contract Conformance Scaffold — Status: ⬜ Pending
+### Sprint 6: Contract Conformance Scaffold — Status: ✅ Done
 
 **Goals**
 - Stand up the contract-conformance harness (skeleton only). No routes are mounted yet (modules are empty), so route-coverage assertions are deferred to Sub-02; what we need now is the file in the right folder, importing every route-constant module, so each Sub-02 sprint can append a single line per route without scaffolding.
