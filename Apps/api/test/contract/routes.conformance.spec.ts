@@ -24,6 +24,7 @@ import {
   ActivatorDetailResponseSchema,
   ActivatorDashboardResponseSchema,
   SetResponseSchema,
+  LotResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -258,6 +259,48 @@ describe('SET_ROUTES — registration', () => {
   it('DELETE /sets/:id is registered (requireAuth → 401, not 404)', async () => {
     const res = await request(app).delete(`${SET_API}/${SAMPLE_UUID}`);
     expect(res.status).toBe(401);
+  });
+});
+
+const LOT_API = `/api/v1${LOT_ROUTES.BASE}`;
+
+describe('LOT_ROUTES — registration', () => {
+  it('GET /lots is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(LOT_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /lots/available-for-order is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${LOT_API}${LOT_ROUTES.GET_AVAILABLE_FOR_ORDER}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /lots is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(LOT_API).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /lots/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${LOT_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('LOT response schemas', () => {
+  it('LotResponseSchema accepts a valid shape', () => {
+    const sample = {
+      id: SAMPLE_UUID,
+      lotNumber: 'LOT-20240630-AABBCC',
+      subscriptionPlanId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+      subscriptionLabel: 'Snapchat Plus — 01 Month',
+      lotStat: 'PENDING',
+      nbOfCards: 5,
+      deliveredCardsCount: 0,
+      isReturned: false,
+      createdAt: '2025-01-10T08:30:00.000Z',
+      deliveryDate: null,
+    };
+    expect(() => LotResponseSchema.parse(sample)).not.toThrow();
   });
 });
 

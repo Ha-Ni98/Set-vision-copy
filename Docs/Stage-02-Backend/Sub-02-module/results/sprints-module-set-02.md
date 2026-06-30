@@ -16,7 +16,7 @@
 | 3 | Set — API (controller + wiring) | api | S2 | ✅ Done |
 | 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
 | 5 | Lot — Logic (service) | logic | S4, S2 (PRINTED cards) | ✅ Done |
-| 6 | Lot — API (controller + wiring) | api | S5 | ⬜ Pending |
+| 6 | Lot — API (controller + wiring) | api | S5 | ✅ Done |
 | 7 | Order — Foundation (mapper + interface) | foundation | S4 | ⬜ Pending |
 | 8 | Order — Logic (service) | logic | S7, S5 (lots) | ⬜ Pending |
 | 9 | Order — API (controller + wiring) | api | S8 | ⬜ Pending |
@@ -141,7 +141,7 @@
 
 ---
 
-### Sprint 6: Lot — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 6: Lot — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller, composition root (static route before `/:id`), wiring, integration + conformance.
