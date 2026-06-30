@@ -19,7 +19,7 @@
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ✅ Done |
 | 7 | Admin — API (controller + wiring) | S6, FC-6 | ✅ Done |
 | 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
-| 9 | Activator — Logic (service) | S8, FC-1/4 | ⬜ Pending |
+| 9 | Activator — Logic (service) | S8, FC-1/4 | ✅ Done |
 | 10 | Activator — API (controller + wiring) | S9, FC-6 | ⬜ Pending |
 
 **Cross-cutting validation** (applies to every sprint, in addition to its own block):
@@ -217,7 +217,7 @@
 
 ---
 
-### Sprint 9: Activator — Logic (service)   — Status: ⬜ Pending
+### Sprint 9: Activator — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `ActivatorService`: getAll / create / getById / update / toggle / resetPassword / delete / performance / myStats. Read-only aggregates over `Activation`/`Payment`. Uses FC-1/4/5.
