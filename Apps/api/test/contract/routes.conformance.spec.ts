@@ -21,6 +21,8 @@ import {
   SessionUserResponseSchema,
   AdminResponseSchema,
   AdminWithCredentialsResponseSchema,
+  ActivatorDetailResponseSchema,
+  ActivatorDashboardResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -134,6 +136,100 @@ describe('ADMIN response schemas', () => {
   it('AdminWithCredentialsResponseSchema accepts a valid shape', () => {
     expect(() =>
       AdminWithCredentialsResponseSchema.parse({ admin: sampleAdmin, generatedPassword: 'Temp#Pass99' }),
+    ).not.toThrow();
+  });
+});
+
+const ACT_API = `/api/v1${ACTIVATOR_ROUTES.BASE}`;
+const SAMPLE_UUID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+describe('ACTIVATOR_ROUTES — registration', () => {
+  it('GET /activators/me/stats is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACT_API}${ACTIVATOR_ROUTES.MY_STATS}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activators is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(ACT_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activators is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(ACT_API).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activators/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACT_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('PATCH /activators/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).patch(`${ACT_API}/${SAMPLE_UUID}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activators/:id/toggle is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACT_API}/${SAMPLE_UUID}/toggle`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activators/:id/reset-password is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACT_API}/${SAMPLE_UUID}/reset-password`);
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /activators/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${ACT_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activators/:id/performance is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACT_API}/${SAMPLE_UUID}/performance`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('ACTIVATOR response schemas', () => {
+  const sampleActivator = {
+    id: SAMPLE_UUID,
+    userId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+    fullName: 'Alice Activator',
+    username: 'alice_act',
+    phone: '0612345678',
+    isEnabled: true,
+    totalEarning: 0,
+    credits: 0,
+    nbOfActivation: 0,
+    nbOfSuccessfulActivation: 0,
+    avgActivationTimeSeconds: null,
+    lastLoginAt: null,
+    createdAt: '2025-01-10T08:30:00.000Z',
+  };
+
+  it('ActivatorDetailResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      ActivatorDetailResponseSchema.parse({
+        ...sampleActivator,
+        totalPaid: 0,
+        creditsOwed: 0,
+        successRate: 0,
+      }),
+    ).not.toThrow();
+  });
+
+  it('ActivatorDashboardResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      ActivatorDashboardResponseSchema.parse({
+        totalEarnings: 0,
+        earningsTrendPercent: 0,
+        creditsBalance: 0,
+        totalActivations: 0,
+        activationsToday: 0,
+        avgActivationTimeSeconds: null,
+        activeSlotsUsed: 0,
+        weekly: [],
+      }),
     ).not.toThrow();
   });
 });

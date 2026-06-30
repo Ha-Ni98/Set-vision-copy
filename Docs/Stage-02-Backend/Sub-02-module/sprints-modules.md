@@ -20,7 +20,7 @@
 | 7 | Admin — API (controller + wiring) | S6, FC-6 | ✅ Done |
 | 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
 | 9 | Activator — Logic (service) | S8, FC-1/4 | ✅ Done |
-| 10 | Activator — API (controller + wiring) | S9, FC-6 | ⬜ Pending |
+| 10 | Activator — API (controller + wiring) | S9, FC-6 | ✅ Done |
 
 **Cross-cutting validation** (applies to every sprint, in addition to its own block):
 - `tsc --noEmit` clean (no `any` leaks, no unused exports).
@@ -241,7 +241,7 @@
 
 ---
 
-### Sprint 10: Activator — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 10: Activator — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller, composition root, route registration (with `/me/stats` ordered before `/:id`), integration + conformance.

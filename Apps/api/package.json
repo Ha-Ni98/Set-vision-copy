@@ -12,7 +12,7 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:unit": "vitest run test/unit test/contract",
-    "test:int": "NODE_ENV=test vitest run test/integration",
+    "test:int": "NODE_ENV=test vitest run --config vitest.integration.config.ts test/integration",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

@@ -42,7 +42,12 @@ const ACTOR_ID = 'actor-user-id-000';
 function makeActivatorWithUser(activatorOverrides = {}, userOverrides = {}) {
   const user = userEntity({ role: UserRole.ACTIVATOR, ...userOverrides });
   const activator = activatorEntity({ userId: user.id, ...activatorOverrides });
-  return { ...activator, user, activations: [], payments: [] };
+  return {
+    ...activator,
+    user,
+    activations: [] as Array<{ takenAt: Date | null; completedAt: Date | null }>,
+    payments: [] as Array<{ totalAmount: Prisma.Decimal }>,
+  };
 }
 
 // ─── getAll ───────────────────────────────────────────────────────────────────
