@@ -72,7 +72,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 2: Framework — Status: ⬜ Pending
+### Sprint 2: Framework — Status: ✅ Done
 
 **Goals**
 - The dependency-free "framework" services that every later layer consumes: Pino logger, success-envelope helper, typed event bus, password/token utils. Lands the **test foundations** (factories + fixtures) so Sprint 3 can write middleware tests without scaffolding.
