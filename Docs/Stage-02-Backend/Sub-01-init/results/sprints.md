@@ -39,7 +39,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 1: Foundation — Status: ⬜ Pending
+### Sprint 1: Foundation — Status: ✅ Done
 
 **Goals**
 - A bootable, type-strict workspace at `Apps/api/` with the env validator (crash-on-invalid), the error class hierarchy, and the Prisma singleton. **No HTTP, no middleware, no logger.** This sprint produces nothing that needs running — only things that need compiling and one unit test.
