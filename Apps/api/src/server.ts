@@ -1,21 +1,31 @@
+import { createServer } from 'node:http';
 import { app } from './app';
 import { env } from './env';
 import { prisma } from './common/db/prisma';
 import { logger } from './common/config/logger';
+import { createSocketServer } from './common/realtime/socket';
+import { authNamespace } from './common/realtime/socket-auth';
+import { initRealtimeGateway } from './common/realtime/realtime-gateway';
+import { NS } from './common/realtime/rooms';
+import { UserRole } from '@my-app/contract';
 
-// Sprint 5 replaces this body with http.createServer + Socket.IO attachment.
+const httpServer = createServer(app);
+const io = createSocketServer(httpServer);
 
-const server = app.listen(env.PORT, () => {
-  logger.info(`API listening on port ${env.PORT}`);
-});
+io.of(NS.ACTIVATORS).use(authNamespace([UserRole.ACTIVATOR]));
+io.of(NS.ADMIN).use(authNamespace([UserRole.ADMIN]));
+
+initRealtimeGateway(io);
 
 async function main(): Promise<void> {
   await prisma.$connect();
+  httpServer.listen(env.PORT, () => logger.info(`API listening on port ${env.PORT}`));
 }
 
 function shutdown(signal: string): void {
   logger.info({ signal }, 'Shutting down');
-  server.close(() => {
+  io.close();
+  httpServer.close(() => {
     void prisma.$disconnect().finally(() => process.exit(0));
   });
 }

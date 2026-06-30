@@ -150,7 +150,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 5: Realtime Gateway — Status: ⬜ Pending
+### Sprint 5: Realtime Gateway — Status: ✅ Done
 
 > Mandated by `realtime-rules.md` §12; depends on the event bus (Sprint 2), the global error handler (Sprint 3), and `app.ts` (Sprint 4).
 
