@@ -13,7 +13,7 @@
 | 0 | Framework Foundation Corrections (FC-1…FC-6) | Sub-01 | ✅ Done |
 | 1 | User — shared mapper | S0 (FC-1 only for context) | ✅ Done |
 | 2 | Auth — Foundation (mapper + interface) | S1 | ✅ Done |
-| 3 | Auth — Logic (service) | S2, FC-1/2/3 | ⬜ Pending |
+| 3 | Auth — Logic (service) | S2, FC-1/2/3 | ✅ Done |
 | 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ⬜ Pending |
 | 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ⬜ Pending |
@@ -92,7 +92,7 @@
 
 ---
 
-### Sprint 3: Auth — Logic (service)   — Status: ⬜ Pending
+### Sprint 3: Auth — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `AuthService` implementing `IAuthService`: login / refresh / logout / me. Uses FC-1 (argon2 verify), FC-2 (opaque + SHA-256 refresh), FC-3 (refresh TTL).
