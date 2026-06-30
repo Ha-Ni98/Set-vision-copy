@@ -15,7 +15,7 @@
 | 2 | Set — Logic (service) | logic | S1 | ✅ Done |
 | 3 | Set — API (controller + wiring) | api | S2 | ✅ Done |
 | 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
-| 5 | Lot — Logic (service) | logic | S4, S2 (PRINTED cards) | ⬜ Pending |
+| 5 | Lot — Logic (service) | logic | S4, S2 (PRINTED cards) | ✅ Done |
 | 6 | Lot — API (controller + wiring) | api | S5 | ⬜ Pending |
 | 7 | Order — Foundation (mapper + interface) | foundation | S4 | ⬜ Pending |
 | 8 | Order — Logic (service) | logic | S7, S5 (lots) | ⬜ Pending |
@@ -120,7 +120,7 @@
 
 ---
 
-### Sprint 5: Lot — Logic (service)   — Status: ⬜ Pending
+### Sprint 5: Lot — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `LotService`: list (+derive delivered count), available-for-order, create (validate candidates + transaction), delete (revert + log).
