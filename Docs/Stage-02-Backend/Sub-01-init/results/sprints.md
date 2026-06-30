@@ -128,7 +128,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 4: Boot (HTTP) — Status: ⬜ Pending
+### Sprint 4: Boot (HTTP) — Status: ✅ Done
 
 **Goals**
 - The Express app is assembled (pipeline only — no listener here) and `GET /health` returns the envelope. A minimal `server.ts` lets `npm run dev` smoke-test, but the **realtime + graceful-shutdown final form lands in Sprint 5** (plan §5 explicitly defers it). One integration test asserts the `/health` envelope through Supertest.
