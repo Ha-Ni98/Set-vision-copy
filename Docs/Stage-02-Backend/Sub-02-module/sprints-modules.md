@@ -18,7 +18,7 @@
 | 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ✅ Done |
 | 7 | Admin — API (controller + wiring) | S6, FC-6 | ✅ Done |
-| 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
+| 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
 | 9 | Activator — Logic (service) | S8, FC-1/4 | ⬜ Pending |
 | 10 | Activator — API (controller + wiring) | S9, FC-6 | ⬜ Pending |
 
@@ -198,7 +198,7 @@
 
 ---
 
-### Sprint 8: Activator — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 8: Activator — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - Activator mapper (`Decimal`→number, derived fields, credential/perf/dashboard DTOs) and `IActivatorService`.
