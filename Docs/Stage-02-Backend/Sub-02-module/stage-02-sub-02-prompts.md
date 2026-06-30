@@ -23,11 +23,11 @@ Constraints: no code; output only /docs/stage-02-backend/sub-02-module/plan-[mod
 Produce the sprint plan for `[module]`.
 
 Read and follow strictly:
-- **Phase file:** `stage-02-sub-02-phase-02-sprints.md`
-- **Plan:** `/docs/stage-02-backend/sub-02-module/plan-[module].md`
-- **Rules:** `module-implementation-rules.md`
+- **Phase file:** stage-02-sub-02-phase-02-sprints.md
+- **Plan:** /docs/stage-02-backend/sub-02-module/plan-[module].md
+- **Rules:** module-implementation-rules.md
 
-Constraints: no code; foundation (mapper/interface) → logic (service) → API (controller/wiring); every sprint has a Validation block covering compilation and tests; output only `/docs/stage-02-backend/sub-02-module/sprints-[module].md`.
+Constraints: no code; foundation (mapper/interface) → logic (service) → API (controller/wiring); every sprint has a Validation block covering compilation and tests; output only Docs/stage-02-backend/sub-02-module/resuls/sprints-[module]-[setnumber].md.
 
 ---
 
