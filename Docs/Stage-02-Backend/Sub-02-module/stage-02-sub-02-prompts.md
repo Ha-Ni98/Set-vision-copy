@@ -9,12 +9,12 @@ Run once per module. Replace `[module]` with the module name. Standing rules: ru
 Plan the `[module]` module.
 
 Read and follow strictly:
-- **Phase file:** `stage-02-sub-02-phase-01-plan.md`
-- **Spec:** `module-contracts/[module].md`
-- **Rules:** `module-implementation-rules.md`
-- **Contract:** `@my-app/contract`
+- **Phase file:** stage-02-sub-02-phase-01-plan.md
+- **Spec:** module-contracts/[module].md
+- **Rules:** module-implementation-rules.md
+- **Contract:** @my-app/contract
 
-Constraints: no code; output only `/docs/stage-02-backend/sub-02-module/plan-[module].md`.
+Constraints: no code; output only /docs/stage-02-backend/sub-02-module/plan-[module].md.
 
 ---
 
