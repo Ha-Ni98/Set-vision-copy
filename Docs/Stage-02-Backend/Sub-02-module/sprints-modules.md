@@ -14,7 +14,7 @@
 | 1 | User — shared mapper | S0 (FC-1 only for context) | ✅ Done |
 | 2 | Auth — Foundation (mapper + interface) | S1 | ✅ Done |
 | 3 | Auth — Logic (service) | S2, FC-1/2/3 | ✅ Done |
-| 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ⬜ Pending |
+| 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ✅ Done |
 | 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ⬜ Pending |
 | 7 | Admin — API (controller + wiring) | S6, FC-6 | ⬜ Pending |
@@ -114,7 +114,7 @@
 
 ---
 
-### Sprint 4: Auth — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 4: Auth — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller, composition root, route registration, and the login rate-limiter (FC-7). First module mounted on `moduleRouter`.

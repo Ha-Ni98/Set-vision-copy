@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { AUTH_ROUTES } from '@my-app/contract';
+import { authRouter } from './auth/auth.routes';
 
-// Module routers are mounted here as they are implemented (one per Sub-02 sprint).
-// Each sprint appends: moduleRouter.use(X_ROUTES.BASE, xRouter);
 export const moduleRouter = Router();
+
+moduleRouter.use(AUTH_ROUTES.BASE, authRouter);
