@@ -14,7 +14,7 @@
 | 1 | Set — Foundation (mapper + interface + generators) | foundation | Sub-01, contract | ✅ Done |
 | 2 | Set — Logic (service) | logic | S1 | ✅ Done |
 | 3 | Set — API (controller + wiring) | api | S2 | ✅ Done |
-| 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ⬜ Pending |
+| 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
 | 5 | Lot — Logic (service) | logic | S4, S2 (PRINTED cards) | ⬜ Pending |
 | 6 | Lot — API (controller + wiring) | api | S5 | ⬜ Pending |
 | 7 | Order — Foundation (mapper + interface) | foundation | S4 | ⬜ Pending |
@@ -100,7 +100,7 @@
 
 ---
 
-### Sprint 4: Lot — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 4: Lot — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - `LotMapper` (with derived `deliveredCardsCount` injected), `ILotService`, `lotNumber` helper, factory, mapper test.
