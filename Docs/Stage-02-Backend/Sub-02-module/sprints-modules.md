@@ -11,7 +11,7 @@
 | # | Sprint | Depends on | Status |
 |---|--------|-----------|--------|
 | 0 | Framework Foundation Corrections (FC-1…FC-6) | Sub-01 | ✅ Done |
-| 1 | User — shared mapper | S0 (FC-1 only for context) | ⬜ Pending |
+| 1 | User — shared mapper | S0 (FC-1 only for context) | ✅ Done |
 | 2 | Auth — Foundation (mapper + interface) | S1 | ⬜ Pending |
 | 3 | Auth — Logic (service) | S2, FC-1/2/3 | ⬜ Pending |
 | 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ⬜ Pending |
@@ -56,7 +56,7 @@
 
 ---
 
-### Sprint 1: User — shared mapper   — Status: ⬜ Pending
+### Sprint 1: User — shared mapper   — Status: ✅ Done
 
 **Goals**
 - Ship the only User file: a pure shared mapper (`toUserIdentityDTO`). No service/interface/controller/routes/listener (spec: no HTTP surface).
