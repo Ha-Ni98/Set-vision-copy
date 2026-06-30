@@ -17,7 +17,7 @@
 | 4 | Auth — API (controller + wiring) | S3, FC-6/7 | ✅ Done |
 | 5 | Admin — Foundation (mapper + interface) | S1, FC-5 | ✅ Done |
 | 6 | Admin — Logic (service) | S5, FC-1/4/8 | ✅ Done |
-| 7 | Admin — API (controller + wiring) | S6, FC-6 | ⬜ Pending |
+| 7 | Admin — API (controller + wiring) | S6, FC-6 | ✅ Done |
 | 8 | Activator — Foundation (mapper + interface) | S1, FC-5 | ⬜ Pending |
 | 9 | Activator — Logic (service) | S8, FC-1/4 | ⬜ Pending |
 | 10 | Activator — API (controller + wiring) | S9, FC-6 | ⬜ Pending |
@@ -178,7 +178,7 @@
 
 ---
 
-### Sprint 7: Admin — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 7: Admin — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller, composition root, admin-only route registration, integration + conformance.

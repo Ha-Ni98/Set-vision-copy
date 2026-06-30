@@ -19,6 +19,8 @@ import {
   STATISTICS_ROUTES,
   AuthTokensResponseSchema,
   SessionUserResponseSchema,
+  AdminResponseSchema,
+  AdminWithCredentialsResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -71,6 +73,68 @@ describe('AUTH_ROUTES — registration', () => {
   it('GET /auth/me is registered (requireAuth → 401, not 404)', async () => {
     const res = await request(app).get(`${API}${AUTH_ROUTES.ME}`);
     expect(res.status).toBe(401);
+  });
+});
+
+const ADMIN_API = `/api/v1${ADMIN_ROUTES.BASE}`;
+
+describe('ADMIN_ROUTES — registration', () => {
+  it('GET /admins is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(ADMIN_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /admins is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(ADMIN_API).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /admins/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ADMIN_API}/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`);
+    expect(res.status).toBe(401);
+  });
+
+  it('PATCH /admins/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).patch(`${ADMIN_API}/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /admins/:id/toggle is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ADMIN_API}/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/toggle`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /admins/:id/reset-password is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ADMIN_API}/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/reset-password`);
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /admins/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${ADMIN_API}/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('ADMIN response schemas', () => {
+  const sampleAdmin = {
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    userId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+    fullName: 'Alice Admin',
+    username: 'alice',
+    phone: '0612345678',
+    isEnabled: true,
+    lastLoginAt: null,
+    createdAt: '2025-01-10T08:30:00.000Z',
+  };
+
+  it('AdminResponseSchema accepts a valid shape', () => {
+    expect(() => AdminResponseSchema.parse(sampleAdmin)).not.toThrow();
+  });
+
+  it('AdminWithCredentialsResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      AdminWithCredentialsResponseSchema.parse({ admin: sampleAdmin, generatedPassword: 'Temp#Pass99' }),
+    ).not.toThrow();
   });
 });
 
