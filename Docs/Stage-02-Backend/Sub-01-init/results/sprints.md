@@ -103,7 +103,7 @@ A sprint may only depend on artifacts produced by earlier sprints. The plan's "D
 
 ---
 
-### Sprint 3: Guards (Middleware) — Status: ⬜ Pending
+### Sprint 3: Guards (Middleware) — Status: ✅ Done
 
 **Goals**
 - The three middlewares (`validate-request`, `requireAuth`, global error handler) and the `Request` augmentation that lets them be typed without `@ts-ignore`. Every middleware ships with a unit test using the factories from Sprint 2.
