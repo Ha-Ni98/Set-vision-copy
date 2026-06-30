@@ -11,7 +11,7 @@
 
 | # | Sprint | Layer | Depends on | Status |
 |---|--------|-------|-----------|--------|
-| 1 | Set — Foundation (mapper + interface + generators) | foundation | Sub-01, contract | ⬜ Pending |
+| 1 | Set — Foundation (mapper + interface + generators) | foundation | Sub-01, contract | ✅ Done |
 | 2 | Set — Logic (service) | logic | S1 | ⬜ Pending |
 | 3 | Set — API (controller + wiring) | api | S2 | ⬜ Pending |
 | 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ⬜ Pending |
@@ -39,7 +39,7 @@
 
 ---
 
-### Sprint 1: Set — Foundation (mapper + interface + generators)   — Status: ⬜ Pending
+### Sprint 1: Set — Foundation (mapper + interface + generators)   — Status: ✅ Done
 
 **Goals**
 - Pure `SetMapper`, `ISetService` contract, the `setNumber`/card-`key` format helpers, and the shared factories Set + everything downstream rely on.
