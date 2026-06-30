@@ -12,7 +12,7 @@
 | # | Sprint | Layer | Depends on | Status |
 |---|--------|-------|-----------|--------|
 | 1 | Set — Foundation (mapper + interface + generators) | foundation | Sub-01, contract | ✅ Done |
-| 2 | Set — Logic (service) | logic | S1 | ⬜ Pending |
+| 2 | Set — Logic (service) | logic | S1 | ✅ Done |
 | 3 | Set — API (controller + wiring) | api | S2 | ⬜ Pending |
 | 4 | Lot — Foundation (mapper + interface) | foundation | S1 (card factory) | ⬜ Pending |
 | 5 | Lot — Logic (service) | logic | S4, S2 (PRINTED cards) | ⬜ Pending |
@@ -59,7 +59,7 @@
 
 ---
 
-### Sprint 2: Set — Logic (service)   — Status: ⬜ Pending
+### Sprint 2: Set — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `SetService implements ISetService`: list, create (+card generation transaction), transition (+`→PRINTED` cascade), delete (+cascade + log).
