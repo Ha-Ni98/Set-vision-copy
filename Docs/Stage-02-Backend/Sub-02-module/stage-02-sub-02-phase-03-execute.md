@@ -12,8 +12,8 @@ Execute the module sprints and produce a fully wired module bound to the contrac
 
 ## Context & Inputs
 
-- **Sprints:** `/docs/stage-02-backend/sub-02-module/sprints-[module].md`.
-- **Plan:** `/docs/stage-02-backend/sub-02-module/plan-[module].md`.
+- **Sprints:** `/docs/stage-02-backend/sub-02-module/results/sprints-[module].md`.
+- **Plan:** `/docs/stage-02-backend/sub-02-module/results/plan-[module].md`.
 - **Spec:** `module-contracts/[module].md`.
 - **Rules:** `module-implementation-rules.md`.
 - **Contract:** `@my-app/contract`.

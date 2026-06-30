@@ -49,4 +49,4 @@ Output `/docs/stage-02-backend/sub-02-module/plan-[module].md` — a checklist o
 
 ## Expected Outputs
 
-- **`/docs/stage-02-backend/sub-02-module/plan-[module1]-....md`** and a clear "vertical slice" for the modules.
+- **`/docs/stage-02-backend/sub-02-module/results/plan-[module1]-....md`** and a clear "vertical slice" for the modules.
