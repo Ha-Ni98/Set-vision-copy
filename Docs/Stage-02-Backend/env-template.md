@@ -14,7 +14,7 @@ Every variable listed here must also exist in the `src/env.ts` Zod schema — th
 
 ## Project-specific add-ons (add to the schema when you adopt them)
 - **`TEST_DATABASE_URL`** — separate disposable DB for integration tests.
-- **`JWT_REFRESH_SECRET` / `JWT_REFRESH_EXPIRATION`** — if using refresh tokens.
+- **`REFRESH_TOKEN_EXPIRATION`** — refresh-token lifetime (default `7d`). Used by the Auth service to set `RefreshToken.expiredAt`.
 - **`REDIS_URL`** — caching/queues.
 - **`SMTP_*` / `AWS_*`** — email / file uploads.
 

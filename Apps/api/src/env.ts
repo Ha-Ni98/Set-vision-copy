@@ -8,6 +8,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRATION: z.string().default('15m'),
+  REFRESH_TOKEN_EXPIRATION: z.string().default('7d'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   WS_PATH: z.string().default('/socket.io'),
 });

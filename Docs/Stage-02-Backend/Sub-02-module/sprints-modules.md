@@ -10,7 +10,7 @@
 
 | # | Sprint | Depends on | Status |
 |---|--------|-----------|--------|
-| 0 | Framework Foundation Corrections (FC-1…FC-6) | Sub-01 | ⬜ Pending |
+| 0 | Framework Foundation Corrections (FC-1…FC-6) | Sub-01 | ✅ Done |
 | 1 | User — shared mapper | S0 (FC-1 only for context) | ⬜ Pending |
 | 2 | Auth — Foundation (mapper + interface) | S1 | ⬜ Pending |
 | 3 | Auth — Logic (service) | S2, FC-1/2/3 | ⬜ Pending |
@@ -29,7 +29,7 @@
 
 ---
 
-### Sprint 0: Framework Foundation Corrections   — Status: ⬜ Pending
+### Sprint 0: Framework Foundation Corrections   — Status: ✅ Done
 
 **Goals**
 - Land the confirmed framework changes (`plan-00-foundation.md` FC-1…FC-6) that every module depends on. FC-7 ships with Auth (S4); FC-8 with Admin (S6).
