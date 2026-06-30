@@ -41,11 +41,12 @@ First sprint not marked ✅. Recall: mapper is static/pure and converts dates; `
 ### Step 3 — Validate
 `tsc --noEmit` clean · `npm run test:unit` (incl. conformance) green · `npm run test:int` green once wired (test DB up) · routes use contract constants · responses use the envelope · no sensitive fields in any DTO.
 
-### Step 4 — Commit on Green
-`git commit -m "api: [module] sprint [N] — [name]"`.
 
-### Step 5 — Report & Mark
+### Step 4 — Report & Mark
 Write `/docs/stage-02-backend/sub-02-module/results-[module]/report-sprint-[NN].md`. Mark the sprint ✅.
+
+### Step 5 — Commit on Green
+`git commit -m "api: [module] sprint [N] — [name]"`.
 
 ### Step 6 — Pause
 Wait for `next`.
