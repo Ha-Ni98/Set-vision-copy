@@ -23,6 +23,7 @@ import {
   AdminWithCredentialsResponseSchema,
   ActivatorDetailResponseSchema,
   ActivatorDashboardResponseSchema,
+  SetResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -231,6 +232,48 @@ describe('ACTIVATOR response schemas', () => {
         weekly: [],
       }),
     ).not.toThrow();
+  });
+});
+
+const SET_API = `/api/v1${SET_ROUTES.BASE}`;
+
+describe('SET_ROUTES — registration', () => {
+  it('GET /sets is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(SET_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /sets is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(SET_API).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /sets/:id/transition is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app)
+      .post(`${SET_API}/${SAMPLE_UUID}/transition`)
+      .send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /sets/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${SET_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('SET response schemas', () => {
+  it('SetResponseSchema accepts a valid shape', () => {
+    const sample = {
+      id: SAMPLE_UUID,
+      setNumber: 'SET-20240630-AABBCC',
+      subscriptionPlanId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+      subscriptionLabel: 'Snapchat Plus — 01 Month',
+      numberOfKeys: 10,
+      setStat: 'NOT_PRINTED',
+      createdAt: '2025-01-10T08:30:00.000Z',
+      printedAt: null,
+    };
+    expect(() => SetResponseSchema.parse(sample)).not.toThrow();
   });
 });
 
