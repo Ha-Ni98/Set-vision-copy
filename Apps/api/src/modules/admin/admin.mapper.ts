@@ -40,7 +40,11 @@ export class AdminMapper {
     return AdminGeneratedPasswordResponseSchema.parse({ generatedPassword });
   }
 
-  static toPersistence(cmd: Partial<CreateAdminCommand | UpdateAdminCommand>) {
+  static toPersistence(cmd: Partial<CreateAdminCommand | UpdateAdminCommand>): {
+    fullName?: string;
+    username?: string;
+    phone?: string;
+  } {
     return {
       ...(cmd.fullName !== undefined && { fullName: cmd.fullName.trim() }),
       ...(cmd.username !== undefined && { username: cmd.username.trim() }),
