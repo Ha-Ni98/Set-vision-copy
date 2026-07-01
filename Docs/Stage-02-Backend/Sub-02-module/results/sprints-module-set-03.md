@@ -21,7 +21,7 @@
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ✅ Done |
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ✅ Done |
 | 9 | Distributor — API | api | S8 | ✅ Done |
-| 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ⬜ Pending |
+| 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ✅ Done |
 | 11 | Payment — Logic | logic | S10 | ⬜ Pending |
 | 12 | Payment — API | api | S11 | ⬜ Pending |
 | 13 | Statistics — Foundation | foundation | contract | ⬜ Pending |
@@ -227,7 +227,7 @@
 
 ---
 
-### Sprint 10: Payment — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 10: Payment — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - `PaymentMapper` (`Decimal`→number, recorder name) and `IPaymentService`.
