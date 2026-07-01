@@ -21,7 +21,7 @@
 | 8 | Order — Logic (service) | logic | S7, S5 (lots) | ✅ Done |
 | 9 | Order — API (controller + wiring) | api | S8 | ✅ Done |
 | 10 | Card — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
-| 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ⬜ Pending |
+| 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ✅ Done |
 | 12 | Card — API (controller + wiring) | api | S11 | ⬜ Pending |
 | 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ⬜ Pending |
 | 14 | Activation — Logic A (client + activator service) | logic | S13 | ⬜ Pending |
@@ -242,7 +242,7 @@
 
 ---
 
-### Sprint 11: Card — Logic (service)   — Status: ⬜ Pending
+### Sprint 11: Card — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `CardService`: reads + the four state-guarded admin actions (delete/disable/enable/revoke) with stock-counter upkeep.
