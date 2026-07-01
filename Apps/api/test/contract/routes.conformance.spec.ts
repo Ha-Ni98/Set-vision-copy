@@ -32,6 +32,7 @@ import {
   ActivationDetailResponseSchema,
   WilayaResponseSchema,
   CommuneResponseSchema,
+  DeliveryCompanyResponseSchema,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -682,6 +683,45 @@ describe('GEOGRAPHY response schemas', () => {
         wilayaId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
         frName: 'Adrar',
         arName: 'أدرار',
+      }),
+    ).not.toThrow();
+  });
+});
+
+const DC_API = `/api/v1${DELIVERY_COMPANY_ROUTES.BASE}`;
+
+describe('DELIVERY_COMPANY_ROUTES — registration', () => {
+  it('GET /delivery-companies is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${DC_API}${DELIVERY_COMPANY_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /delivery-companies is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${DC_API}${DELIVERY_COMPANY_ROUTES.CREATE}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('PATCH /delivery-companies/:id is registered (requireAuth → 401, not 404)', async () => {
+    const path = DELIVERY_COMPANY_ROUTES.UPDATE.replace(':id', SAMPLE_UUID);
+    const res = await request(app).patch(`${DC_API}${path}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /delivery-companies/:id/toggle is registered (requireAuth → 401, not 404)', async () => {
+    const path = DELIVERY_COMPANY_ROUTES.TOGGLE.replace(':id', SAMPLE_UUID);
+    const res = await request(app).post(`${DC_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DELIVERY_COMPANY response schemas', () => {
+  it('DeliveryCompanyResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      DeliveryCompanyResponseSchema.parse({
+        id: SAMPLE_UUID,
+        name: 'Fast Delivery',
+        registeredName: 'Fast Delivery SARL',
+        isActive: true,
       }),
     ).not.toThrow();
   });

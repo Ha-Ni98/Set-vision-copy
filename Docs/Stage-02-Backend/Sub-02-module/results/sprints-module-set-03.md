@@ -12,8 +12,8 @@
 
 | # | Sprint | Layer | Depends on | Status |
 |---|--------|-------|-----------|--------|
-| 1 | Geography (full slice) | F+L+API | Sub-01, contract | ⬜ Pending |
-| 2 | Delivery Company (full slice) | F+L+API | Sub-01 | ⬜ Pending |
+| 1 | Geography (full slice) | F+L+API | Sub-01, contract | ✅ Done |
+| 2 | Delivery Company (full slice) | F+L+API | Sub-01 | ✅ Done |
 | 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ⬜ Pending |
 | 4 | Subscription Plan — Foundation | foundation | contract | ⬜ Pending |
 | 5 | Subscription Plan — Logic | logic | S4 | ⬜ Pending |
@@ -40,7 +40,7 @@
 
 ---
 
-### Sprint 1: Geography (full slice)   — Status: ⬜ Pending
+### Sprint 1: Geography (full slice)   — Status: ✅ Done
 
 **Goals**
 - The complete read-only reference module (wilayas + communes), foundation→logic→API in one sprint.
@@ -63,7 +63,7 @@
 
 ---
 
-### Sprint 2: Delivery Company (full slice)   — Status: ⬜ Pending
+### Sprint 2: Delivery Company (full slice)   — Status: ✅ Done
 
 **Goals**
 - The small management module (list/create/update/toggle; **no delete, no audit**), full slice.
