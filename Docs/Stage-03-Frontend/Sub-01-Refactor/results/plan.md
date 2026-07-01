@@ -75,7 +75,7 @@ Styling: port oklch tokens from `styles.css` into `src/index.css` + `tailwind.co
 
 ### 2.2 i18n
 
-- Create `config/translations.json` (EN/FR) + `lib/i18n.ts` (`translate(key, lang, vars)`) + `LanguageProvider` + reactive `useTranslation` with interpolation (`{count}`).
+- Create `config/translations.json` — a **flat map** from dot-notation key to a `{ en, fr, ar }` object (e.g. `"common.actions.save": { "en": "Save", "fr": "Enregistrer", "ar": "" }`), **not** a nested tree keyed by language. `en`/`fr` get real copy; `ar` is reserved on every entry as `""` — not authored or exposed this stage (2026-07-02 decision: the visible toggle stays EN/FR only; Arabic activation + RTL layout are explicitly deferred to a later stage). Plus `lib/i18n.ts` (`translate(key, lang, vars) = interpolate(values[key][lang], vars)`) + `LanguageProvider` + reactive `useTranslation` with interpolation (`{count}`).
 - **Every** user-facing string moves behind `t()` — the map flags `#inline-string` in all 20 app components/pages, including toasts, aria-labels, `<title>`/meta (set via `document.title` on route change), dialog copy, empty states, and formatter suffixes (`DZD`, time).
 - Key scheme `<scope>.<feature>.<element>.<variant?>`: `common.actions.*`, `common.states.*` (loading/empty/error), `public.landing.*` (steps, verify, form, otp, completed, whoWeAre, stats), `auth.login.*`, `activator.nav.*`, `activator.dashboard.*`, `activator.requests.*`, `activator.history.*`, `enums.activationStat.*`, `enums.clientStatus.*`, `enums.accountInformation.*` (badge/filter/field labels reused everywhere).
 - No page-local translation files; enum label maps live once under `enums.*`.

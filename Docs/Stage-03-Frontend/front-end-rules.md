@@ -132,15 +132,23 @@ Errors and loading must never crash the page or hide the global layout.
 
 ### B. Internationalization (reactive `useTranslation`)
 - All text lives in `src/config/translations.json`. No page-local translation files; reuse keys.
+- **Storage shape — flat map, dot-notation key → per-language object.** Not a nested tree. Each key resolves directly (`values[key]`) to a `{ en, fr, ar }` triple:
+  ```json
+  {
+    "common.actions.save": { "en": "Save", "fr": "Enregistrer", "ar": "" },
+    "auth.login.title": { "en": "Log In", "fr": "Connexion", "ar": "" }
+  }
+  ```
+  **`ar` is reserved on every key but not user-facing yet** — the toggle exposes EN/FR only until a later stage activates Arabic. Populate `en`/`fr` with real copy; leave `ar` as `""` (empty string, not `null`, not an omitted key) so the shape is uniform and ready to fill in without a migration. Arabic is RTL, but no RTL layout work (`dir="rtl"`, mirrored flex/spacing, logical CSS properties) happens until that later stage — `components.json`'s `"rtl": false` stays as-is.
 - **Use the hook, not a static function** — only a hook can read the language from context and re-render on toggle:
   ```tsx
   const { t } = useTranslation();
   <Button>{t('common.actions.save')}</Button>
   <span>{t('cart.itemCount', { count })}</span>  // interpolation supported
   ```
-  `useTranslation()` reads the current language from `LanguageProvider`. (A non-reactive `translate(key, lang, vars)` exists for non-component code only.)
-- **No inline strings** in JSX. Keys are lowercase dot-notation: `<scope>.<feature>.<element>.<variant?>` (e.g. `admin.users.table.noResults`).
-- Language toggle via React context. Theme via `next-themes`, persisted to `localStorage`, no FOUC.
+  `useTranslation()` reads the current language from `LanguageProvider` and resolves `t(key, vars) = interpolate(values[key][lang], vars)`. (A non-reactive `translate(key, lang, vars)` — same lookup, explicit `lang` param — exists for non-component code only, e.g. toasts fired from `query-client.ts`.)
+- **No inline strings** in JSX. Keys are lowercase dot-notation: `<scope>.<feature>.<element>.<variant?>` (e.g. `admin.users.table.noResults`) — the dots are just part of the key **string**, not a path into a nested object.
+- Language toggle via React context, EN/FR only for now. Theme via `next-themes`, persisted to `localStorage`, no FOUC.
 - Colors: CSS variables in `src/index.css`, referenced in `tailwind.config.ts`, semantic names (`background-neutral`, `surface`, `primary-accent`, `success`, `warning`, `destructive`).
 
 ### C. Layouts (see `front-end-best-practices.md` for header/footer contents)
