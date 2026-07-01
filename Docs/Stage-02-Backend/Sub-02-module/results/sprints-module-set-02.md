@@ -23,7 +23,7 @@
 | 10 | Card — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
 | 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ✅ Done |
 | 12 | Card — API (controller + wiring) | api | S11 | ✅ Done |
-| 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ⬜ Pending |
+| 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ✅ Done |
 | 14 | Activation — Logic A (client + activator service) | logic | S13 | ⬜ Pending |
 | 15 | Activation — Logic B (admin service) | logic | S14 | ⬜ Pending |
 | 16 | Activation — API + Realtime (controllers + two routers) | api | S15, Sub-01 Sprint 5 (gateway) | ⬜ Pending |
