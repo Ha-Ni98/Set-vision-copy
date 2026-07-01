@@ -25,7 +25,7 @@
 | 12 | Card — API (controller + wiring) | api | S11 | ✅ Done |
 | 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ✅ Done |
 | 14 | Activation — Logic A (client + activator service) | logic | S13 | ✅ Done |
-| 15 | Activation — Logic B (admin service) | logic | S14 | ⬜ Pending |
+| 15 | Activation — Logic B (admin service) | logic | S14 | ✅ Done |
 | 16 | Activation — API + Realtime (controllers + two routers) | api | S15, Sub-01 Sprint 5 (gateway) | ⬜ Pending |
 
 **Cross-cutting validation** (applies to every sprint, in addition to its own block):
@@ -325,7 +325,7 @@
 
 ---
 
-### Sprint 15: Activation — Logic B (admin service)   — Status: ⬜ Pending
+### Sprint 15: Activation — Logic B (admin service)   — Status: ✅ Done
 
 **Goals**
 - The admin half: list / detail assembly / admin resolutions / price override.

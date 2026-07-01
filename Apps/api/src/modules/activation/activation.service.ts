@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import {
+  Prisma,
   ActivationStat as PrismaActivationStat,
   CardStat as PrismaCardStat,
   AccountInformation as PrismaAccountInformation,
@@ -10,6 +11,8 @@ import {
   ActivationStat,
   AccountInformation,
   ClientActivationStatus,
+  CardStat,
+  LogActionType,
   type KeyVerificationDTO,
   type ClientActivationStatusDTO,
   type PendingActivationDTO,
@@ -193,6 +196,37 @@ export class ActivationService implements IActivationService {
       info,
       otpValue,
     );
+  }
+
+  private buildCardHistory(
+    card: {
+      set: { createdAt: Date; printedAt: Date | null };
+      lot: { createdAt: Date; orderLots: Array<{ order: { completedAt: Date | null } }> } | null;
+    },
+    requestedAt: Date,
+    completedAt: Date | null,
+    activationStat: string,
+  ): Array<{ stat: CardStat; at: Date }> {
+    const history: Array<{ stat: CardStat; at: Date }> = [];
+    history.push({ stat: CardStat.IN_SET, at: card.set.createdAt });
+    if (card.set.printedAt) history.push({ stat: CardStat.PRINTED, at: card.set.printedAt });
+    if (card.lot) {
+      history.push({ stat: CardStat.IN_LOT, at: card.lot.createdAt });
+      const orderCompleted = card.lot.orderLots[0]?.order.completedAt;
+      if (orderCompleted) history.push({ stat: CardStat.AT_DISTRIBUTOR, at: orderCompleted });
+    }
+    history.push({ stat: CardStat.ACTIVATION_PROGRESS, at: requestedAt });
+    if (completedAt) {
+      const terminalStat =
+        activationStat === PrismaActivationStat.ACTIVATED ||
+        activationStat === PrismaActivationStat.ACTIVATED_BY_ADMIN
+          ? CardStat.ACTIVATED
+          : activationStat === PrismaActivationStat.CANCELLED_BY_ADMIN
+            ? CardStat.ACTIVATION_FAILED
+            : null;
+      if (terminalStat) history.push({ stat: terminalStat, at: completedAt });
+    }
+    return history;
   }
 
   // ─── Client methods ────────────────────────────────────────────────────────
@@ -975,29 +1009,324 @@ export class ActivationService implements IActivationService {
     );
   }
 
-  // ─── Admin methods (implemented in Sprint 15) ──────────────────────────────
+  // ─── Admin methods ─────────────────────────────────────────────────────────
 
-  async getAll(_query: GetActivationsQuery): Promise<PaginatedResult<AdminActivationDTO>> {
-    throw new Error('Not implemented');
+  async getAll(query: GetActivationsQuery): Promise<PaginatedResult<AdminActivationDTO>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const cardWhere: {
+      subscriptionPlanId?: string;
+      distributorId?: string;
+      key?: { contains: string; mode: 'insensitive' };
+      distributor?: { wilayaId?: string; communeId?: string };
+    } = {};
+    if (query.subscriptionPlanId) cardWhere.subscriptionPlanId = query.subscriptionPlanId;
+    if (query.distributorId) cardWhere.distributorId = query.distributorId;
+    if (query.key) cardWhere.key = { contains: query.key, mode: 'insensitive' };
+    if (query.wilayaId || query.communeId) {
+      cardWhere.distributor = {
+        ...(query.wilayaId && { wilayaId: query.wilayaId }),
+        ...(query.communeId && { communeId: query.communeId }),
+      };
+    }
+
+    const requestedAtFilter: { gte?: Date; lte?: Date } = {};
+    if (query.dateFrom) requestedAtFilter.gte = new Date(query.dateFrom);
+    if (query.dateTo) requestedAtFilter.lte = new Date(query.dateTo);
+
+    const where = {
+      ...(Object.keys(cardWhere).length > 0 && { card: cardWhere }),
+      ...(query.activatorId && { activatorId: query.activatorId }),
+      ...(query.state && { activationStat: query.state as unknown as PrismaActivationStat }),
+      ...(Object.keys(requestedAtFilter).length > 0 && { requestedAt: requestedAtFilter }),
+    };
+
+    const [activations, total] = await Promise.all([
+      this.prisma.activation.findMany({
+        where,
+        include: {
+          card: { include: { subscriptionPlan: true, distributor: { select: { storeName: true } } } },
+          activator: { select: { fullName: true } },
+        },
+        orderBy: { requestedAt: 'desc' },
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.activation.count({ where }),
+    ]);
+
+    const items = activations.map((a) =>
+      ActivationMapper.toAdminActivationDTO(
+        a,
+        a.card.subscriptionPlan as unknown as ActivationPlanJoin,
+        a.card.key,
+        a.activator?.fullName ?? null,
+        a.card.distributor?.storeName ?? '',
+      ),
+    );
+
+    return { items, meta: buildPaginationMeta(page, limit, total) };
   }
 
-  async getById(_id: string): Promise<ActivationDetailDTO> {
-    throw new Error('Not implemented');
+  async getById(id: string): Promise<ActivationDetailDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: {
+          include: {
+            set: true,
+            lot: {
+              include: {
+                orderLots: {
+                  take: 1,
+                  include: { order: { select: { completedAt: true } } },
+                },
+              },
+            },
+            subscriptionPlan: {
+              include: { commissions: { include: { commissionDuration: true } } },
+            },
+            distributor: { include: { wilaya: true, commune: true } },
+          },
+        },
+        activator: { select: { id: true, fullName: true } },
+        information: true,
+        steps: {
+          orderBy: { createdAt: 'desc' as const },
+          include: { wrongInformation: true, additionalInformation: true },
+        },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+    const dist = this.buildDistributorJoin(activation.card.distributor!);
+    const latestWinsInfo = this.resolveLatestWinsInfo(activation.information, activation.steps);
+    const cardHistory = this.buildCardHistory(
+      activation.card,
+      activation.requestedAt,
+      activation.completedAt,
+      activation.activationStat,
+    );
+
+    const { tierLabel: commissionTierLabel } =
+      activation.takenAt && activation.completedAt
+        ? this.computeCommission(
+            activation.card.subscriptionPlan.commissions,
+            activation.takenAt,
+            activation.completedAt,
+          )
+        : { tierLabel: null };
+
+    return ActivationMapper.toActivationDetailDTO(
+      activation,
+      dist,
+      activation.activator,
+      latestWinsInfo,
+      activation.steps,
+      cardHistory,
+      commissionTierLabel,
+    );
   }
 
-  async activateByAdmin(_id: string): Promise<AdminActivationDTO> {
-    throw new Error('Not implemented');
+  async activateByAdmin(id: string): Promise<AdminActivationDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: {
+          include: {
+            subscriptionPlan: { include: { commissions: { include: { commissionDuration: true } } } },
+            distributor: { select: { id: true, storeName: true } },
+          },
+        },
+        activator: true,
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+    if (activation.activationStat !== PrismaActivationStat.FREEZE) {
+      throw new ConflictError('Activation is not frozen');
+    }
+
+    const now = new Date();
+    const { price, tierLabel: _tierLabel } = activation.takenAt
+      ? this.computeCommission(activation.card.subscriptionPlan.commissions, activation.takenAt, now)
+      : { price: null, tierLabel: null };
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activation.update({
+        where: { id },
+        data: {
+          activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
+          completedAt: now,
+          ...(price && { activationPrice: price }),
+        },
+      });
+
+      await tx.card.update({
+        where: { id: activation.cardId },
+        data: { cardStat: PrismaCardStat.ACTIVATED },
+      });
+
+      if (activation.activator) {
+        await tx.activator.update({
+          where: { id: activation.activator.id },
+          data: {
+            nbOfActivation: { increment: 1 },
+            nbOfSuccessfulActivation: { increment: 1 },
+            ...(price && { totalEarning: { increment: price }, credits: { increment: price } }),
+          },
+        });
+      }
+
+      await tx.distributor.update({
+        where: { id: activation.card.distributor!.id },
+        data: { nbOfActivation: { increment: 1 }, nbOfActiveCards: { decrement: 1 } },
+      });
+
+      await tx.activationStep.create({
+        data: { activationId: id, activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN },
+      });
+    });
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+
+    eventBus.emit('activation:resolved', {
+      activationId: id,
+      activatorId: activation.activator!.id,
+      outcome: ActivationStat.ACTIVATED_BY_ADMIN,
+      timestamp: now.toISOString(),
+    });
+    eventBus.emit('activation:status-changed', {
+      activationId: id,
+      status: ClientActivationStatus.ACTIVATED,
+      timestamp: now.toISOString(),
+    });
+
+    return ActivationMapper.toAdminActivationDTO(
+      { ...activation, activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN, completedAt: now, activationPrice: price },
+      plan,
+      activation.card.key,
+      activation.activator?.fullName ?? null,
+      activation.card.distributor?.storeName ?? '',
+    );
   }
 
-  async cancelByAdmin(_id: string): Promise<AdminActivationDTO> {
-    throw new Error('Not implemented');
+  async cancelByAdmin(id: string): Promise<AdminActivationDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: { include: { subscriptionPlan: true, distributor: { select: { id: true, storeName: true } } } },
+        activator: { select: { id: true, fullName: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+    if (activation.activationStat !== PrismaActivationStat.FREEZE) {
+      throw new ConflictError('Activation is not frozen');
+    }
+
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activation.update({
+        where: { id },
+        data: { activationStat: PrismaActivationStat.CANCELLED_BY_ADMIN, completedAt: now },
+      });
+
+      await tx.card.update({
+        where: { id: activation.cardId },
+        data: { cardStat: PrismaCardStat.ACTIVATION_FAILED },
+      });
+
+      if (activation.activator) {
+        await tx.activator.update({
+          where: { id: activation.activator.id },
+          data: { nbOfActivation: { increment: 1 } },
+        });
+      }
+
+      await tx.activationStep.create({
+        data: { activationId: id, activationStat: PrismaActivationStat.CANCELLED_BY_ADMIN },
+      });
+    });
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+
+    eventBus.emit('activation:resolved', {
+      activationId: id,
+      activatorId: activation.activator!.id,
+      outcome: ActivationStat.CANCELLED_BY_ADMIN,
+      timestamp: now.toISOString(),
+    });
+    eventBus.emit('activation:status-changed', {
+      activationId: id,
+      status: ClientActivationStatus.FAILED,
+      timestamp: now.toISOString(),
+    });
+
+    return ActivationMapper.toAdminActivationDTO(
+      { ...activation, activationStat: PrismaActivationStat.CANCELLED_BY_ADMIN, completedAt: now },
+      plan,
+      activation.card.key,
+      activation.activator?.fullName ?? null,
+      activation.card.distributor?.storeName ?? '',
+    );
   }
 
-  async setPrice(
-    _id: string,
-    _cmd: SetActivatorPriceCommand,
-    _actorId: string,
-  ): Promise<AdminActivationDTO> {
-    throw new Error('Not implemented');
+  async setPrice(id: string, cmd: SetActivatorPriceCommand, actorId: string): Promise<AdminActivationDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: { include: { subscriptionPlan: true, distributor: { select: { storeName: true } } } },
+        activator: { select: { id: true, fullName: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    const completedStats: PrismaActivationStat[] = [
+      PrismaActivationStat.ACTIVATED,
+      PrismaActivationStat.ACTIVATED_BY_ADMIN,
+    ];
+    if (!completedStats.includes(activation.activationStat as PrismaActivationStat)) {
+      throw new ConflictError('Activation is not completed');
+    }
+
+    const oldPrice = activation.activationPrice ? Number(activation.activationPrice) : 0;
+    const delta = cmd.amount - oldPrice;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activation.update({
+        where: { id },
+        data: { activationPrice: new Prisma.Decimal(cmd.amount) },
+      });
+
+      if (activation.activator) {
+        await tx.activator.update({
+          where: { id: activation.activator.id },
+          data: { totalEarning: { increment: delta }, credits: { increment: delta } },
+        });
+      }
+    });
+
+    await this.prisma.log.create({
+      data: {
+        actionType: LogActionType.CHANGE_ACTIVATION_COMMISSION,
+        actionDescription: `Set activation price to ${cmd.amount} (was ${oldPrice})`,
+        userId: actorId,
+      },
+    });
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+
+    return ActivationMapper.toAdminActivationDTO(
+      { ...activation, activationPrice: new Prisma.Decimal(cmd.amount) },
+      plan,
+      activation.card.key,
+      activation.activator?.fullName ?? null,
+      activation.card.distributor?.storeName ?? '',
+    );
   }
 }
