@@ -17,7 +17,7 @@
 | 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ✅ Done |
 | 4 | Subscription Plan — Foundation | foundation | contract | ✅ Done |
 | 5 | Subscription Plan — Logic | logic | S4 | ✅ Done |
-| 6 | Subscription Plan — API | api | S5 | ⬜ Pending |
+| 6 | Subscription Plan — API | api | S5 | ✅ Done |
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ⬜ Pending |
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ⬜ Pending |
 | 9 | Distributor — API | api | S8 | ⬜ Pending |
@@ -149,7 +149,7 @@
 
 ---
 
-### Sprint 6: Subscription Plan — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 6: Subscription Plan — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller (6), composition root (static commission routes before `/:id`), wiring, integration + conformance.

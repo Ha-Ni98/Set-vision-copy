@@ -35,6 +35,7 @@ import {
   DeliveryCompanyResponseSchema,
   LogResponseSchema,
   LogActionType,
+  CommissionMatrixResponseSchema,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -747,6 +748,60 @@ describe('LOG response schemas', () => {
         actionDescription: 'Added distributor X',
         userName: 'Alice Admin',
         createdAt: '2026-01-15T10:00:00.000Z',
+      }),
+    ).not.toThrow();
+  });
+});
+
+const SP_API = `/api/v1${SUBSCRIPTION_PLAN_ROUTES.BASE}`;
+
+describe('SUBSCRIPTION_PLAN_ROUTES — registration', () => {
+  it('GET /subscription-plans is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${SP_API}${SUBSCRIPTION_PLAN_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /subscription-plans is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${SP_API}${SUBSCRIPTION_PLAN_ROUTES.CREATE}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /subscription-plans/commission-durations is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${SP_API}${SUBSCRIPTION_PLAN_ROUTES.GET_COMMISSION_DURATIONS}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /subscription-plans/commissions is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${SP_API}${SUBSCRIPTION_PLAN_ROUTES.GET_COMMISSIONS}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('PATCH /subscription-plans/commissions is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).patch(`${SP_API}${SUBSCRIPTION_PLAN_ROUTES.UPDATE_COMMISSION}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /subscription-plans/:id/toggle is registered (requireAuth → 401, not 404)', async () => {
+    const path = SUBSCRIPTION_PLAN_ROUTES.TOGGLE.replace(':id', SAMPLE_UUID);
+    const res = await request(app).post(`${SP_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('SUBSCRIPTION_PLAN response schemas', () => {
+  it('CommissionMatrixResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      CommissionMatrixResponseSchema.parse({
+        tiers: [
+          { id: SAMPLE_UUID, key: 'tier_0_60', label: '0–60 min', nbMinuteMin: 0, nbMinuteMax: 60 },
+        ],
+        rows: [
+          {
+            planId: SAMPLE_UUID,
+            planLabel: 'Snapchat Plus — 01 Month',
+            cells: [{ commissionDurationId: SAMPLE_UUID, commission: null }],
+          },
+        ],
       }),
     ).not.toThrow();
   });

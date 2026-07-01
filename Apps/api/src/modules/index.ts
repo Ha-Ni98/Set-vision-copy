@@ -5,6 +5,7 @@ import {
   GEOGRAPHY_ROUTES,
   DELIVERY_COMPANY_ROUTES,
   LOG_ROUTES,
+  SUBSCRIPTION_PLAN_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -17,6 +18,7 @@ import { keyRouter, activationRouter } from './activation/activation.routes';
 import { geographyRouter } from './geography/geography.routes';
 import { deliveryCompanyRouter } from './delivery-company/delivery-company.routes';
 import { logRouter } from './log/log.routes';
+import { subscriptionPlanRouter } from './subscription-plan/subscription-plan.routes';
 
 export const moduleRouter = Router();
 
@@ -32,3 +34,4 @@ moduleRouter.use(ACTIVATION_ROUTES.BASE, activationRouter);
 moduleRouter.use(GEOGRAPHY_ROUTES.BASE, geographyRouter);
 moduleRouter.use(DELIVERY_COMPANY_ROUTES.BASE, deliveryCompanyRouter);
 moduleRouter.use(LOG_ROUTES.BASE, logRouter);
+moduleRouter.use(SUBSCRIPTION_PLAN_ROUTES.BASE, subscriptionPlanRouter);
