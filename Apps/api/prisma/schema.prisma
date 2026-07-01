@@ -479,6 +479,7 @@ model Distributor {
   id              String    @id @default(uuid())
   fullName        String
   storeName       String
+  phone           String?
   wilayaId        String
   communeId       String
   isEnabled       Boolean   @default(true)

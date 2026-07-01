@@ -18,7 +18,7 @@
 | 4 | Subscription Plan — Foundation | foundation | contract | ✅ Done |
 | 5 | Subscription Plan — Logic | logic | S4 | ✅ Done |
 | 6 | Subscription Plan — API | api | S5 | ✅ Done |
-| 7 | Distributor — Foundation | foundation | S1 (geography seed) | ⬜ Pending |
+| 7 | Distributor — Foundation | foundation | S1 (geography seed) | ✅ Done |
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ⬜ Pending |
 | 9 | Distributor — API | api | S8 | ⬜ Pending |
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ⬜ Pending |
@@ -168,7 +168,7 @@
 
 ---
 
-### Sprint 7: Distributor — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 7: Distributor — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - `DistributorMapper` (resolved names + kept ids + derived fields) and `IDistributorService`.
