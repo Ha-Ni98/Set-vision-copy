@@ -73,3 +73,23 @@ export const seedCard = async (
 
   return { card, plan, set };
 };
+
+export function cardTimelineSources(overrides: {
+  set?: { createdAt?: Date; printedAt?: Date | null };
+  lot?: { createdAt?: Date } | null;
+  order?: { createdAt?: Date; completedAt?: Date | null } | null;
+} = {}) {
+  return {
+    set: {
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      printedAt: new Date('2024-01-02T00:00:00.000Z'),
+      ...overrides.set,
+    },
+    lot: overrides.lot !== undefined
+      ? overrides.lot
+      : { createdAt: new Date('2024-01-03T00:00:00.000Z') },
+    order: overrides.order !== undefined
+      ? overrides.order
+      : { createdAt: new Date('2024-01-04T00:00:00.000Z'), completedAt: new Date('2024-01-05T00:00:00.000Z') },
+  };
+}
