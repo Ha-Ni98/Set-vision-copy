@@ -19,7 +19,7 @@
 | 5 | Subscription Plan — Logic | logic | S4 | ✅ Done |
 | 6 | Subscription Plan — API | api | S5 | ✅ Done |
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ✅ Done |
-| 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ⬜ Pending |
+| 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ✅ Done |
 | 9 | Distributor — API | api | S8 | ⬜ Pending |
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ⬜ Pending |
 | 11 | Payment — Logic | logic | S10 | ⬜ Pending |
@@ -186,7 +186,7 @@
 
 ---
 
-### Sprint 8: Distributor — Logic (service)   — Status: ⬜ Pending
+### Sprint 8: Distributor — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `DistributorService`: list/create/getById/update/toggle/delete with geography validation, inline audit, and read-only counters.
