@@ -22,7 +22,7 @@
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ✅ Done |
 | 9 | Distributor — API | api | S8 | ✅ Done |
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ✅ Done |
-| 11 | Payment — Logic | logic | S10 | ⬜ Pending |
+| 11 | Payment — Logic | logic | S10 | ✅ Done |
 | 12 | Payment — API | api | S11 | ⬜ Pending |
 | 13 | Statistics — Foundation | foundation | contract | ⬜ Pending |
 | 14 | Statistics — Logic A (summaries) | logic | S13 | ⬜ Pending |
@@ -245,7 +245,7 @@
 
 ---
 
-### Sprint 11: Payment — Logic (service)   — Status: ⬜ Pending
+### Sprint 11: Payment — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `PaymentService`: list / create (credits decrement + snapshot + log) / delete (reverse + log). Resolves the recording `Admin` by `userId` (plan §1.4).
