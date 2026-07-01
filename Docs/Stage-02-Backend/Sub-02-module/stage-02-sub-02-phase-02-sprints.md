@@ -12,7 +12,7 @@ Decompose `plan-[module].md` into dependency-ordered sprints for this module.
 
 ## Context & Inputs
 
-- **Plan:** `/docs/stage-02-backend/sub-02-module/plan-[module].md`.
+- **Plan:** `/docs/stage-02-backend/sub-02-module/results/plan-[module]-[setnumber].md`.
 - **Rules:** `module-implementation-rules.md`.
 
 ---
@@ -49,4 +49,4 @@ Decompose `plan-[module].md` into dependency-ordered sprints for this module.
 
 ## Expected Output
 
-- **`/docs/stage-02-backend/sub-02-module/sprints-[module].md`**.
+- **`/docs/stage-02-backend/sub-02-module/results/sprints-[module]-[setnumber].md`**.

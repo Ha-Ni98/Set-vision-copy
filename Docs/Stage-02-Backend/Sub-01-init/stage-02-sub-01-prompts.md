@@ -13,7 +13,7 @@ Read and follow strictly:
 - **Rules:** `back-end-rules.md` and `test-rules.md` and `realtime-rules.md`
 - **Inputs:** `@my-app/contract`, `prisma/schema.prisma`
 
-Constraints: no code; no `src/modules/` content; output only `/docs/stage-02-backend/sub-01-init/plan.md`.
+Constraints: no code; no `src/modules/` content; output only `/Docs/stage-02-backend/sub-01-init/results/plan.md`.
 
 ---
 

@@ -28,6 +28,7 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+.claude
 *.suo
 *.ntvs*
 *.njsproj
@@ -37,5 +38,6 @@ dist-ssr
 # Ignore environment variables and secrets
 .env
 *.local
+
 
 
