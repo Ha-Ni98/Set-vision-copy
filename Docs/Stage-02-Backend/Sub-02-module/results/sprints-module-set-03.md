@@ -23,7 +23,7 @@
 | 9 | Distributor — API | api | S8 | ✅ Done |
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ✅ Done |
 | 11 | Payment — Logic | logic | S10 | ✅ Done |
-| 12 | Payment — API | api | S11 | ⬜ Pending |
+| 12 | Payment — API | api | S11 | ✅ Done |
 | 13 | Statistics — Foundation | foundation | contract | ⬜ Pending |
 | 14 | Statistics — Logic A (summaries) | logic | S13 | ⬜ Pending |
 | 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ⬜ Pending |
@@ -264,7 +264,7 @@
 
 ---
 
-### Sprint 12: Payment — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 12: Payment — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller (3), composition root, wiring, integration + conformance.

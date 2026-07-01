@@ -37,6 +37,7 @@ import {
   LogActionType,
   CommissionMatrixResponseSchema,
   DistributorDetailResponseSchema,
+  PaymentResponseSchema,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -862,6 +863,42 @@ describe('DISTRIBUTOR response schemas', () => {
         createdAt: '2024-01-15T10:00:00.000Z',
         soldKeys: 5,
         ordersCount: 10,
+      }),
+    ).not.toThrow();
+  });
+});
+
+const PAY_API = `/api/v1${PAYMENT_ROUTES.BASE}`;
+
+describe('PAYMENT_ROUTES — registration', () => {
+  it('GET /payments is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${PAY_API}${PAYMENT_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /payments is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${PAY_API}${PAYMENT_ROUTES.CREATE}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /payments/:id is registered (requireAuth → 401, not 404)', async () => {
+    const path = PAYMENT_ROUTES.DELETE.replace(':id', SAMPLE_UUID);
+    const res = await request(app).delete(`${PAY_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('PAYMENT response schemas', () => {
+  it('PaymentResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      PaymentResponseSchema.parse({
+        id: SAMPLE_UUID,
+        activatorId: SAMPLE_UUID,
+        amount: 150.50,
+        previousCredits: 500.00,
+        paymentDate: '2024-03-10T09:00:00.000Z',
+        recordedByName: 'Alice Admin',
+        isDeleted: false,
       }),
     ).not.toThrow();
   });
