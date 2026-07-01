@@ -36,6 +36,7 @@ import {
   LogResponseSchema,
   LogActionType,
   CommissionMatrixResponseSchema,
+  DistributorDetailResponseSchema,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -802,6 +803,65 @@ describe('SUBSCRIPTION_PLAN response schemas', () => {
             cells: [{ commissionDurationId: SAMPLE_UUID, commission: null }],
           },
         ],
+      }),
+    ).not.toThrow();
+  });
+});
+
+const DIST_API = `/api/v1${DISTRIBUTOR_ROUTES.BASE}`;
+
+describe('DISTRIBUTOR_ROUTES — registration', () => {
+  it('GET /distributors is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${DIST_API}${DISTRIBUTOR_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /distributors is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${DIST_API}${DISTRIBUTOR_ROUTES.CREATE}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /distributors/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${DIST_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('PATCH /distributors/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).patch(`${DIST_API}/${SAMPLE_UUID}`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /distributors/:id/toggle is registered (requireAuth → 401, not 404)', async () => {
+    const path = DISTRIBUTOR_ROUTES.TOGGLE.replace(':id', SAMPLE_UUID);
+    const res = await request(app).post(`${DIST_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /distributors/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${DIST_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DISTRIBUTOR response schemas', () => {
+  it('DistributorDetailResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      DistributorDetailResponseSchema.parse({
+        id: SAMPLE_UUID,
+        fullName: 'John Doe',
+        storeName: 'My Store',
+        phone: '+213555000000',
+        wilayaId: SAMPLE_UUID,
+        wilayaName: 'Adrar',
+        communeId: SAMPLE_UUID,
+        communeName: 'Adrar City',
+        isEnabled: true,
+        nbOfActiveCards: 0,
+        nbOfActivation: 0,
+        deliveredOrdersCount: 0,
+        createdAt: '2024-01-15T10:00:00.000Z',
+        soldKeys: 5,
+        ordersCount: 10,
       }),
     ).not.toThrow();
   });

@@ -20,7 +20,7 @@
 | 6 | Subscription Plan — API | api | S5 | ✅ Done |
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ✅ Done |
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ✅ Done |
-| 9 | Distributor — API | api | S8 | ⬜ Pending |
+| 9 | Distributor — API | api | S8 | ✅ Done |
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ⬜ Pending |
 | 11 | Payment — Logic | logic | S10 | ⬜ Pending |
 | 12 | Payment — API | api | S11 | ⬜ Pending |
@@ -208,7 +208,7 @@
 
 ---
 
-### Sprint 9: Distributor — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 9: Distributor — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller (6), composition root, wiring, integration + conformance.
