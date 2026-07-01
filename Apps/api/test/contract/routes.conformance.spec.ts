@@ -27,6 +27,12 @@ import {
   LotResponseSchema,
   OrderDetailResponseSchema,
   CardDetailResponseSchema,
+  KeyVerificationResponseSchema,
+  ActiveRequestResponseSchema,
+  ActivationDetailResponseSchema,
+  ActivationStat,
+  ClientActivationStatus,
+  AccountInformation,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -446,6 +452,179 @@ describe('CARD response schemas', () => {
       distributionTimeline: [{ stat: 'IN_SET', at: '2025-01-10T08:30:00.000Z' }],
     };
     expect(() => CardDetailResponseSchema.parse(sample)).not.toThrow();
+  });
+});
+
+const KEY_API = `/api/v1${KEY_ROUTES.BASE}`;
+const ACT_ID = 'a0eebc99-9c0b-4ef8-8a6d-6bb9bd380a11'; // RFC-4122 variant
+
+describe('KEY_ROUTES — registration', () => {
+  it('POST /keys/verify is registered (validates body → 400, not 404)', async () => {
+    const res = await request(app).post(`${KEY_API}${KEY_ROUTES.VERIFY}`).send({});
+    expect(res.status).not.toBe(404);
+  });
+
+  it('POST /keys/submit is registered (validates body → 400, not 404)', async () => {
+    const res = await request(app).post(`${KEY_API}${KEY_ROUTES.SUBMIT}`).send({});
+    expect(res.status).not.toBe(404);
+  });
+
+  it('POST /keys/:activationId/update is registered (validates body → 400, not 404)', async () => {
+    const res = await request(app)
+      .post(`${KEY_API}/${ACT_ID}/update`)
+      .send({});
+    expect(res.status).not.toBe(404);
+  });
+
+  it('POST /keys/:activationId/additional is registered (validates body → 400, not 404)', async () => {
+    const res = await request(app)
+      .post(`${KEY_API}/${ACT_ID}/additional`)
+      .send({});
+    expect(res.status).not.toBe(404);
+  });
+
+  it('GET /keys/:activationId/status is registered (invalid UUID → 400 from validation, not 404 from router)', async () => {
+    const res = await request(app).get(`${KEY_API}/not-a-uuid/status`);
+    expect(res.status).toBe(400);
+  });
+});
+
+const ACTIVATION_API = `/api/v1${ACTIVATION_ROUTES.BASE}`;
+
+describe('ACTIVATION_ROUTES — registration', () => {
+  it('GET /activations/pending is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}${ACTIVATION_ROUTES.GET_PENDING}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activations/active is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}${ACTIVATION_ROUTES.GET_ACTIVE}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activations/my-history is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}${ACTIVATION_ROUTES.GET_MY_HISTORY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activations/recent is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}${ACTIVATION_ROUTES.GET_RECENT}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activations/ is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}${ACTIVATION_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /activations/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ACTIVATION_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/take is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/take`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/flag-wrong-info is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/flag-wrong-info`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/request-additional is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app)
+      .post(`${ACTIVATION_API}/${SAMPLE_UUID}/request-additional`)
+      .send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/activate is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/activate`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/cancel is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/cancel`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/release is registered (requireAuth → 401, not 404) [RELEASE contract addition]', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/release`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/freeze is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/freeze`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/activate-by-admin is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/activate-by-admin`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/cancel-by-admin is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/cancel-by-admin`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /activations/:id/set-price is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ACTIVATION_API}/${SAMPLE_UUID}/set-price`).send({});
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('ACTIVATION response schemas', () => {
+  it('KeyVerificationResponseSchema accepts READY shape', () => {
+    expect(() =>
+      KeyVerificationResponseSchema.parse({
+        status: ClientActivationStatus.READY,
+        subscriptionLabel: 'Snapchat Plus — 01 Month',
+      }),
+    ).not.toThrow();
+  });
+
+  it('KeyVerificationResponseSchema accepts NEEDS_CORRECTION shape with flaggedFields', () => {
+    expect(() =>
+      KeyVerificationResponseSchema.parse({
+        status: ClientActivationStatus.NEEDS_CORRECTION,
+        activationId: SAMPLE_UUID,
+        flaggedFields: [{ field: AccountInformation.USERNAME, label: 'Username' }],
+      }),
+    ).not.toThrow();
+  });
+
+  it('ActiveRequestResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      ActiveRequestResponseSchema.parse({
+        id: SAMPLE_UUID,
+        subscriptionLabel: 'Snapchat Plus — 01 Month',
+        key: 'A1B2C3D4E5F6',
+        takenAt: '2025-01-10T08:30:00.000Z',
+        state: ActivationStat.PROCESSING,
+        distributor: { storeName: 'Tech Store', wilayaName: 'Alger', communeName: 'Bab El Oued' },
+        client: { fullName: 'Jane Doe', phone: '+213555000001' },
+        accountFields: [{ fieldLabel: 'Username', value: 'jane_doe' }],
+        otpValue: null,
+        freezeReason: null,
+      }),
+    ).not.toThrow();
+  });
+
+  it('ActivationDetailResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      ActivationDetailResponseSchema.parse({
+        id: SAMPLE_UUID,
+        client: { fullName: 'Jane Doe', phone: '+213555000001' },
+        distributor: { storeName: 'Tech Store', wilayaName: 'Alger', communeName: 'Bab El Oued' },
+        activator: null,
+        submittedInformation: [{ fieldLabel: 'Username', value: 'jane_doe' }],
+        timeline: [],
+        cardHistory: [{ stat: 'IN_SET', at: '2025-01-01T00:00:00.000Z' }],
+        financial: { activationPrice: null, commissionTierLabel: null },
+      }),
+    ).not.toThrow();
   });
 });
 
