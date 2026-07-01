@@ -22,6 +22,7 @@ describe('env.ts', () => {
     delete process.env['JWT_EXPIRATION'];
     delete process.env['LOG_LEVEL'];
     delete process.env['WS_PATH'];
+    delete process.env['REFRESH_TOKEN_EXPIRATION'];
   });
 
   afterEach(() => {
@@ -40,6 +41,7 @@ describe('env.ts', () => {
     expect(env.LOG_LEVEL).toBe('info');
     expect(env.JWT_SECRET).toBe(VALID_ENV.JWT_SECRET);
     expect(typeof env.PORT).toBe('number');
+    expect(env.REFRESH_TOKEN_EXPIRATION).toBe('7d');
   });
 
   it('calls process.exit(1) when JWT_SECRET is missing', async () => {

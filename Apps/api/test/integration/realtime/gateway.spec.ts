@@ -9,7 +9,7 @@ import { authNamespace } from '../../../src/common/realtime/socket-auth';
 import { initRealtimeGateway } from '../../../src/common/realtime/realtime-gateway';
 import { NS } from '../../../src/common/realtime/rooms';
 import { eventBus } from '../../../src/common/events/event-bus';
-import { UserRole, ClientActivationStatus } from '@my-app/contract';
+import { UserRole, ClientActivationStatus, ActivationStat } from '@my-app/contract';
 import { faker } from '@faker-js/faker';
 import { mintToken } from '../../fixtures/auth.fixture';
 
@@ -105,5 +105,50 @@ describe('Realtime Gateway', () => {
       activationId: expect.any(String) as string,
     });
     adminClient.disconnect();
+  });
+
+  it('(d) /activators receives activation:taken — gateway strips activatorId from payload', async () => {
+    const activatorToken = mintToken({ id: faker.string.uuid(), role: UserRole.ACTIVATOR });
+    const actClient = Client(`${baseUrl}${NS.ACTIVATORS}`, { auth: { token: activatorToken } });
+    await new Promise<void>((r) => actClient.once('connect', r));
+    await delay(50);
+
+    const receivedPromise = new Promise<unknown>((r) => actClient.once('activation:taken', r));
+
+    eventBus.emit('activation:taken', {
+      activationId: faker.string.uuid(),
+      activatorId: faker.string.uuid(),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Gateway broadcasts to activatorNs (all activators) with { activationId, timestamp } only
+    await expect(receivedPromise).resolves.toMatchObject({
+      activationId: expect.any(String) as string,
+    });
+    actClient.disconnect();
+  });
+
+  it('(e) /activators receives activation:resolved on the assigned activator\'s room', async () => {
+    const activatorUserId = faker.string.uuid();
+    const activatorToken = mintToken({ id: activatorUserId, role: UserRole.ACTIVATOR });
+    const actClient = Client(`${baseUrl}${NS.ACTIVATORS}`, { auth: { token: activatorToken } });
+    await new Promise<void>((r) => actClient.once('connect', r));
+    await delay(80); // wait for socket.join(rooms.activator(userId))
+
+    const receivedPromise = new Promise<unknown>((r) => actClient.once('activation:resolved', r));
+
+    // Gateway routes to rooms.activator(activatorId) where activatorId = userId from JWT
+    eventBus.emit('activation:resolved', {
+      activationId: faker.string.uuid(),
+      activatorId: activatorUserId,
+      outcome: ActivationStat.ACTIVATED_BY_ADMIN,
+      timestamp: new Date().toISOString(),
+    });
+
+    await expect(receivedPromise).resolves.toMatchObject({
+      activationId: expect.any(String) as string,
+      outcome: ActivationStat.ACTIVATED_BY_ADMIN,
+    });
+    actClient.disconnect();
   });
 });

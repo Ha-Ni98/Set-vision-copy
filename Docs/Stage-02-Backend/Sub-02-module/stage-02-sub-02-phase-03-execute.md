@@ -12,11 +12,11 @@ Execute the module sprints and produce a fully wired module bound to the contrac
 
 ## Context & Inputs
 
-- **Sprints:** `/docs/stage-02-backend/sub-02-module/sprints-[module].md`.
-- **Plan:** `/docs/stage-02-backend/sub-02-module/plan-[module].md`.
+- **Sprints:** `/docs/stage-02-backend/sub-02-module/results/sprints-[module]-[setnumber].md`.
+- **Plan:** `/docs/stage-02-backend/sub-02-module/results/plan-[module]-[setnumber].md`.
 - **Spec:** `module-contracts/[module].md`.
 - **Rules:** `module-implementation-rules.md`.
-- **Contract:** `@my-app/contract`.
+- **Contract:** `Apps/contract`.
 
 ---
 
@@ -43,10 +43,11 @@ First sprint not marked ✅. Recall: mapper is static/pure and converts dates; `
 
 
 ### Step 4 — Report & Mark
-Write `/docs/stage-02-backend/sub-02-module/results-[module]/report-sprint-[NN].md`. Mark the sprint ✅.
+Write `/docs/stage-02-backend/sub-02-module/results-[module]/report-sprint-[NN]-[setnumber].md`. Mark the sprint ✅.
 
 ### Step 5 — Commit on Green
-`git commit -m "api: [module] sprint [N] — [name]"`.
+Stage all changes, add all files you change no need to see what files you change use directly this command: `git add .`
+`git commit -m "api: [module] sprint [N] — [name]"`. and don't add anything to this commit message beside what i give to you.
 
 ### Step 6 — Pause
 Wait for `next`.

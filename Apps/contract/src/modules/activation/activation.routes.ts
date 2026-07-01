@@ -16,6 +16,7 @@ export const ACTIVATION_ROUTES = {
   REQUEST_ADDITIONAL: '/:id/request-additional',
   ACTIVATE: '/:id/activate',
   CANCEL: '/:id/cancel',
+  RELEASE: '/:id/release',
   FREEZE: '/:id/freeze',
   GET_MY_HISTORY: '/my-history',
   GET_RECENT: '/recent',
