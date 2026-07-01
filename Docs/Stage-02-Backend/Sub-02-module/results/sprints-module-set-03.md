@@ -16,7 +16,7 @@
 | 2 | Delivery Company (full slice) | F+L+API | Sub-01 | ✅ Done |
 | 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ✅ Done |
 | 4 | Subscription Plan — Foundation | foundation | contract | ✅ Done |
-| 5 | Subscription Plan — Logic | logic | S4 | ⬜ Pending |
+| 5 | Subscription Plan — Logic | logic | S4 | ✅ Done |
 | 6 | Subscription Plan — API | api | S5 | ⬜ Pending |
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ⬜ Pending |
 | 8 | Distributor — Logic | logic | S7, S3 (inline audit) | ⬜ Pending |
@@ -127,7 +127,7 @@
 
 ---
 
-### Sprint 5: Subscription Plan — Logic (service)   — Status: ⬜ Pending
+### Sprint 5: Subscription Plan — Logic (service)   — Status: ✅ Done
 
 **Goals**
 - `SubscriptionPlanService`: plans (list/create/toggle), tiers, matrix, commission upsert (+log).
