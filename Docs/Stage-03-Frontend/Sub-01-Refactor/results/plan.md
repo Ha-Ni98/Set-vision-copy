@@ -8,7 +8,7 @@ Companion to [`codebase-map.md`](./codebase-map.md). Scope: standardize the exis
 
 ---
 
-## 1. The Purge
+## 1. The Purge — ✅ Done (Sprint 1, 2026-07-02 — see `sprints.md`)
 
 ### 1.1 Libraries
 

@@ -6,12 +6,12 @@ Decomposition of [`plan.md`](./plan.md) into 4 incremental sprints per the phase
 
 ## Sprint overview
 
-| # | Sprint | Plan § | End state ("runnable" means) |
-|---|---|---|---|
-| 1 | Purge & Structure | §1 | `Apps/web` builds and serves all 5 routes on the approved stack, strict folder layout, mock data still inline |
-| 2 | UI Standardization & i18n | §2 | Same routes, now on shared components + contract types, EN/FR toggle live, zero inline strings |
-| 3 | Layouts & Boundaries | §3 | Router-level layouts + guards, lazy pages, skeleton/error states exist (prop-driven) |
-| 4 | Data Decoupling | §4, §5 | Component→Hook→Service everywhere, mocks deleted, pages render typed empty states; §5 readiness gate green |
+| # | Sprint | Plan § | End state ("runnable" means) | Status |
+|---|---|---|---|---|
+| 1 | Purge & Structure | §1 | `Apps/web` builds and serves all 5 routes on the approved stack, strict folder layout, mock data still inline | ✅ Done |
+| 2 | UI Standardization & i18n | §2 | Same routes, now on shared components + contract types, EN/FR toggle live, zero inline strings | ⬜ Pending |
+| 3 | Layouts & Boundaries | §3 | Router-level layouts + guards, lazy pages, skeleton/error states exist (prop-driven) | ⬜ Pending |
+| 4 | Data Decoupling | §4, §5 | Component→Hook→Service everywhere, mocks deleted, pages render typed empty states; §5 readiness gate green | ⬜ Pending |
 
 ## Transitional artifacts (deliberate, tracked to their kill-sprint)
 
@@ -22,36 +22,45 @@ Decomposition of [`plan.md`](./plan.md) into 4 incremental sprints per the phase
 | Custom `AuthContext` mock login + `localStorage` | S1 | S4 (AuthProvider on stubs) | Login/guards must work while data layer doesn't exist |
 | In-component `useEffect` route guards | S1 | S3 (`ProtectedRoute`) | Boundaries are Sprint-3 scope |
 | `isLoading`/`isError` props defaulted `false` | S3 | S4 (live TanStack Query flags) | States are built before the hooks that drive them |
+| `pages/NotFoundPage.tsx` + `pages/ErrorPage.tsx` (verbatim ports of `__root.tsx`/`router.tsx`'s fallbacks) | S1 | S3 (shared `NotFoundState` inside the active layout) | The app needs *some* 404/error rendering before Sprint 3 builds the layout-preserving version |
 
 **Standard validation gate (every sprint, referenced below as "gate"):** `npm run check` (`tsc --noEmit`) clean · `npm run build` succeeds · `npm run dev` walk of `/`, `/login`, `/dashboard`, `/requests`, `/history` in light+dark — renders, no console errors, no layout crash · committed on green.
 
 ---
 
-### Sprint 1: Purge & Structure — Status: ⬜ Pending
+### Sprint 1: Purge & Structure — Status: ✅ Done (2026-07-02)
 
 **Goals**
 - `Apps/web` exists on the approved stack with the plan §1.3 folder layout; every MVP file is ported, relocated, or deliberately left behind (plan §1.2); zero unapproved libraries ever installed.
 - App runs end-to-end on React Router with mock data untouched.
 
 **Tasks**
-- [ ] Scaffold `Apps/web`: Vite **5.4.19** SPA + React **18.3.1** + TS strict; `index.html` + `src/main.tsx` + `src/App.tsx`; `@` alias; scripts `dev/build/preview/lint/format/check(tsc --noEmit)`; eslint/prettier carried; `components.json` paths updated. (#unapproved-lib)
-- [ ] Final `package.json` in one pass per plan §1.1 — name `@my-app/web`; add `react-router-dom`, `axios`, `next-themes`, `@tanstack/react-table`, `tailwindcss-animate`, `"@my-app/contract": "file:../contract"`, `@tanstack/react-query-devtools` (dev); **zod ^4**; keeps per plan; nothing from the uninstall lists. Later sprints add no packages.
-- [ ] Tailwind **3.4.17**: `tailwind.config.ts` + `src/index.css`. Port oklch tokens **as channel triplets** exposed as `oklch(var(--x) / <alpha-value>)` so the MVP's opacity utilities (`bg-primary/15`, `bg-success/15`, `bg-warning/20`…) keep working; port radius scale, `--shadow-card`/`--shadow-glow`, gradients, `animate-shake`/`pulse-soft`/`pop-in`/`fade-out` keyframes; `darkMode: 'class'`; semantic names per rules §6B. (#layout)
-- [ ] Port the **19 kept** `ui/` primitives (map §3) + `lib/utils.ts`; re-idiom `tw-animate-css` → `tailwindcss-animate`; the 25 unused primitives are left behind. (#ui-primitive)
-- [ ] Move all app files to the strict layout per map §3 current→proposed columns: `routes/*` → `pages/` (+ `pages/activator/`), `components/setvision|activator/*` → `layout/` · `shared/` · `sections/landing|activator/`, `contexts/*` → `components/providers/` (**ported as-is**, rewrite later), `hooks/use-mobile`, `assets/`. All import paths updated. (#page #layout #shared-component)
-- [ ] Swap TanStack Router → **react-router-dom** in `App.tsx`: plain (non-lazy) routes for all 5 pages; migrate `Link`/`useNavigate`/`useLocation` call sites (`NavLink` for sidebar active styling); temporary in-component guards stay. `router.tsx`, `routeTree.gen.ts`, `wrangler.jsonc`, `.wrangler/`, `bunfig.toml`, `bun.lockb`, Lovable `vite.config.ts` do not cross over. (#unapproved-lib)
-- [ ] Port `lib/mock-data.ts` **unchanged** (transitional — see table above). (#legacy-fetch)
-- [ ] Static `index.html` `<title>`/meta from `__root.tsx` `head()` (SPA equivalent; reactive titles arrive with i18n in S2).
+- [x] Scaffold `Apps/web`: Vite **5.4.19** SPA + React **18.3.1** + TS strict; `index.html` + `src/main.tsx` + `src/App.tsx`; `@` alias; scripts `dev/build/preview/lint/format/check(tsc --noEmit)`; eslint/prettier carried; `components.json` paths updated. (#unapproved-lib)
+- [x] Final `package.json` in one pass per plan §1.1 — name `@my-app/web`; add `react-router-dom`, `axios`, `next-themes`, `@tanstack/react-table`, `tailwindcss-animate`, `"@my-app/contract": "file:../contract"`, `@tanstack/react-query-devtools` (dev); **zod ^4**; keeps per plan; nothing from the uninstall lists. Later sprints add no packages. Also added `postcss`/`autoprefixer` (dev) — mechanical requirement for Tailwind 3's build pipeline, not called out in the plan's library table but not an application library either.
+- [x] Tailwind **3.4.17**: `tailwind.config.ts` + `src/index.css`. Port oklch tokens **as channel triplets** exposed as `oklch(var(--x) / <alpha-value>)` so the MVP's opacity utilities (`bg-primary/15`, `bg-success/15`, `bg-warning/20`…) keep working; port radius scale, `--shadow-card`/`--shadow-glow`, gradients, `animate-shake`/`pulse-soft`/`pop-in`/`fade-out` keyframes; `darkMode: 'class'`; semantic names per rules §6B. (#layout)
+- [x] Port the **20 kept** `ui/` primitives (map §3 — corrected from this file's earlier "19", a scrivener miscount when tallying the map's list) + `lib/utils.ts`; re-idiom `tw-animate-css` → `tailwindcss-animate`; the 25 unused primitives are left behind. (#ui-primitive)
+- [x] Move all app files to the strict layout per map §3 current→proposed columns: `routes/*` → `pages/` (+ `pages/activator/`), `components/setvision|activator/*` → `layout/` · `shared/` · `sections/landing|activator/`, `contexts/*` → `components/providers/` (**ported as-is**, rewrite later), `hooks/use-mobile`, `assets/`. All import paths updated. (#page #layout #shared-component)
+- [x] Swap TanStack Router → **react-router-dom** in `App.tsx`: plain (non-lazy) routes for all 5 pages; migrate `Link`/`useNavigate`/`useLocation` call sites; temporary in-component guards stay. `router.tsx`, `routeTree.gen.ts`, `wrangler.jsonc`, `.wrangler/`, `bunfig.toml`, `bun.lockb`, Lovable `vite.config.ts` do not cross over. (#unapproved-lib)
+- [x] Port `lib/mock-data.ts` **unchanged** (transitional — see table above). (#legacy-fetch)
+- [x] Static `index.html` `<title>`/meta from `__root.tsx` `head()` (SPA equivalent; reactive titles arrive with i18n in S2).
+
+**Implementation notes (decisions made while executing, not in the original task list)**
+- Used `createBrowserRouter`/`RouterProvider` (react-router-dom's data-router API) instead of plain `<BrowserRouter><Routes>`, so every route gets a real `errorElement` — the closest honest equivalent of the MVP's router-level `defaultErrorComponent`, and it gives Sprint 3 nested layout routes (`<Outlet/>`) for free instead of a second router-API migration.
+- `routes/_activator.tsx` (guard) and `components/activator/ActivatorShell.tsx` (chrome) were **merged into one file** at `components/layout/ActivatorShell.tsx`: the guard's `useEffect` redirect-if-unauthenticated + null-return-while-redirecting is unchanged, just relocated to wrap `children` instead of `<Outlet/>`. Sidebar active-state kept the original's `useLocation().pathname === item.to` check on plain `Link` rather than switching to `NavLink` — the task list mentioned `NavLink` as an option, but changing the mechanism wasn't necessary to port the existing behavior faithfully, so it was left as-is pending Sprint 3's real layout-route split.
+- `NotFoundPage.tsx` and `ErrorPage.tsx` (`src/pages/`) are two small **transitional files not listed in the original transitional-artifacts table** — ported verbatim from `__root.tsx`'s `NotFoundComponent` and `router.tsx`'s `DefaultErrorComponent` so the app has *something* for 404s/render errors before Sprint 3 builds the real layout-preserving `NotFoundState`. Added to the transitional table below; dies at S3.
+- Demo artifacts (demo-keys paragraph, demo credentials line, "Toggle Empty State" button, fake notifications) were **kept untouched** — stripping them is explicitly Sprint 2 scope (i18n string sweep), not Sprint 1 (structural move only).
 
 **Validation**
-- [ ] Gate passes; mock login (`ahmed/ahmed123`) still reaches the portal; visual diff of all 5 pages vs MVP (especially `/15`-style opacity surfaces and dark mode).
-- [ ] `package.json` contains no TanStack Router/Start, Lovable, Cloudflare, or Tailwind-4 packages; `npm ls zod` shows a single ^4 major (contract + web).
-- [ ] Folder tree matches plan §1.3 exactly (no `contexts/`, no `routes/`).
+- [x] `tsc --noEmit` clean (zero errors). `npm run build` succeeds (1846 modules, valid `dist/`).
+- [x] `package.json` contains no TanStack Router/Start, Lovable, Cloudflare, or Tailwind-4 packages (grep confirmed empty); `zod` is `^4.0.0` in both `Apps/web` and `Apps/contract` — single major.
+- [x] Folder tree matches plan §1.3 exactly (`assets/ components/ config/ hooks/ lib/ pages/ services/ types/` — no `contexts/`, no `routes/`).
+- [x] Dev server boots clean (`VITE ready`, no errors in log after sustained idle) and serves the correct HTML shell (title/meta match). Compiled production CSS was inspected directly to verify the exact risk called out below: `.bg-primary\/15{background-color:oklch(var(--primary) / .15)}` and `.bg-warning\/20{...oklch(var(--warning) / .2)}` — the channel-triplet approach compiles correctly, opacity modifiers are **not** broken. `:root` triplets, the `.dark{}` override block, and all 4 custom keyframes (`shake`/`pop-in`/`pulse-soft`/`fade-out-up`) are present in the bundle.
+- [ ] **Not verified: interactive browser walk** (mock login → `/dashboard`, dark-mode toggle, visual diff, console errors). This sandbox's network egress reaches the npm registry but not the Playwright/Chromium CDN host (`cdn.playwright.dev` → `EAI_AGAIN`, repeated), and no `chromium-cli` or browser binary is preinstalled — so no headless browser could be launched. Static evidence above (tsc/build/CSS-inspection) stands in for it. **This gap should be closed with a real browser pass before Sub-02 integration**, ideally via a project `run` skill recorded for this repo once a working browser path exists in the target environment.
 
 **Risks**
-- Tailwind 4→3 regressions: opacity modifiers are the big one (mitigated by channel-triplet tokens); minor ring/border default deltas — catch via visual diff.
-- Router API drift (active-link logic, navigate-after-login timing) may briefly break nav highlighting.
-- SSR head() features (og: tags per route) flatten into static `index.html` — acceptable for the SPA target.
+- Tailwind 4→3 regressions: opacity modifiers are the big one — **mitigated and statically confirmed** (see Validation); minor ring/border default deltas remain unverified visually (see the browser-walk gap above).
+- Router API drift (active-link logic, navigate-after-login timing): mitigated by keeping the original's exact `useLocation`-based active check; navigate-after-login (`nav("/dashboard")`) is a direct string-form port of the original's `nav({ to: "/dashboard" })`.
+- SSR head() features (og: tags per route) flatten into static `index.html` — acceptable for the SPA target, confirmed served correctly.
 
 ---
 
