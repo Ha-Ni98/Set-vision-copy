@@ -238,21 +238,38 @@ describe('DELETE /admins/:id', () => {
   });
 
   it('409 — last enabled admin returns RESOURCE_CONFLICT', async () => {
-    // Only one enabled admin in DB for this test — need to ensure uniqueness
-    const { admin, user } = await seed();
-    const token = mintToken({ id: user.id, role: UserRole.ADMIN });
+    // Temporarily disable any pre-existing enabled admins so the guard fires
+    // reliably regardless of DB state (handles orphaned records from prior runs).
+    const preExisting = await prisma.user.findMany({
+      where: { role: 'ADMIN', isEnabled: true, deletedAt: null },
+      select: { id: true },
+    });
+    const preExistingIds = preExisting.map((u) => u.id);
+    if (preExistingIds.length > 0) {
+      await prisma.user.updateMany({
+        where: { id: { in: preExistingIds } },
+        data: { isEnabled: false },
+      });
+    }
 
-    // Create a second actor with a different id so we're not self-deleting
-    // But we still have only 1 admin (the seeded one) to trigger the guard
-    // Use a fake actorId that doesn't match the admin being deleted
-    const fakeActorToken = mintToken({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', role: UserRole.ADMIN });
+    try {
+      const { admin } = await seed();
+      const fakeActorToken = mintToken({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', role: UserRole.ADMIN });
 
-    const res = await request(app)
-      .delete(`${BASE}/${admin.id}`)
-      .set('Authorization', `Bearer ${fakeActorToken}`);
+      const res = await request(app)
+        .delete(`${BASE}/${admin.id}`)
+        .set('Authorization', `Bearer ${fakeActorToken}`);
 
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
+    } finally {
+      if (preExistingIds.length > 0) {
+        await prisma.user.updateMany({
+          where: { id: { in: preExistingIds } },
+          data: { isEnabled: true },
+        });
+      }
+    }
   });
 
   it('204 — soft-deletes; admin no longer appears in list', async () => {
