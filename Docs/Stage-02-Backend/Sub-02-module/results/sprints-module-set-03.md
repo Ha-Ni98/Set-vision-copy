@@ -25,7 +25,7 @@
 | 11 | Payment — Logic | logic | S10 | ✅ Done |
 | 12 | Payment — API | api | S11 | ✅ Done |
 | 13 | Statistics — Foundation | foundation | contract | ✅ Done |
-| 14 | Statistics — Logic A (summaries) | logic | S13 | ⬜ Pending |
+| 14 | Statistics — Logic A (summaries) | logic | S13 | ✅ Done |
 | 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ⬜ Pending |
 | 16 | Statistics — API | api | S15, set-02 entities (int) | ⬜ Pending |
 
@@ -302,7 +302,7 @@
 
 ---
 
-### Sprint 14: Statistics — Logic A (summaries)   — Status: ⬜ Pending
+### Sprint 14: Statistics — Logic A (summaries)   — Status: ✅ Done
 
 **Goals**
 - The six fixed-shape aggregates: `dashboard`, `activatorsSummary`, `distributorsSummary`, `inventorySummary`, `ordersSummary`, `activationsSummary`.
