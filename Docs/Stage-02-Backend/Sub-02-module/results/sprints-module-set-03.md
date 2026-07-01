@@ -24,7 +24,7 @@
 | 10 | Payment — Foundation | foundation | set-01 Activator/Admin | ✅ Done |
 | 11 | Payment — Logic | logic | S10 | ✅ Done |
 | 12 | Payment — API | api | S11 | ✅ Done |
-| 13 | Statistics — Foundation | foundation | contract | ⬜ Pending |
+| 13 | Statistics — Foundation | foundation | contract | ✅ Done |
 | 14 | Statistics — Logic A (summaries) | logic | S13 | ⬜ Pending |
 | 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ⬜ Pending |
 | 16 | Statistics — API | api | S15, set-02 entities (int) | ⬜ Pending |
@@ -283,7 +283,7 @@
 
 ---
 
-### Sprint 13: Statistics — Foundation (mapper + interface + time helper)   — Status: ⬜ Pending
+### Sprint 13: Statistics — Foundation (mapper + interface + time helper)   — Status: ✅ Done
 
 **Goals**
 - The shape layer for all 9 aggregates, the Algiers-tz boundary helper, and `IStatisticsService`.
