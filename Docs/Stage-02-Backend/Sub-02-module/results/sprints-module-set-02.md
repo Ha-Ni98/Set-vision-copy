@@ -22,7 +22,7 @@
 | 9 | Order — API (controller + wiring) | api | S8 | ✅ Done |
 | 10 | Card — Foundation (mapper + interface) | foundation | S1 (card factory) | ✅ Done |
 | 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ✅ Done |
-| 12 | Card — API (controller + wiring) | api | S11 | ⬜ Pending |
+| 12 | Card — API (controller + wiring) | api | S11 | ✅ Done |
 | 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ⬜ Pending |
 | 14 | Activation — Logic A (client + activator service) | logic | S13 | ⬜ Pending |
 | 15 | Activation — Logic B (admin service) | logic | S14 | ⬜ Pending |
@@ -266,7 +266,7 @@
 
 ---
 
-### Sprint 12: Card — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 12: Card — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller (7), composition root (static before param), wiring, integration + conformance.

@@ -26,6 +26,7 @@ import {
   SetResponseSchema,
   LotResponseSchema,
   OrderDetailResponseSchema,
+  CardDetailResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -385,6 +386,66 @@ describe('SET response schemas', () => {
       printedAt: null,
     };
     expect(() => SetResponseSchema.parse(sample)).not.toThrow();
+  });
+});
+
+const CARD_API = `/api/v1${CARD_ROUTES.BASE}`;
+
+describe('CARD_ROUTES — registration', () => {
+  it('GET /cards is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(CARD_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /cards/available-for-lot is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${CARD_API}${CARD_ROUTES.GET_AVAILABLE_FOR_LOT}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /cards/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${CARD_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /cards/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${CARD_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /cards/:id/disable is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${CARD_API}/${SAMPLE_UUID}/disable`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /cards/:id/enable is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${CARD_API}/${SAMPLE_UUID}/enable`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /cards/:id/revoke is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${CARD_API}/${SAMPLE_UUID}/revoke`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('CARD response schemas', () => {
+  it('CardDetailResponseSchema accepts a valid shape', () => {
+    const sample = {
+      id: SAMPLE_UUID,
+      key: 'ABCD-1234-EFGH-5678',
+      subscriptionPlanId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+      subscriptionLabel: 'Snapchat Plus — 01 Month',
+      setNumber: 'SET-20240101-AABBCC',
+      lotNumber: null,
+      distributorName: null,
+      cardStat: 'IN_SET',
+      isActive: false,
+      isDisabled: false,
+      isRevoked: false,
+      createdAt: '2025-01-10T08:30:00.000Z',
+      distributionTimeline: [{ stat: 'IN_SET', at: '2025-01-10T08:30:00.000Z' }],
+    };
+    expect(() => CardDetailResponseSchema.parse(sample)).not.toThrow();
   });
 });
 
