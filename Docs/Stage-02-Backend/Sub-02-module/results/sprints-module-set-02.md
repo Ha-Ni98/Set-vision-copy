@@ -19,7 +19,7 @@
 | 6 | Lot — API (controller + wiring) | api | S5 | ✅ Done |
 | 7 | Order — Foundation (mapper + interface) | foundation | S4 | ✅ Done |
 | 8 | Order — Logic (service) | logic | S7, S5 (lots) | ✅ Done |
-| 9 | Order — API (controller + wiring) | api | S8 | ⬜ Pending |
+| 9 | Order — API (controller + wiring) | api | S8 | ✅ Done |
 | 10 | Card — Foundation (mapper + interface) | foundation | S1 (card factory) | ⬜ Pending |
 | 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ⬜ Pending |
 | 12 | Card — API (controller + wiring) | api | S11 | ⬜ Pending |
@@ -203,7 +203,7 @@
 
 ---
 
-### Sprint 9: Order — API (controller + wiring)   — Status: ⬜ Pending
+### Sprint 9: Order — API (controller + wiring)   — Status: ✅ Done
 
 **Goals**
 - Controller, composition root, wiring, integration (incl. delivery cascade) + conformance.

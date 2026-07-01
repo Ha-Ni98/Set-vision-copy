@@ -25,6 +25,7 @@ import {
   ActivatorDashboardResponseSchema,
   SetResponseSchema,
   LotResponseSchema,
+  OrderDetailResponseSchema,
   UserRole,
 } from '@my-app/contract';
 import { app } from '../../src/app';
@@ -301,6 +302,73 @@ describe('LOT response schemas', () => {
       deliveryDate: null,
     };
     expect(() => LotResponseSchema.parse(sample)).not.toThrow();
+  });
+});
+
+const ORDER_API = `/api/v1${ORDER_ROUTES.BASE}`;
+
+describe('ORDER_ROUTES — registration', () => {
+  it('GET /orders is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(ORDER_API);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /orders/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${ORDER_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /orders is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(ORDER_API).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /orders/:id/transition is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).post(`${ORDER_API}/${SAMPLE_UUID}/transition`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('DELETE /orders/:id is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).delete(`${ORDER_API}/${SAMPLE_UUID}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('ORDER response schemas', () => {
+  it('OrderDetailResponseSchema accepts a valid shape', () => {
+    const sample = {
+      id: SAMPLE_UUID,
+      orderNumber: 'ORD-20240630-AABBCC',
+      distributorId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+      distributorName: 'Best Store',
+      receivedName: 'John Doe',
+      receivedPhone: '0612345678',
+      wilayaId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b23',
+      wilayaName: 'Alger',
+      communeId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b24',
+      communeName: 'Bab El Oued',
+      deliveryCompanyId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b25',
+      deliveryCompanyName: 'FastDel',
+      deliveryType: 'HOME',
+      lotNumbers: ['LOT-001'],
+      cardsCount: 10,
+      orderPrice: 500.0,
+      deliverPrice: 50.0,
+      cardsDeliveredCount: 0,
+      orderStat: 'PENDING_DELIVERY',
+      createdAt: '2025-01-10T08:30:00.000Z',
+      completedAt: null,
+      lots: [
+        {
+          lotId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b26',
+          lotNumber: 'LOT-001',
+          subscriptionLabel: 'Snapchat Plus — 01 Month',
+          cardsCount: 10,
+          lotStat: 'PENDING',
+        },
+      ],
+    };
+    expect(() => OrderDetailResponseSchema.parse(sample)).not.toThrow();
   });
 });
 
