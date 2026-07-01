@@ -27,7 +27,7 @@
 | 13 | Statistics — Foundation | foundation | contract | ✅ Done |
 | 14 | Statistics — Logic A (summaries) | logic | S13 | ✅ Done |
 | 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ✅ Done |
-| 16 | Statistics — API | api | S15, set-02 entities (int) | ⬜ Pending |
+| 16 | Statistics — API | api | S15, set-02 entities (int) | ✅ Done |
 
 **Cross-cutting validation** (applies to every sprint, in addition to its own block):
 - `tsc --noEmit` clean across `apps/api`.
@@ -343,7 +343,7 @@
 
 ---
 
-### Sprint 16: Statistics — API (controllers + wiring)   — Status: ⬜ Pending
+### Sprint 16: Statistics — API (controllers + wiring)   — Status: ✅ Done
 
 **Goals**
 - 9 controllers, composition root (static `/wilaya-heatmap` before `/wilaya/:wilayaId`), wiring, integration + conformance. Integration needs set-02 entities seeded.

@@ -8,6 +8,7 @@ import {
   SUBSCRIPTION_PLAN_ROUTES,
   DISTRIBUTOR_ROUTES,
   PAYMENT_ROUTES,
+  STATISTICS_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -23,6 +24,7 @@ import { logRouter } from './log/log.routes';
 import { subscriptionPlanRouter } from './subscription-plan/subscription-plan.routes';
 import { distributorRouter } from './distributor/distributor.routes';
 import { paymentRouter } from './payment/payment.routes';
+import { statisticsRouter } from './statistics/statistics.routes';
 
 export const moduleRouter = Router();
 
@@ -41,3 +43,4 @@ moduleRouter.use(LOG_ROUTES.BASE, logRouter);
 moduleRouter.use(SUBSCRIPTION_PLAN_ROUTES.BASE, subscriptionPlanRouter);
 moduleRouter.use(DISTRIBUTOR_ROUTES.BASE, distributorRouter);
 moduleRouter.use(PAYMENT_ROUTES.BASE, paymentRouter);
+moduleRouter.use(STATISTICS_ROUTES.BASE, statisticsRouter);

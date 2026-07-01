@@ -17,6 +17,8 @@ import {
   DISTRIBUTOR_ROUTES,
   SUBSCRIPTION_PLAN_ROUTES,
   STATISTICS_ROUTES,
+  StatisticsOverviewResponseSchema,
+  DashboardStatsResponseSchema,
   AuthTokensResponseSchema,
   SessionUserResponseSchema,
   AdminResponseSchema,
@@ -899,6 +901,82 @@ describe('PAYMENT response schemas', () => {
         paymentDate: '2024-03-10T09:00:00.000Z',
         recordedByName: 'Alice Admin',
         isDeleted: false,
+      }),
+    ).not.toThrow();
+  });
+});
+
+const STATS_API = `/api/v1${STATISTICS_ROUTES.BASE}`;
+
+describe('STATISTICS_ROUTES — registration', () => {
+  it('GET /statistics/dashboard is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.DASHBOARD}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/activators is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.ACTIVATORS_SUMMARY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/distributors is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.DISTRIBUTORS_SUMMARY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/inventory is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.INVENTORY_SUMMARY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/orders is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.ORDERS_SUMMARY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/activations is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.ACTIVATIONS_SUMMARY}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/overview is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.OVERVIEW}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/wilaya-heatmap is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${STATS_API}${STATISTICS_ROUTES.WILAYA_HEATMAP}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /statistics/wilaya/:wilayaId is registered (requireAuth → 401, not 404)', async () => {
+    const path = STATISTICS_ROUTES.WILAYA_DRILLDOWN.replace(':wilayaId', SAMPLE_UUID);
+    const res = await request(app).get(`${STATS_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('STATISTICS response schemas', () => {
+  it('DashboardStatsResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      DashboardStatsResponseSchema.parse({
+        activationsToday: 12,
+        totalRevenue: 4500.75,
+        pendingActivations: 3,
+        activeActivators: 8,
+      }),
+    ).not.toThrow();
+  });
+
+  it('StatisticsOverviewResponseSchema accepts a valid empty shape', () => {
+    expect(() =>
+      StatisticsOverviewResponseSchema.parse({
+        activationsOverTime: [],
+        activationsByState: [],
+        topActivators: [],
+        topDistributors: [],
+        avgTimeTrend: [],
+        revenueOverTime: [],
       }),
     ).not.toThrow();
   });
