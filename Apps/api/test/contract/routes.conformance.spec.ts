@@ -30,6 +30,8 @@ import {
   KeyVerificationResponseSchema,
   ActiveRequestResponseSchema,
   ActivationDetailResponseSchema,
+  WilayaResponseSchema,
+  CommuneResponseSchema,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -642,5 +644,45 @@ describe('AUTH response schemas', () => {
       fullName: 'Alice Admin',
     };
     expect(() => SessionUserResponseSchema.parse(data)).not.toThrow();
+  });
+});
+
+const GEO_API = `/api/v1${GEOGRAPHY_ROUTES.BASE}`;
+
+describe('GEOGRAPHY_ROUTES — registration', () => {
+  it('GET /geography/wilayas is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${GEO_API}${GEOGRAPHY_ROUTES.GET_WILAYAS}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /geography/wilayas/:wilayaId/communes is registered (requireAuth → 401, not 404)', async () => {
+    const path = GEOGRAPHY_ROUTES.GET_COMMUNES.replace(':wilayaId', SAMPLE_UUID);
+    const res = await request(app).get(`${GEO_API}${path}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('GEOGRAPHY response schemas', () => {
+  it('WilayaResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      WilayaResponseSchema.parse({
+        id: SAMPLE_UUID,
+        wilayaCode: '01',
+        frName: 'Adrar',
+        arName: 'أدرار',
+      }),
+    ).not.toThrow();
+  });
+
+  it('CommuneResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      CommuneResponseSchema.parse({
+        id: SAMPLE_UUID,
+        communeCode: '010101',
+        wilayaId: 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22',
+        frName: 'Adrar',
+        arName: 'أدرار',
+      }),
+    ).not.toThrow();
   });
 });
