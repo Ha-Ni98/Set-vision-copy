@@ -26,7 +26,7 @@
 | 12 | Payment — API | api | S11 | ✅ Done |
 | 13 | Statistics — Foundation | foundation | contract | ✅ Done |
 | 14 | Statistics — Logic A (summaries) | logic | S13 | ✅ Done |
-| 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ⬜ Pending |
+| 15 | Statistics — Logic B (overview/heatmap/drilldown) | logic | S14 | ✅ Done |
 | 16 | Statistics — API | api | S15, set-02 entities (int) | ⬜ Pending |
 
 **Cross-cutting validation** (applies to every sprint, in addition to its own block):
@@ -324,7 +324,7 @@
 
 ---
 
-### Sprint 15: Statistics — Logic B (overview / heatmap / drilldown)   — Status: ⬜ Pending
+### Sprint 15: Statistics — Logic B (overview / heatmap / drilldown)   — Status: ✅ Done
 
 **Goals**
 - The period-filtered series + geographic aggregates: `overview`, `wilayaHeatmap`, `wilayaDrilldown`.

@@ -34,6 +34,15 @@ export function yearStart(): Date {
 
 export type PeriodBounds = { from: Date; to: Date; bucket: 'day' | 'week' };
 
+export function bucketDate(date: Date, bucket: 'day' | 'week'): Date {
+  const a = new Date(date.getTime() + ALGIERS_OFFSET_MS);
+  if (bucket === 'day') {
+    return algiersToUTC(new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate())));
+  }
+  const diff = (a.getUTCDay() + 6) % 7;
+  return algiersToUTC(new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate() - diff)));
+}
+
 export function resolvePeriod(
   period: StatisticsPeriod,
   dateFrom?: string,
