@@ -33,6 +33,8 @@ import {
   WilayaResponseSchema,
   CommuneResponseSchema,
   DeliveryCompanyResponseSchema,
+  LogResponseSchema,
+  LogActionType,
   ActivationStat,
   ClientActivationStatus,
   AccountInformation,
@@ -722,6 +724,29 @@ describe('DELIVERY_COMPANY response schemas', () => {
         name: 'Fast Delivery',
         registeredName: 'Fast Delivery SARL',
         isActive: true,
+      }),
+    ).not.toThrow();
+  });
+});
+
+const LOG_API = `/api/v1${LOG_ROUTES.BASE}`;
+
+describe('LOG_ROUTES — registration', () => {
+  it('GET /logs is registered (requireAuth → 401, not 404)', async () => {
+    const res = await request(app).get(`${LOG_API}${LOG_ROUTES.GET_ALL}`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('LOG response schemas', () => {
+  it('LogResponseSchema accepts a valid shape', () => {
+    expect(() =>
+      LogResponseSchema.parse({
+        id: SAMPLE_UUID,
+        actionType: LogActionType.ADD_DISTRIBUTOR,
+        actionDescription: 'Added distributor X',
+        userName: 'Alice Admin',
+        createdAt: '2026-01-15T10:00:00.000Z',
       }),
     ).not.toThrow();
   });

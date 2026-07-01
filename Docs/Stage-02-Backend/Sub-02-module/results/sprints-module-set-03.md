@@ -14,7 +14,7 @@
 |---|--------|-------|-----------|--------|
 | 1 | Geography (full slice) | F+L+API | Sub-01, contract | ✅ Done |
 | 2 | Delivery Company (full slice) | F+L+API | Sub-01 | ✅ Done |
-| 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ⬜ Pending |
+| 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ✅ Done |
 | 4 | Subscription Plan — Foundation | foundation | contract | ⬜ Pending |
 | 5 | Subscription Plan — Logic | logic | S4 | ⬜ Pending |
 | 6 | Subscription Plan — API | api | S5 | ⬜ Pending |
@@ -86,7 +86,7 @@
 
 ---
 
-### Sprint 3: Log (full slice)   — Status: ⬜ Pending
+### Sprint 3: Log (full slice)   — Status: ✅ Done
 
 **Goals**
 - The append-only read surface (`GET_ALL`) + actor-name resolution. (The inline-audit pattern callers use is documented in plan §1.3; no shared writer required.)

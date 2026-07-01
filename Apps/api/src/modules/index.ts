@@ -4,6 +4,7 @@ import {
   LOT_ROUTES, ORDER_ROUTES, CARD_ROUTES, KEY_ROUTES, ACTIVATION_ROUTES,
   GEOGRAPHY_ROUTES,
   DELIVERY_COMPANY_ROUTES,
+  LOG_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -15,6 +16,7 @@ import { cardRouter } from './card/card.routes';
 import { keyRouter, activationRouter } from './activation/activation.routes';
 import { geographyRouter } from './geography/geography.routes';
 import { deliveryCompanyRouter } from './delivery-company/delivery-company.routes';
+import { logRouter } from './log/log.routes';
 
 export const moduleRouter = Router();
 
@@ -29,3 +31,4 @@ moduleRouter.use(KEY_ROUTES.BASE, keyRouter);
 moduleRouter.use(ACTIVATION_ROUTES.BASE, activationRouter);
 moduleRouter.use(GEOGRAPHY_ROUTES.BASE, geographyRouter);
 moduleRouter.use(DELIVERY_COMPANY_ROUTES.BASE, deliveryCompanyRouter);
+moduleRouter.use(LOG_ROUTES.BASE, logRouter);
