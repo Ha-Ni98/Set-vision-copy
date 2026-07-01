@@ -15,7 +15,7 @@
 | 1 | Geography (full slice) | F+L+API | Sub-01, contract | ✅ Done |
 | 2 | Delivery Company (full slice) | F+L+API | Sub-01 | ✅ Done |
 | 3 | Log (full slice) | F+L+API | Sub-01 (User actor) | ✅ Done |
-| 4 | Subscription Plan — Foundation | foundation | contract | ⬜ Pending |
+| 4 | Subscription Plan — Foundation | foundation | contract | ✅ Done |
 | 5 | Subscription Plan — Logic | logic | S4 | ⬜ Pending |
 | 6 | Subscription Plan — API | api | S5 | ⬜ Pending |
 | 7 | Distributor — Foundation | foundation | S1 (geography seed) | ⬜ Pending |
@@ -109,7 +109,7 @@
 
 ---
 
-### Sprint 4: Subscription Plan — Foundation (mapper + interface)   — Status: ⬜ Pending
+### Sprint 4: Subscription Plan — Foundation (mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - `SubscriptionPlanMapper` (plan label, tier, matrix assembly, cell) and `ISubscriptionPlanService`.
