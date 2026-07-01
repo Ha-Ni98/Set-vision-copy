@@ -61,30 +61,30 @@ export type ActivationDistributorJoin = {
 };
 
 export type ActivationInfoEntry = {
-  accountInform: AccountInformation;
+  accountInform: string;
   value: string | null;
 };
 
 export type ActivationStepEntry = {
   activationStat: string;
   createdAt: Date;
-  wrongInformation: Array<{ accountInform: AccountInformation; value: string | null }>;
-  additionalInformation: Array<{ accountInform: AccountInformation; value: string | null }>;
+  wrongInformation: Array<{ accountInform: string; value: string | null }>;
+  additionalInformation: Array<{ accountInform: string; value: string | null }>;
 };
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-function toLabel(field: AccountInformation): string {
-  return FIELD_LABEL[field] ?? field;
+function toLabel(field: string): string {
+  return FIELD_LABEL[field as AccountInformation] ?? field;
 }
 
 function maskKey(key: string): string {
   return key.length <= 4 ? key : '*'.repeat(key.length - 4) + key.slice(-4);
 }
 
-function maskValue(field: AccountInformation, value: string | null): string {
+function maskValue(field: string, value: string | null): string {
   if (value === null) return '';
-  return SENSITIVE_FIELDS.has(field) ? '****' : value;
+  return SENSITIVE_FIELDS.has(field as AccountInformation) ? '****' : value;
 }
 
 function decimalToNumber(d: Decimal | null | undefined): number | null {
@@ -111,8 +111,8 @@ export class ActivationMapper {
       id: string;
       information: ActivationInfoEntry[];
       latestStep: {
-        wrongInformation: Array<{ accountInform: AccountInformation }>;
-        additionalInformation: Array<{ accountInform: AccountInformation }>;
+        wrongInformation: Array<{ accountInform: string }>;
+        additionalInformation: Array<{ accountInform: string }>;
       } | null;
     } | null,
   ): KeyVerificationDTO {
@@ -140,13 +140,13 @@ export class ActivationMapper {
       if (activation.latestStep) {
         if (activation.latestStep.wrongInformation.length > 0) {
           dto.flaggedFields = activation.latestStep.wrongInformation.map((w) => ({
-            field: w.accountInform,
+            field: w.accountInform as unknown as AccountInformation,
             label: toLabel(w.accountInform),
           }));
         }
         if (activation.latestStep.additionalInformation.length > 0) {
           dto.requestedFields = activation.latestStep.additionalInformation.map((a) => ({
-            field: a.accountInform,
+            field: a.accountInform as unknown as AccountInformation,
             label: toLabel(a.accountInform),
           }));
         }

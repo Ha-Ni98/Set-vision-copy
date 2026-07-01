@@ -24,7 +24,7 @@
 | 11 | Card — Logic (service) | logic | S10, S8 (distributed cards) | ✅ Done |
 | 12 | Card — API (controller + wiring) | api | S11 | ✅ Done |
 | 13 | Activation — Foundation (contract `RELEASE` + mapper + interface) | foundation | S10, contract edit | ✅ Done |
-| 14 | Activation — Logic A (client + activator service) | logic | S13 | ⬜ Pending |
+| 14 | Activation — Logic A (client + activator service) | logic | S13 | ✅ Done |
 | 15 | Activation — Logic B (admin service) | logic | S14 | ⬜ Pending |
 | 16 | Activation — API + Realtime (controllers + two routers) | api | S15, Sub-01 Sprint 5 (gateway) | ⬜ Pending |
 
@@ -286,7 +286,7 @@
 
 ---
 
-### Sprint 13: Activation — Foundation (contract `RELEASE` + mapper + interface)   — Status: ⬜ Pending
+### Sprint 13: Activation — Foundation (contract `RELEASE` + mapper + interface)   — Status: ✅ Done
 
 **Goals**
 - Land the one approved contract addition, then the **exposure-aware** `ActivationMapper`, the `IActivationService` contract, and the activation factories.
@@ -306,7 +306,7 @@
 
 ---
 
-### Sprint 14: Activation — Logic A (client + activator service)   — Status: ⬜ Pending
+### Sprint 14: Activation — Logic A (client + activator service)   — Status: ✅ Done
 
 **Goals**
 - The public-client and activator halves of `ActivationService`, emitting to `eventBus` **after** each transaction. Activator principal resolved to `Activator` by `userId`.
