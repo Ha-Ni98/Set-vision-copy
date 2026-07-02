@@ -6,23 +6,31 @@ import type { ActivatorHistoryItemDTO, RecentActivationDTO } from "@my-app/contr
 import { MOCK_GLOBAL_RECENT, MOCK_PERSONAL_HISTORY, formatDZD, formatTime } from "@/lib/mock-data";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { NotFoundState } from "@/components/shared/NotFoundState";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Phone, KeyRound, Clock as ClockIcon, Coins } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Phone, KeyRound, Clock as ClockIcon, Coins, AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const STATUS_OPTIONS = Object.values(ActivationStat);
 const PER_PAGE = 10;
 
+// isLoading*/isError* are hardcoded false this sprint — Sprint 4's useRecentActivations /
+// useMyHistory hooks drive them for real (two separate queries, two separate flags).
 export default function HistoryPage() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<"ALL" | ActivationStat>("ALL");
   const [sort, setSort] = useState<"NEW" | "OLD" | "EARN">("NEW");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const isLoadingRecent = false;
+  const isErrorRecent = false;
+  const isLoadingHistory = false;
+  const isErrorHistory = false;
 
   const filtered = useMemo(() => {
     let arr: ActivatorHistoryItemDTO[] = [...MOCK_PERSONAL_HISTORY];
@@ -65,23 +73,29 @@ export default function HistoryPage() {
     <div className="space-y-8">
       <section>
         <h2 className="mb-3 text-lg font-semibold text-foreground">{t("activator.history.recentTitle")}</h2>
-        <DataTable
-          columns={recentColumns}
-          data={MOCK_GLOBAL_RECENT}
-          getRowKey={(r) => r.id}
-          renderMobileRow={(r) => (
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-medium text-foreground">{r.subscriptionLabel}</div>
-                <StatusBadge status={r.state} />
+        {isErrorRecent ? (
+          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+        ) : isLoadingRecent ? (
+          <TableSkeleton rows={5} columns={4} />
+        ) : (
+          <DataTable
+            columns={recentColumns}
+            data={MOCK_GLOBAL_RECENT}
+            getRowKey={(r) => r.id}
+            renderMobileRow={(r) => (
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-foreground">{r.subscriptionLabel}</div>
+                  <StatusBadge status={r.state} />
+                </div>
+                <div className="mt-1 flex items-center justify-between text-xs">
+                  <span className="font-mono text-foreground">{r.keyMasked}</span>
+                  <span className="text-muted-foreground">{format(parseISO(r.completedAt), "MMM d, HH:mm")}</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between text-xs">
-                <span className="font-mono text-foreground">{r.keyMasked}</span>
-                <span className="text-muted-foreground">{format(parseISO(r.completedAt), "MMM d, HH:mm")}</span>
-              </div>
-            </div>
-          )}
-        />
+            )}
+          />
+        )}
       </section>
 
       <section>
@@ -111,27 +125,33 @@ export default function HistoryPage() {
           </Select>
         </div>
 
-        <DataTable
-          columns={historyColumns}
-          data={pageRows}
-          getRowKey={(r) => r.id}
-          renderMobileRow={(r) => (
-            <div className="space-y-2 p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-foreground">{r.subscriptionLabel}</div>
-                <StatusBadge status={r.state} />
+        {isErrorHistory ? (
+          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+        ) : isLoadingHistory ? (
+          <TableSkeleton rows={PER_PAGE} columns={7} />
+        ) : (
+          <DataTable
+            columns={historyColumns}
+            data={pageRows}
+            getRowKey={(r) => r.id}
+            renderMobileRow={(r) => (
+              <div className="space-y-2 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-foreground">{r.subscriptionLabel}</div>
+                  <StatusBadge status={r.state} />
+                </div>
+                <div className="text-sm">{r.client.fullName}</div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {r.client.phone}</div>
+                  <div className="inline-flex items-center gap-1 font-mono"><KeyRound className="h-3 w-3" /> {r.key.slice(-9)}</div>
+                  <div className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {r.durationSeconds ? formatTime(r.durationSeconds) : "—"}</div>
+                  <div className="inline-flex items-center gap-1 font-semibold text-foreground"><Coins className="h-3 w-3" /> {r.earning ? formatDZD(r.earning) : "—"}</div>
+                </div>
               </div>
-              <div className="text-sm">{r.client.fullName}</div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {r.client.phone}</div>
-                <div className="inline-flex items-center gap-1 font-mono"><KeyRound className="h-3 w-3" /> {r.key.slice(-9)}</div>
-                <div className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {r.durationSeconds ? formatTime(r.durationSeconds) : "—"}</div>
-                <div className="inline-flex items-center gap-1 font-semibold text-foreground"><Coins className="h-3 w-3" /> {r.earning ? formatDZD(r.earning) : "—"}</div>
-              </div>
-            </div>
-          )}
-          emptyState={<div className="p-10 text-center text-muted-foreground">{t("activator.history.noMatch")}</div>}
-        />
+            )}
+            emptyState={<div className="p-10 text-center text-muted-foreground">{t("activator.history.noMatch")}</div>}
+          />
+        )}
 
         <div className="mt-4 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">{t("activator.history.recordCount", { count: filtered.length })}</span>

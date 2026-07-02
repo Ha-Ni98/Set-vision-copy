@@ -9,8 +9,8 @@ Decomposition of [`plan.md`](./plan.md) into 4 incremental sprints per the phase
 | # | Sprint | Plan § | End state ("runnable" means) | Status |
 |---|---|---|---|---|
 | 1 | Purge & Structure | §1 | `Apps/web` builds and serves all 5 routes on the approved stack, strict folder layout, mock data still inline | ✅ Done |
-| 2 | UI Standardization & i18n | §2 | Same routes, now on shared components + contract types, EN/FR toggle live, zero inline strings | ⬜ Pending |
-| 3 | Layouts & Boundaries | §3 | Router-level layouts + guards, lazy pages, skeleton/error states exist (prop-driven) | ⬜ Pending |
+| 2 | UI Standardization & i18n | §2 | Same routes, now on shared components + contract types, EN/FR toggle live, zero inline strings | ✅ Done |
+| 3 | Layouts & Boundaries | §3 | Router-level layouts + guards, lazy pages, skeleton/error states exist (prop-driven) | ✅ Done |
 | 4 | Data Decoupling | §4, §5 | Component→Hook→Service everywhere, mocks deleted, pages render typed empty states; §5 readiness gate green | ⬜ Pending |
 
 ## Transitional artifacts (deliberate, tracked to their kill-sprint)
@@ -106,30 +106,36 @@ Decomposition of [`plan.md`](./plan.md) into 4 incremental sprints per the phase
 
 ---
 
-### Sprint 3: Layouts & Boundaries — Status: ⬜ Pending
+### Sprint 3: Layouts & Boundaries — Status: ✅ Done (2026-07-02)
 
 **Goals**
 - Routing concerns live in the router: `PublicLayout`/`ActivatorLayout` as layout routes, guard as `ProtectedRoute`, pages lazy-loaded.
 - Every data section has a Skeleton and a local error/empty rendering path; the shell never disappears.
 
 **Tasks**
-- [ ] `PublicLayout` (PublicHeader + PublicFooter + `Outlet`) wraps `/`; login stays a standalone centered page (plan §3.1). (#layout)
-- [ ] Split ported ActivatorShell → `ActivatorLayout` + `ActivatorHeader` + `ActivatorSidebar` (mobile Sheet kept); nav data → `config/nav-links.ts`; notifications bell reduced to empty dropdown shell, no badge, no action (§8.Q6). (#layout)
-- [ ] `ProtectedRoute` (session check → `<Navigate to="/login">`; authenticated users hitting `/login` → `/dashboard`) replaces **both** `useEffect` redirects — MVP behavior kept exactly (no return-to-target invention). (#state)
-- [ ] `React.lazy()` all 5 pages + `<Suspense fallback={<PageLoader/>}>` (code-splitting only, rules §5).
-- [ ] Shared `NotFoundState`; catch-all `*` route renders it **inside** the active layout (kills the MVP's full-page root 404); also used as the section-level `isError` visual (rules §4).
-- [ ] Skeleton set per plan §3.2 (stat-card, chart, request-card, table-row shapes) wired into sections behind `isLoading`/`isError` props (defaulted `false` until Sprint 4). (#shared-component)
-- [ ] Router `errorElement` wraps page content only — header/sidebar/footer survive render errors.
+- [x] `PublicLayout` (PublicHeader + PublicFooter + `Outlet`) wraps `/`; login stays a standalone centered page (plan §3.1). Also accepts explicit `children` (falls back to `<Outlet/>` when absent) so the catch-all route — not a matched child — can reuse it. (#layout)
+- [x] Split ported ActivatorShell → `ActivatorLayout` + `ActivatorHeader` + `ActivatorSidebar` (`ActivatorSidebarNav` extracted as a shared sub-piece so the mobile Sheet in the header and the desktop `<aside>` render identical nav markup); nav data → `config/nav-links.ts`; notifications bell reduced to an empty dropdown shell — trigger + label kept, the 3 fake entries and the badge "3" are gone, replaced by a translated "No notifications yet" placeholder (§8.Q6). (#layout)
+- [x] `ProtectedRoute` + `PublicOnlyRoute` (same file, `components/layout/ProtectedRoute.tsx`) — both declarative (`<Navigate replace>` via `<Outlet/>`-based layout routes), replacing **both** `useEffect` redirects exactly: unauthenticated → `/login`, authenticated on `/login` → `/dashboard`. No return-to-target invention. (#state)
+- [x] `React.lazy()` all 5 pages + `<Suspense fallback={<PageLoader/>}>` — confirmed in the build output: `LandingPage`, `LoginPage`, `DashboardPage`, `RequestsPage`, `HistoryPage` each landed in their own chunk (rules §5, code-splitting only).
+- [x] Shared `NotFoundState` — one generic content-scoped component (`icon`/`eyebrow`/`title`/`body`/`action`/`debugDetails` props) serves **three** roles: the catch-all 404 content, the route-crash `errorElement` content (via `RouteErrorBoundary`), and is ready for Sprint 4's section-level `isError` use (already wired into all three activator pages this sprint, see below). Catch-all `*` route picks `ActivatorLayout` or `PublicLayout` based on live auth state (`useAuth()`) so it always renders **inside the layout the user is actually in**, not a fixed default. (rules §4)
+- [x] Skeleton set (`StatCardSkeleton`, `ChartSkeleton`, `RequestCardSkeleton`, `TableSkeleton`) wired into all three activator pages behind `isLoading`/`isError` props — 8 flags total (Dashboard: 2; Requests: 4, active+pending as separate queries; History: 4, recent+my-history as separate queries), every one hardcoded `false` this sprint. (#shared-component)
+- [x] Router `errorElement` on every **leaf** page route (not the parent layout routes) — confirmed by design: `RouteErrorBoundary` replaces only the `<Outlet/>` slot, so `ActivatorLayout`'s header/sidebar and `PublicLayout`'s header/footer keep rendering around it. `/login` (no layout) gets `RouteErrorBoundary` wrapped in a one-off full-page centering `<div>` at its route registration, since nothing else provides that structure there.
+
+**Implementation notes (decisions made while executing)**
+- `NotFoundPage.tsx` and `ErrorPage.tsx` — the Sprint-1 transitional files — are **deleted**, exactly as the transitional-artifacts table scheduled. Both are superseded by `NotFoundState` + `RouteErrorBoundary`; the old full-page `min-h-screen` treatment doesn't fit inside a layout's content slot, so route-crash content is now content-scoped by design (see `RouteErrorBoundary`'s doc comment).
+- `ActivatorLayout`/`PublicLayout` both accept an optional `children` prop as an escape hatch for the catch-all route, which isn't reached through normal route matching so `<Outlet/>` alone wouldn't resolve to anything there.
+- Kept `PER_PAGE` (10) as the row count for History's `TableSkeleton`, and used the page's own column counts (4/4/7) for each `TableSkeleton` instance, so the skeleton shape roughly matches its real table instead of a generic guess.
 
 **Validation**
-- [ ] Gate passes; hard-refresh on `/dashboard` unauthenticated → clean redirect (no null flash); authenticated `/login` visit → `/dashboard`.
-- [ ] Unknown URL keeps the surrounding layout and shows `NotFoundState`; build output shows per-page chunks.
-- [ ] Dev-only prop flip renders every skeleton and error state correctly inside the intact layout (flip reverted before commit).
+- [x] Gate passes (`tsc --noEmit` clean, `npm run build` succeeds). Dev-server smoke test: `curl` on `/dashboard`, `/login`, and an unknown path all return `200` (SPA fallback intact — a hard refresh on any client route loads the shell, then `ProtectedRoute`/`PublicOnlyRoute` handle the redirect client-side).
+- [x] Unknown URL keeps the surrounding layout (confirmed by design — `CatchAllRoute` composition, not by browser walk) and shows `NotFoundState`; **build output shows per-page chunks** — confirmed directly: `LandingPage-*.js` (27.7kB), `LoginPage-*.js` (2.7kB), `DashboardPage-*.js` (4.3kB), `RequestsPage-*.js` (20.8kB), `HistoryPage-*.js` (30.1kB) all split out, plus shared chunks (`DataTable`, `schemas`, icon chunks). Main `index-*.js` dropped from 756kB (Sprint 2) to 500kB.
+- [x] Dev-only prop flip: every one of the 8 `isLoading`/`isError` flags across Dashboard/Requests/History was flipped to `true` in turn, `npm run build` re-run to confirm the branch compiles and survives minification (esbuild's dead-code elimination on the literal-boolean conditional proved each branch is real, reachable JSX — a stronger signal than a no-op compile), then reverted. Diffs confirmed clean (`git diff` empty on those files pre-commit) — this is a static substitute for an actual visual flip, per the same sandbox browser limitation as Sprints 1–2.
+- [ ] **Not verified: real interactive browser walk** (visual skeleton/error rendering, mobile Sheet nav at <768px, actual redirect-loop check). Same sandbox limitation and same user-directed deferral as Sprint 2 — see that sprint's notes for the exact commands to finish this with a real browser.
 
 **Risks**
-- Guard ↔ login redirect loop if session predicate is inconsistent between the two — test both directions.
-- Suspense fallback flash on fast loads (acceptable; PageLoader is minimal).
-- Splitting ActivatorShell can regress the mobile Sheet nav — verify at <768px.
+- Guard ↔ login redirect loop: both guards read the same `useAuth().isAuthenticated`, so they can't disagree with each other by construction — not eliminated as a *category* of bug, but this specific implementation can't produce one.
+- Suspense fallback flash on fast loads: unverified visually (see above), but `PageLoader` is deliberately minimal (a single centered spinner) so any flash should be brief and unstyled-content-free.
+- Splitting ActivatorShell into Header+Sidebar could regress the mobile Sheet nav — the Sheet's content now renders the *extracted* `ActivatorSidebarNav` (identical JSX to before, just relocated), so the risk is structural-only; unverified visually.
 
 ---
 

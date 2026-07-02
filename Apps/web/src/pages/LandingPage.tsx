@@ -2,8 +2,6 @@ import { useState } from "react";
 import { ClientActivationStatus } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PublicHeader } from "@/components/layout/PublicHeader";
-import { PublicFooter } from "@/components/layout/PublicFooter";
 import { StepIndicator } from "@/components/sections/landing/StepIndicator";
 import { AccountForm } from "@/components/sections/landing/AccountForm";
 import { OtpStep } from "@/components/sections/landing/OtpStep";
@@ -63,10 +61,8 @@ export default function LandingPage() {
   const reset = () => { setInput(""); setView({ name: "STEP1" }); };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <PublicHeader />
-      <main className="flex-1">
-        <section className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+    <>
+      <section className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
           <div className="mb-10">
             <StepIndicator current={currentStep} />
           </div>
@@ -128,12 +124,10 @@ export default function LandingPage() {
               </Button>
             </div>
           )}
-        </section>
+      </section>
 
-        <WhoWeAre />
-        <StatsRow />
-      </main>
-      <PublicFooter />
-    </div>
+      <WhoWeAre />
+      <StatsRow />
+    </>
   );
 }

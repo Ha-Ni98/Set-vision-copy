@@ -6,18 +6,27 @@ import { ActiveRequestCard } from "@/components/sections/activator/ActiveRequest
 import { LiveTimer } from "@/components/shared/LiveTimer";
 import { DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { NotFoundState } from "@/components/shared/NotFoundState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { RequestCardSkeleton } from "@/components/shared/RequestCardSkeleton";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { Button } from "@/components/ui/button";
-import { Zap, KeyRound } from "lucide-react";
+import { Zap, KeyRound, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const ACTIVE_SLOTS_CAP = 3;
 
+// isLoading*/isError* are hardcoded false this sprint — Sprint 4's useActiveRequests /
+// usePendingActivations hooks drive them for real (two separate queries, two separate flags).
 export default function RequestsPage() {
   const { t } = useTranslation();
   const [active, setActive] = useState<ActiveRequestDTO[]>(MOCK_ACTIVE_REQUESTS);
   const [pool, setPool] = useState<PendingActivationDTO[]>(MOCK_PENDING_POOL);
+  const isLoadingActive = false;
+  const isErrorActive = false;
+  const isLoadingPending = false;
+  const isErrorPending = false;
 
   const slotsUsed = active.length;
 
@@ -61,7 +70,14 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        {active.length === 0 ? (
+        {isErrorActive ? (
+          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+        ) : isLoadingActive ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <RequestCardSkeleton />
+            <RequestCardSkeleton />
+          </div>
+        ) : active.length === 0 ? (
           <EmptyState icon={<Zap className="h-8 w-8" />} title={t("activator.requests.emptyActive.title")} body={t("activator.requests.emptyActive.body")} />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -80,35 +96,41 @@ export default function RequestsPage() {
           )}
         </div>
 
-        <DataTable
-          columns={columns}
-          data={pool}
-          getRowKey={(p) => p.id}
-          renderMobileRow={(p) => (
-            <div className="space-y-3 p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-foreground">{p.subscriptionLabel}</div>
-                <LiveTimer since={p.requestedAt} mode="wait" />
-              </div>
-              <div className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><KeyRound className="h-3 w-3" /> {p.keyMasked}</div>
-              <Button onClick={() => takeRequest(p.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP} className="w-full"><Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}</Button>
-            </div>
-          )}
-          emptyState={
-            <EmptyState
-              icon={<span className="text-5xl">📭</span>}
-              title={t("activator.requests.emptyPending.title")}
-              body={t("activator.requests.emptyPending.body")}
-              decoration={
-                <div className="mt-4 flex justify-center gap-1.5" aria-hidden>
-                  {[0, 1, 2].map((i) => (
-                    <span key={i} className="h-2 w-2 animate-pulse rounded-full bg-primary/50" style={{ animationDelay: `${i * 200}ms` }} />
-                  ))}
+        {isErrorPending ? (
+          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+        ) : isLoadingPending ? (
+          <TableSkeleton rows={4} columns={4} />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={pool}
+            getRowKey={(p) => p.id}
+            renderMobileRow={(p) => (
+              <div className="space-y-3 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-foreground">{p.subscriptionLabel}</div>
+                  <LiveTimer since={p.requestedAt} mode="wait" />
                 </div>
-              }
-            />
-          }
-        />
+                <div className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><KeyRound className="h-3 w-3" /> {p.keyMasked}</div>
+                <Button onClick={() => takeRequest(p.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP} className="w-full"><Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}</Button>
+              </div>
+            )}
+            emptyState={
+              <EmptyState
+                icon={<span className="text-5xl">📭</span>}
+                title={t("activator.requests.emptyPending.title")}
+                body={t("activator.requests.emptyPending.body")}
+                decoration={
+                  <div className="mt-4 flex justify-center gap-1.5" aria-hidden>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className="h-2 w-2 animate-pulse rounded-full bg-primary/50" style={{ animationDelay: `${i * 200}ms` }} />
+                    ))}
+                  </div>
+                }
+              />
+            }
+          />
+        )}
       </section>
     </div>
   );

@@ -100,12 +100,7 @@
   "activator.nav.history": { "en": "Activation History", "fr": "Historique des activations", "ar": "" },
 
   "activator.shell.notifications": { "en": "Notifications", "fr": "Notifications", "ar": "" },
-  "activator.shell.notif.newPending": { "en": "New pending request", "fr": "Nouvelle demande en attente", "ar": "" },
-  "activator.shell.notif.newPendingDetail": { "en": "Snapchat+ 1 Month · 2 min ago", "fr": "Snapchat+ 1 mois · il y a 2 min", "ar": "" },
-  "activator.shell.notif.completed": { "en": "Activation completed", "fr": "Activation terminée", "ar": "" },
-  "activator.shell.notif.completedDetail": { "en": "SV-…-0001 · 8 min ago", "fr": "SV-…-0001 · il y a 8 min", "ar": "" },
-  "activator.shell.notif.earningCredited": { "en": "Earning credited", "fr": "Gain crédité", "ar": "" },
-  "activator.shell.notif.earningCreditedDetail": { "en": "+350 DZD · 1 hour ago", "fr": "+350 DZD · il y a 1 heure", "ar": "" },
+  "activator.shell.noNotifications": { "en": "No notifications yet", "fr": "Aucune notification pour le moment", "ar": "" },
   "activator.shell.signOut": { "en": "Sign Out", "fr": "Se déconnecter", "ar": "" },
   "activator.shell.signOutTitle": { "en": "Sign out?", "fr": "Se déconnecter ?", "ar": "" },
   "activator.shell.signOutBody": { "en": "You'll need to log in again to access the activator portal.", "fr": "Vous devrez vous reconnecter pour accéder au portail activateur.", "ar": "" },

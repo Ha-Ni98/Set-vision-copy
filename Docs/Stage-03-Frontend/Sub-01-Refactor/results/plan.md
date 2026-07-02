@@ -83,7 +83,7 @@ Styling: port oklch tokens from `styles.css` into `src/index.css` + `tailwind.co
 
 ---
 
-## 3. Layouts & States
+## 3. Layouts & States — ✅ Done (Sprint 3, 2026-07-02 — see `sprints.md`)
 
 ### 3.1 Layouts
 

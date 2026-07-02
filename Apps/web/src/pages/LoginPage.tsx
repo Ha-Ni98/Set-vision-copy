@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, type LoginCommand } from "@my-app/contract";
@@ -13,9 +13,11 @@ import { LanguageToggle } from "@/components/shared/LanguageToggle";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
+// Redirect-if-already-authenticated is handled by the router's PublicOnlyRoute guard,
+// which never mounts this page for an authenticated session.
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
   const nav = useNavigate();
   const [showP, setShowP] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,10 +28,6 @@ export default function LoginPage() {
     resolver: zodResolver(LoginSchema),
     mode: "onSubmit",
   });
-
-  useEffect(() => {
-    if (isAuthenticated) nav("/dashboard");
-  }, [isAuthenticated, nav]);
 
   const submit = (data: LoginCommand) => {
     setErr("");
