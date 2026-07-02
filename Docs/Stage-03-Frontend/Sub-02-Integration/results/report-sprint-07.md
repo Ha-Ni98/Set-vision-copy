@@ -2,7 +2,7 @@
 sprint: 7
 title: Inventory — Sets + Lots + Cards
 status: ✅ Done
-commit: tbd
+commit: 5179705
 ---
 
 # Sprint 7 Report — Inventory
