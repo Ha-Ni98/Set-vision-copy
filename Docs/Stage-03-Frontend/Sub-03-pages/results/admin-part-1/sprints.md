@@ -33,7 +33,7 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 1 — FOUNDATION
 
-### Sprint 1: Foundation — Schemas, i18n, Routes & Lazy scaffolding   — Status: ⬜ Pending
+### Sprint 1: Foundation — Schemas, i18n, Routes & Lazy scaffolding   — Status: ✅ Done
 
 **Goals**
 - Every form's co-located Zod schema exists and its `z.infer` is assignable to the matching contract Command.
@@ -41,14 +41,21 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 - `/admin/*` mounts 5 lazy route stubs under `AdminGuard`/`AdminLayout` **stubs**; `tsc` + lazy loading pass with zero UI built.
 
 **Tasks**
-- [ ] Co-located schemas (#foundation): `pages/admin/activators/components/{create-activator,update-activator,record-payment}.schema.ts`; `pages/admin/distributors/components/{create-distributor,update-distributor}.schema.ts`. Constraints per plan §D: `fullName` 3–100; `username` 3–30 `^[A-Za-z0-9_]+$`; `phone` `^(?:\+213|0)(5|6|7)\d{8}$`; `storeName` 2–100; `amount` `>0` `.multipleOf(0.01)`; `initialCredits` optional `≥0` default 0; `wilayaId`/`communeId` `z.uuid()`. Add a compile-time assignability check to each so it can't drift from `CreateActivatorCommand`/`UpdateActivatorCommand`/`RecordPaymentCommand`/`CreateDistributorCommand`/`UpdateDistributorCommand`.
-- [ ] i18n keys (#i18n): `admin.shell.*`, `admin.dashboard.*`, `admin.activators.*`, `admin.distributors.*`, and reusable `common.actions.*` (save, cancel, delete, edit, view, retry, clear, add, enable, disable, confirm, reset-password, record-payment, sign-out). Flat key → `{ en, fr, ar:"" }`.
-- [ ] Route scaffolding (#foundation): register `/admin`, `/admin/activators`, `/admin/activators/:id`, `/admin/distributors`, `/admin/distributors/:id` with `React.lazy()` page stubs (modules returning `null`), wrapped in `<Suspense fallback={<PageLoader/>}>`, under **passthrough** `AdminGuard` + `AdminLayout` stubs (bare `<Outlet/>`) created here and fleshed out in S2. Keep axios loop-safe 401 handling intact.
+- [x] Co-located schemas (#foundation): `pages/admin/activators/components/{create-activator,update-activator,record-payment}.schema.ts`; `pages/admin/distributors/components/{create-distributor,update-distributor}.schema.ts`. Constraints per plan §D: `fullName` 3–100; `username` 3–30 `^[A-Za-z0-9_]+$`; `phone` `^(?:\+213|0)(5|6|7)\d{8}$`; `storeName` 2–100; `amount` `>0` `.multipleOf(0.01)`; `initialCredits` optional `≥0` default 0; `wilayaId`/`communeId` `z.uuid()`. Add a compile-time assignability check to each so it can't drift from `CreateActivatorCommand`/`UpdateActivatorCommand`/`RecordPaymentCommand`/`CreateDistributorCommand`/`UpdateDistributorCommand`.
+- [x] i18n keys (#i18n): `admin.shell.*`, `admin.dashboard.*`, `admin.activators.*`, `admin.distributors.*`, and reusable `common.actions.*` (save, cancel, delete, edit, view, retry, clear, add, enable, disable, confirm, reset-password, record-payment, sign-out). Flat key → `{ en, fr, ar:"" }`.
+- [x] Route scaffolding (#foundation): register `/admin`, `/admin/activators`, `/admin/activators/:id`, `/admin/distributors`, `/admin/distributors/:id` with `React.lazy()` page stubs (modules returning `null`), wrapped in `<Suspense fallback={<PageLoader/>}>`, under **passthrough** `AdminGuard` + `AdminLayout` stubs (bare `<Outlet/>`) created here and fleshed out in S2. Keep axios loop-safe 401 handling intact.
 
 **Validation**
-- [ ] No inline strings — keys resolve via `useTranslation`. / [ ] `tsc --noEmit` clean.
-- [ ] Each schema `z.infer` assignable to its contract Command (assertion compiles).
-- [ ] Lazy routes resolve to stubs; existing Vitest green; no `/src` tests. / [ ] Committed on green.
+- [x] No inline strings — keys resolve via `useTranslation`. / [x] `tsc --noEmit` clean.
+- [x] Each schema `z.infer` assignable to its contract Command (assertion compiles).
+- [x] Lazy routes resolve to stubs; existing Vitest green; no `/src` tests. / [x] Committed on green.
+
+**Execution notes (see report-sprint-01.md for full detail):**
+- Page stubs render `<></>` rather than literal `null` — `withSuspense`'s existing type (`LazyExoticComponent<() => JSX.Element>`) requires `JSX.Element`; an empty fragment satisfies it without a cast and is visually identical to "nothing yet."
+- i18n was authored as a full first pass (shell + all 4 page namespaces, ~115 keys, all spec-verbatim) rather than validation-messages-only, per this sprint's own task list naming all 4 namespaces as targets — de-risks S2–S6 from needing further translations.json churn. Also pre-added `enums.cardStat.*`/`enums.orderStat.*` (needed by S3's Distributor Detail compact tables).
+- **Discovered gap for S3:** `StatusBadge` is hard-typed to `ActivationStat` only (`TONE: Record<ActivationStat, Tone>`) — Distributor Detail's Cards/Orders history (CardStat/OrderStat) and the enabled/disabled column will need it generalized or a sibling component. Not fixed here (out of S1 scope); flagged for S3.
+- **Discovered gap for S2:** `useAuth()` exposes no `role` — only `session?.role` used internally for the socket. The real `AdminGuard` (S2) will need role, via either exposing it on `AuthCtx` or calling `useSession()` directly.
+- **Tooling correction:** `front-end-test-rules.md`/phase docs say `.spec.tsx`; the actual `vitest.config.ts` `include` glob and all 37 existing test files use `.test.tsx`/`.test.ts`. `.spec.tsx` files would silently never run. Resolved toward the working convention — **S7 test files will use `.test.tsx`**, not `.spec.tsx`.
 
 **Risks**
 - Schema over-tightening breaking assignability to the loose contract Command → keep refinements superset-compatible.

@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, type LazyExoticComponent, type JSX } from "r
 import { createBrowserRouter, Link, RouterProvider } from "react-router-dom";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { ActivatorLayout } from "@/components/layout/ActivatorLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import { AdminGuard } from "@/components/layout/AdminGuard";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/layout/ProtectedRoute";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { NotFoundState } from "@/components/shared/NotFoundState";
@@ -16,6 +18,14 @@ const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DashboardPage = lazy(() => import("@/pages/activator/DashboardPage"));
 const RequestsPage = lazy(() => import("@/pages/activator/RequestsPage"));
 const HistoryPage = lazy(() => import("@/pages/activator/HistoryPage"));
+
+const AdminDashboardPage = lazy(() => import("@/pages/admin/DashboardPage"));
+const AdminActivatorsPage = lazy(() => import("@/pages/admin/activators/ActivatorsPage"));
+const AdminActivatorDetailPage = lazy(() => import("@/pages/admin/activators/ActivatorDetailPage"));
+const AdminDistributorsPage = lazy(() => import("@/pages/admin/distributors/DistributorsPage"));
+const AdminDistributorDetailPage = lazy(
+  () => import("@/pages/admin/distributors/DistributorDetailPage"),
+);
 
 const withSuspense = (Component: LazyExoticComponent<() => JSX.Element>) => (
   <Suspense fallback={<PageLoader />}>
@@ -42,13 +52,19 @@ function CatchAllRoute() {
       />
     </div>
   );
-  return isAuthenticated ? <ActivatorLayout>{content}</ActivatorLayout> : <PublicLayout>{content}</PublicLayout>;
+  return isAuthenticated ? (
+    <ActivatorLayout>{content}</ActivatorLayout>
+  ) : (
+    <PublicLayout>{content}</PublicLayout>
+  );
 }
 
 const router = createBrowserRouter([
   {
     element: <PublicLayout />,
-    children: [{ index: true, element: withSuspense(LandingPage), errorElement: <RouteErrorBoundary /> }],
+    children: [
+      { index: true, element: withSuspense(LandingPage), errorElement: <RouteErrorBoundary /> },
+    ],
   },
   {
     element: <PublicOnlyRoute />,
@@ -72,9 +88,56 @@ const router = createBrowserRouter([
       {
         element: <ActivatorLayout />,
         children: [
-          { path: "/dashboard", element: withSuspense(DashboardPage), errorElement: <RouteErrorBoundary /> },
-          { path: "/requests", element: withSuspense(RequestsPage), errorElement: <RouteErrorBoundary /> },
-          { path: "/history", element: withSuspense(HistoryPage), errorElement: <RouteErrorBoundary /> },
+          {
+            path: "/dashboard",
+            element: withSuspense(DashboardPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/requests",
+            element: withSuspense(RequestsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/history",
+            element: withSuspense(HistoryPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    element: <AdminGuard />,
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          {
+            path: "/admin",
+            element: withSuspense(AdminDashboardPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/activators",
+            element: withSuspense(AdminActivatorsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/activators/:id",
+            element: withSuspense(AdminActivatorDetailPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/distributors",
+            element: withSuspense(AdminDistributorsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/distributors/:id",
+            element: withSuspense(AdminDistributorDetailPage),
+            errorElement: <RouteErrorBoundary />,
+          },
         ],
       },
     ],
