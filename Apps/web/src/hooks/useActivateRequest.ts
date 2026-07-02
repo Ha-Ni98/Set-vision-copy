@@ -12,8 +12,7 @@ export function useActivateRequest() {
     onSuccess: () => {
       toast.success(t("activator.requests.card.doneToast"));
       queryClient.invalidateQueries({ queryKey: qk.activations.active() });
-      // Deliberately still the raw ["activator","my-stats"] literal — see useTakeActivation.
-      queryClient.invalidateQueries({ queryKey: ["activator", "my-stats"] });
+      queryClient.invalidateQueries({ queryKey: qk.activators.myStats() });
       queryClient.invalidateQueries({ queryKey: qk.activations.myHistoryAll() });
       queryClient.invalidateQueries({ queryKey: qk.activations.recent() });
     },

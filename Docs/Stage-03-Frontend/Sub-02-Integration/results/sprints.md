@@ -155,7 +155,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 5: People & Money — Activators + Admins + Payments   — Status: ⬜ Pending
+### Sprint 5: People & Money — Activators + Admins + Payments   — Status: ✅ Done
 
 **Goals**
 - Full admin people-management pipeline: 9 `ACTIVATOR_ROUTES` (extending the existing service), 7 `ADMIN_ROUTES`, 3 `PAYMENT_ROUTES` (plan §2.4–§2.6), with the D4 key normalization landed.

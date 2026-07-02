@@ -13,10 +13,7 @@ export function useTakeActivation() {
       toast.success(t("activator.requests.takenToast"));
       queryClient.invalidateQueries({ queryKey: qk.activations.pending() });
       queryClient.invalidateQueries({ queryKey: qk.activations.active() });
-      // Deliberately still the raw ["activator","my-stats"] literal (singular), matching
-      // useMyStats's own current key exactly — the D4 rename to qk.activators.myStats()
-      // happens atomically across every site in Sprint 5, not piecemeal here.
-      queryClient.invalidateQueries({ queryKey: ["activator", "my-stats"] });
+      queryClient.invalidateQueries({ queryKey: qk.activators.myStats() });
     },
   });
 }
