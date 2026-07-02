@@ -2,7 +2,7 @@
 sprint: 4
 title: Realtime Client
 status: ✅ Done
-commit: tbd
+commit: 84729de
 ---
 
 # Sprint 4 Report — Realtime Client
