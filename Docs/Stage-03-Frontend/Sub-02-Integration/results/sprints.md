@@ -68,7 +68,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 2: Auth Domain   — Status: ⬜ Pending
+### Sprint 2: Auth Domain   — Status: ✅ Done
 
 **Goals**
 - Real session lifecycle over `AUTH_ROUTES`: login/refresh/logout/me wired to the token store; `stubSession` deleted; cold-start restore works (plan §2.1).
