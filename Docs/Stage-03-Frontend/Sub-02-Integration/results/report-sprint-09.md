@@ -2,7 +2,7 @@
 sprint: 9
 title: Statistics & Closeout
 status: ✅ Done
-commit: TBD
+commit: 6b8f3d2
 ---
 
 # Sprint 9 Report — Statistics & Closeout
