@@ -2,7 +2,7 @@
 sprint: 3
 title: Primitives — Activators + Distributors
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: 0ec6dbf
 ---
 
 # Sprint 3 Report — Activators + Distributors Primitives
