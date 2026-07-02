@@ -13,8 +13,15 @@ export function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-const NUMBER_LOCALE: Record<Language, string> = { en: "en-US", fr: "fr-FR" };
+const LOCALE_TAG: Record<Language, string> = { en: "en-US", fr: "fr-FR" };
 
 export function formatDZD(amount: number, language: Language = "en"): string {
-  return `${new Intl.NumberFormat(NUMBER_LOCALE[language]).format(amount)} DZD`;
+  return `${new Intl.NumberFormat(LOCALE_TAG[language]).format(amount)} DZD`;
+}
+
+export function formatDateTime(iso: string, language: Language = "en"): string {
+  return new Intl.DateTimeFormat(LOCALE_TAG[language], {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
 }

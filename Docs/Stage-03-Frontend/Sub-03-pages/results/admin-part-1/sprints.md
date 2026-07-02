@@ -65,7 +65,7 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 2 — PRIMITIVES & STATES
 
-### Sprint 2: Primitives — Admin Shell + Dashboard   — Status: ⬜ Pending
+### Sprint 2: Primitives — Admin Shell + Dashboard   — Status: ✅ Done
 
 **Goals**
 - `/admin/*` renders inside the real `AdminLayout` (guard + sidebar + header + bell), session/role states handled, admin socket connects on mount.
@@ -73,24 +73,30 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 **Tasks**
 - *Shell* (plan §C):
-  - [ ] `AdminGuard.tsx` (#state): role-checked wrapper over `ProtectedRoute`/`useSession` — session resolving → full-page spinner (the *only* full-page state, rules §4); invalid/expired → redirect `/login`; authed non-admin → redirect.
-  - [ ] `AdminLayout.tsx` (#ui/#wiring): chrome + `<Outlet/>`; `connectRoleSocket(UserRole.ADMIN)` on mount / `disconnectRoleSocket()` on unmount — **realtime only, never a data `useEffect`**.
-  - [ ] `AdminSidebar.tsx` (#ui): full conception nav; Part-1 items as active-highlightable `NavLink`s, all other groups (Orders, Sets & Lots, Cards, Activations, Statistics, Settings, Logs) as plain `<Link>` (scope confinement).
-  - [ ] `AdminHeader.tsx` (#ui): `Logo`, `LanguageToggle` (EN/FR), `ThemeToggle`, admin-name menu → **Sign Out** `AlertDialog` (→ `useLogout` → `disconnectRoleSocket()` → redirect `/login`).
-  - [ ] `NotificationBell.tsx` (#ui/#state): bell chrome + `useRealtimeStatus()` reconnect indicator. **Feed/badge deferred (§F-6)** — idle bell, no invented event store.
+  - [x] `AdminGuard.tsx` (#state): role-checked wrapper over `ProtectedRoute`/`useSession` — session resolving → full-page spinner (the *only* full-page state, rules §4); invalid/expired → redirect `/login`; authed non-admin → redirect.
+  - [x] `AdminLayout.tsx` (#ui/#wiring): chrome + `<Outlet/>`; ~~`connectRoleSocket(UserRole.ADMIN)` on mount / `disconnectRoleSocket()` on unmount~~ **no socket management — see execution notes**.
+  - [x] `AdminSidebar.tsx` (#ui): full conception nav; Part-1 items as active-highlightable `NavLink`s, all other groups (Orders, Sets & Lots, Cards, Activations, Statistics, Settings, Logs) as plain `<Link>` (scope confinement).
+  - [x] `AdminHeader.tsx` (#ui): `Logo`, `LanguageToggle` (EN/FR), `ThemeToggle`, admin-name menu → **Sign Out** `AlertDialog` (→ `useLogout` → `disconnectRoleSocket()` → redirect `/login`).
+  - [x] `NotificationBell.tsx` (#ui/#state): bell chrome + `useRealtimeStatus()` reconnect indicator. **Feed/badge deferred (§F-6)** — idle bell, no invented event store.
 - *Dashboard* (plan §D1.2–3):
-  - [ ] `pages/admin/DashboardPage.tsx` static region layout (#ui).
-  - [ ] `StatsRow.tsx` (#ui): 4× `StatCard`, each with independent `StatCardSkeleton` slot.
-  - [ ] `FrozenActivationsTable.tsx` / `RecentActivationsTable.tsx` / `PendingActivationsTable.tsx` (#ui): `DataTable` + memoized `ColumnDef[]`; **reduced column sets per §F** (no `frozen_since`; no recent activator/client/store/duration; no pending client). Frozen row exposes Activate/Cancel callback props.
-  - [ ] `ResolveFreezeDialog.tsx` (#ui): presentational `AlertDialog`, Activate & Cancel variants; Cancel copy states "the card will be marked failed."
-  - [ ] States (#state): `TableSkeleton` per table; `EmptyState` variants (frozen = green "all running smoothly", recent, pending); compact `NotFoundState` with a `Retry` `action` slot. `LiveTimer` for pending wait / relative times.
+  - [x] `pages/admin/DashboardPage.tsx` static region layout (#ui).
+  - [x] `StatsRow.tsx` (#ui): 4× `StatCard`, each with independent `StatCardSkeleton` slot.
+  - [x] `FrozenActivationsTable.tsx` / `RecentActivationsTable.tsx` / `PendingActivationsTable.tsx` (#ui): `DataTable` + memoized `ColumnDef[]`; **reduced column sets per §F** (no `frozen_since`; no recent activator/client/store/duration; no pending client). Frozen row exposes Activate/Cancel callback props.
+  - [x] `ResolveFreezeDialog.tsx` (#ui): presentational `AlertDialog`, Activate & Cancel variants; Cancel copy states "the card will be marked failed."
+  - [x] States (#state): `TableSkeleton` per table; `EmptyState` variants (frozen = green "all running smoothly", recent, pending); compact `NotFoundState` with a `Retry` `action` slot. `LiveTimer` for pending wait / relative times.
 
 **Validation**
-- [ ] All labels via `useTranslation`. / [ ] `tsc` clean. / [ ] No data `useEffect` (socket wiring is not fetching).
-- [ ] Guard states verified (resolving / invalid / non-admin); Dashboard renders all three states from props; layout intact. / [ ] Existing Vitest green. / [ ] Committed.
+- [x] All labels via `useTranslation`. / [x] `tsc` clean. / [x] No data `useEffect` (socket wiring is not fetching).
+- [x] Guard states verified (resolving / invalid / non-admin) — **in a real headless browser**, not just code review; Dashboard renders all three states from props; layout intact. / [x] Existing Vitest green. / [x] Committed.
 
-**Risks**
-- Session-gate flash; socket listener leak if unmount cleanup missed; sidebar active-state on nested routes; skeleton↔data column shift.
+**Execution notes (see report-sprint-02.md for full detail):**
+- **Correction vs. this sprint's own task list:** `AdminLayout` does **not** call `connectRoleSocket`/`disconnectRoleSocket`. Closer reading of `AuthProvider.tsx` (Sub-02) showed it already owns the role-socket lifecycle globally, keyed on session+role — connects the moment any admin session resolves, regardless of route. Having `AdminLayout` manage it too would double-connect on mount and, worse, could disconnect a socket `AuthProvider` still wants alive if the admin ever navigates away and back without a role change (its effect wouldn't re-fire to reconnect). `AdminLayout` only renders chrome.
+- **S1's flagged `useAuth()`-has-no-`role` gap resolved without touching `AuthProvider.tsx`:** `AdminGuard` calls `useSession()` directly (same cache entry, no extra network call) rather than extending `AuthCtx`.
+- **Redirect-target refinement:** authed-non-admin redirects to `/dashboard`, not `/login` (the task text didn't specify a target). Sending an already-authenticated user to `/login` would just bounce them straight back out via `PublicOnlyRoute` — `/dashboard` is their actual home.
+- **`LiveTimer` (existing, Sub-01) already implements the spec's exact wait-tier thresholds** (green `<5m` / amber `5–15m` / red `>15m` via its `mode="wait"`) — `PendingActivationsTable` uses it directly. **This supersedes Sprint 4's planned bespoke `useMemo` color-map task**, which sprints.md's S4 section should drop when reached.
+- Added `formatDateTime()` to `lib/utils.ts` (no date-formatting helper existed anywhere in the codebase yet) and extended `nav-links.ts` additively with `NavGroup`/`ADMIN_NAV_LINKS` (existing `NavLink`/`ACTIVATOR_NAV_LINKS` untouched).
+- Added 4 more i18n keys discovered while building (bell empty-state, section-error body, activate-confirm body — the last needed to avoid a Radix a11y console warning on the dialog, which would violate "console silent") and one column-header key (fixing a leftover broken placeholder caught before commit).
+- **Browser-verified**, not just gated by `tsc`/`vitest`: started the Vite dev server (created `.env` from `.env.example`; none existed), drove headless Chromium (already locally cached — zero network fetch) to `/admin`, `/login`, `/admin/activators` unauthenticated. All three resolved correctly — both admin routes client-side-redirect to a cleanly rendered `/login` (screenshot-confirmed, not blank). One expected console error (`ERR_CONNECTION_REFUSED` from `useSession()`'s fetch — no backend running, which is exactly the mechanism that makes the redirect-on-no-session path exercisable without one) and one pre-existing React Router future-flag warning (present on `/login` too, predates this sprint). No new console errors/warnings introduced. **Not verified:** the authenticated admin-shell rendering (sidebar/header/skeletons) — would need a live backend + seeded admin account, which don't exist in this environment; noted rather than assumed.
 
 ---
 
@@ -130,7 +136,7 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 **Tasks**
 - *Dashboard* (plan §D1.1/4/5, §F):
   - [ ] Reads (#wiring): `useActivationsSummary` + `useActivatorsSummary` + `useDistributorsSummary` → `StatsRow` (independent per-card loading/error); `useAdminActivations({ state: ActivationStat.FREEZE, limit: 50 })` → Frozen; `useRecentActivations` → Recent; `usePendingActivations` → Pending. **No `useDashboardStats` (§F-1); no fetch `useEffect`.**
-  - [ ] Derived (#perf): `useMemo` completed = Σ `byState` (`ACTIVATED` + `ACTIVATED_BY_ADMIN`); `useMemo` pending wait-tier map (green `<5m` / amber `5–15m` / red `>15m`).
+  - [ ] Derived (#perf): `useMemo` completed = Σ `byState` (`ACTIVATED` + `ACTIVATED_BY_ADMIN`). ~~`useMemo` pending wait-tier map~~ **superseded — `PendingActivationsTable` (built Sprint 2) already colors via `LiveTimer`'s existing `mode="wait"` thresholds; nothing to build here.**
   - [ ] Mutations (#wiring): `useActivateByAdmin` / `useCancelByAdmin` via `ResolveFreezeDialog` (`mutate(id)`); in-hook invalidation; failure → global toast, row stays, dialog closes only on success. Region error → `NotFoundState` Retry → `refetch`; empty → `EmptyState`.
 - *Distributors* (plan §D4.1/4, §D5.1/4):
   - [ ] List reads (#wiring): `useDistributorsSummary` + `useDistributors({ page, limit, search, wilayaId, communeId })`; filter selects `useWilayas()` + `useCommunes(wilayaId)` (`enabled: !!wilayaId`).
