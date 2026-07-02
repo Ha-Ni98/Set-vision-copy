@@ -42,6 +42,8 @@
   --shadow-glow: 0 8px 40px -12px oklch(0.55 0.25 295 / 0.45);
   --gradient-primary: linear-gradient(135deg, oklch(0.55 0.25 295), oklch(0.45 0.22 295));
   --gradient-surface: linear-gradient(180deg, oklch(0.985 0.01 295), oklch(0.965 0.025 295));
+  --login-glow: radial-gradient(60% 50% at 50% 0%, oklch(0.95 0.04 295 / 0.7), transparent),
+    radial-gradient(50% 40% at 80% 100%, oklch(0.95 0.04 295 / 0.5), transparent);
 }
 
 .dark {
@@ -82,6 +84,8 @@
   --shadow-card: 0 4px 24px -8px oklch(0 0 0 / 0.5);
   --shadow-glow: 0 8px 40px -12px oklch(0.65 0.22 295 / 0.5);
   --gradient-surface: linear-gradient(180deg, oklch(0.18 0.05 280), oklch(0.14 0.04 280));
+  --login-glow: radial-gradient(60% 50% at 50% 0%, oklch(0.3 0.1 295 / 0.5), transparent),
+    radial-gradient(50% 40% at 80% 100%, oklch(0.3 0.1 295 / 0.4), transparent);
 }
 
 @layer base {

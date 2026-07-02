@@ -1,17 +1,19 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 
-const STEPS = ["Enter Key", "Account Info", "Activation"];
+const STEP_KEYS = ["public.landing.steps.enterKey", "public.landing.steps.accountInfo", "public.landing.steps.activation"];
 
 export function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
+  const { t } = useTranslation();
   return (
     <div className="mx-auto flex max-w-md items-center justify-between px-2">
-      {STEPS.map((label, i) => {
+      {STEP_KEYS.map((key, i) => {
         const step = i + 1;
         const completed = step < current;
         const active = step === current;
         return (
-          <div key={label} className="flex flex-1 items-center last:flex-none">
+          <div key={key} className="flex flex-1 items-center last:flex-none">
             <div className="flex flex-col items-center">
               <div
                 className={cn(
@@ -26,9 +28,9 @@ export function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
               <span className={cn(
                 "mt-2 text-xs font-medium whitespace-nowrap transition-colors",
                 active ? "text-foreground" : "text-muted-foreground"
-              )}>{label}</span>
+              )}>{t(key)}</span>
             </div>
-            {step < STEPS.length && (
+            {step < STEP_KEYS.length && (
               <div className="mx-2 mb-6 h-0.5 flex-1 bg-muted relative overflow-hidden">
                 <div className={cn(
                   "absolute inset-0 transition-transform duration-500 origin-left",

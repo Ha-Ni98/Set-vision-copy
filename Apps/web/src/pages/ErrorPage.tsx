@@ -1,8 +1,10 @@
 // Temporary — ported from App-MVP's router.tsx DefaultErrorComponent as a react-router-dom
 // errorElement. Replaced by a layout-preserving local NotFoundState/isError treatment in Sprint 3.
 import { Link, useRouteError } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ErrorPage() {
+  const { t } = useTranslation();
   const error = useRouteError();
   const message = error instanceof Error ? error.message : String(error);
 
@@ -25,10 +27,8 @@ export default function ErrorPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          An unexpected error occurred. Please try again.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("common.errors.crashTitle")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("common.errors.crashBody")}</p>
         {import.meta.env.DEV && message && (
           <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
             {message}
@@ -39,13 +39,13 @@ export default function ErrorPage() {
             onClick={() => window.location.reload()}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            {t("common.actions.tryAgain")}
           </button>
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            {t("common.actions.goHome")}
           </Link>
         </div>
       </div>

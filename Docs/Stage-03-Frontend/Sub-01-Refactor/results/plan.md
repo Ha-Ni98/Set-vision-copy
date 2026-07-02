@@ -54,7 +54,7 @@ Routing (`App.tsx`): `React.lazy` top-level routes + `<Suspense fallback={<PageL
 
 ---
 
-## 2. UI Standardization & i18n
+## 2. UI Standardization & i18n — ✅ Done (Sprint 2, 2026-07-02 — see `sprints.md`)
 
 ### 2.1 Duplicates → `shared/`
 

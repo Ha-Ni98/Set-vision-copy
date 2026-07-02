@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ClientActivationStatus } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -9,17 +10,27 @@ import { OtpStep } from "@/components/sections/landing/OtpStep";
 import { CompletedStep } from "@/components/sections/landing/CompletedStep";
 import { StatsRow } from "@/components/sections/landing/StatsRow";
 import { WhoWeAre } from "@/components/sections/landing/WhoWeAre";
-import { lookupKey, MockKey } from "@/lib/mock-data";
+import { lookupKey, type MockKeyRecord } from "@/lib/mock-data";
 import { AlertCircle, CheckCircle2, KeyRound, RotateCcw, Loader2 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type View =
   | { name: "STEP1" }
-  | { name: "STEP2"; key: MockKey }
-  | { name: "STEP3_OTP"; key: MockKey }
-  | { name: "STEP3_DONE"; key: MockKey }
-  | { name: "MESSAGE"; tone: "success" | "error"; title: string; body: string };
+  | { name: "STEP2"; key: MockKeyRecord }
+  | { name: "STEP3_OTP"; key: MockKeyRecord }
+  | { name: "STEP3_DONE"; key: MockKeyRecord }
+  | { name: "MESSAGE"; tone: "success" | "error"; titleKey: string; bodyKey: string };
+
+const PENDING_LIKE = new Set<ClientActivationStatus>([
+  ClientActivationStatus.READY,
+  ClientActivationStatus.SUBMITTED,
+  ClientActivationStatus.PROCESSING,
+  ClientActivationStatus.UNDER_REVIEW,
+  ClientActivationStatus.NEEDS_CORRECTION,
+]);
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const [view, setView] = useState<View>({ name: "STEP1" });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,21 +46,16 @@ export default function LandingPage() {
     setTimeout(() => {
       const k = lookupKey(input);
       setLoading(false);
-      switch (k.status) {
-        case "ACTIVE":
-        case "PENDING":
-        case "INFORMATION_ERROR":
-          setView({ name: "STEP2", key: k }); break;
-        case "OTP_REQUIRED":
-          setView({ name: "STEP3_OTP", key: k }); break;
-        case "COMPLETED":
-          setView({ name: "STEP3_DONE", key: k }); break;
-        case "USED":
-          setView({ name: "MESSAGE", tone: "success", title: "Already activated", body: "This key has already been used. Thank you!" }); break;
-        case "DISABLED":
-          setView({ name: "MESSAGE", tone: "error", title: "Key deactivated", body: "This key has been deactivated. Contact support." }); break;
-        default:
-          setView({ name: "MESSAGE", tone: "error", title: "Key not found", body: "This key does not exist. Please check and try again." });
+      if (PENDING_LIKE.has(k.status)) {
+        setView({ name: "STEP2", key: k });
+      } else if (k.status === ClientActivationStatus.NEEDS_OTP) {
+        setView({ name: "STEP3_OTP", key: k });
+      } else if (k.status === ClientActivationStatus.ACTIVATED) {
+        setView({ name: "STEP3_DONE", key: k });
+      } else if (k.status === ClientActivationStatus.FAILED) {
+        setView({ name: "MESSAGE", tone: "error", titleKey: "public.landing.message.failedTitle", bodyKey: "public.landing.message.failedBody" });
+      } else {
+        setView({ name: "MESSAGE", tone: "error", titleKey: "public.landing.message.invalidTitle", bodyKey: "public.landing.message.invalidBody" });
       }
     }, 500);
   };
@@ -72,9 +78,9 @@ export default function LandingPage() {
                   <KeyRound className="h-7 w-7" />
                 </div>
                 <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-                  Enter Your Activation Key
+                  {t("public.landing.verify.title")}
                 </h1>
-                <p className="text-muted-foreground">Scratch your card and enter the key below</p>
+                <p className="text-muted-foreground">{t("public.landing.verify.subtitle")}</p>
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value.toUpperCase())}
@@ -83,7 +89,7 @@ export default function LandingPage() {
                   autoFocus
                 />
                 <Button type="submit" disabled={loading || !input.trim()} className="h-12 w-full text-base sm:w-auto sm:min-w-[220px]">
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : "Verify Key"}
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("public.landing.verify.verifying")}</> : t("public.landing.verify.submit")}
                 </Button>
               </form>
             )}
@@ -93,8 +99,8 @@ export default function LandingPage() {
                 <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${view.tone === "success" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
                   {view.tone === "success" ? <CheckCircle2 className="h-9 w-9" /> : <AlertCircle className="h-9 w-9" />}
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">{view.title}</h2>
-                <p className="text-muted-foreground">{view.body}</p>
+                <h2 className="text-2xl font-bold text-foreground">{t(view.titleKey)}</h2>
+                <p className="text-muted-foreground">{t(view.bodyKey)}</p>
               </div>
             )}
 
@@ -111,21 +117,17 @@ export default function LandingPage() {
             )}
 
             {view.name === "STEP3_DONE" && (
-              <CompletedStep username={view.key.snap_username ?? view.key.client_data?.snap_username ?? "fatima_z"} />
+              <CompletedStep username={view.key.accountUsername} />
             )}
           </div>
 
           {view.name !== "STEP1" && (
             <div className="mt-6 text-center">
               <Button variant="outline" onClick={reset}>
-                <RotateCcw className="mr-2 h-4 w-4" /> Check Another Key
+                <RotateCcw className="mr-2 h-4 w-4" /> {t("public.landing.verify.checkAnother")}
               </Button>
             </div>
           )}
-
-          <p className="mt-8 text-center text-xs text-muted-foreground">
-            Demo keys: <span className="font-mono">SV-2026-AAAA-1111</span>, <span className="font-mono">…BBBB-2222</span>, <span className="font-mono">…CCCC-3333</span>, <span className="font-mono">…DDDD-4444</span>, <span className="font-mono">…EEEE-5555</span>, <span className="font-mono">…FFFF-6666</span>, <span className="font-mono">…GGGG-7777</span>
-          </p>
         </section>
 
         <WhoWeAre />

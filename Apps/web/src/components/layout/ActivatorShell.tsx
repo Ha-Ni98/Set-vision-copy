@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { LanguageToggle } from "@/components/shared/LanguageToggle";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -10,20 +11,23 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Bell, Menu, LayoutDashboard, Zap, History, ChevronDown, LogOut, ChevronsUpDown } from "lucide-react";
+import { Bell, Menu, LayoutDashboard, Zap, History, LogOut, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Guard is folded into the shell (temporary — Sprint 3 splits this into a router-level
 // ProtectedRoute + ActivatorLayout per the plan; TanStack's file-route guard had no
 // direct nested-route equivalent yet in this sprint's plain react-router-dom setup).
+// Nav data stays local here — moving it to config/nav-links.ts is Sprint 3 scope.
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: null as null | number },
-  { to: "/requests", label: "Active Requests", icon: Zap, badge: 4 },
-  { to: "/history", label: "Activation History", icon: History, badge: null },
+  { to: "/dashboard", labelKey: "activator.nav.dashboard", icon: LayoutDashboard, badge: null as null | number },
+  { to: "/requests", labelKey: "activator.nav.requests", icon: Zap, badge: 4 },
+  { to: "/history", labelKey: "activator.nav.history", icon: History, badge: null },
 ] as const;
 
 export function ActivatorShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { isAuthenticated, displayName, logout } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -56,7 +60,7 @@ export function ActivatorShell({ children }: { children: ReactNode }) {
           >
             <span className="flex items-center gap-3">
               <Icon className="h-4 w-4" />
-              {item.label}
+              {t(item.labelKey)}
             </span>
             {item.badge !== null && (
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-destructive-foreground">
@@ -99,15 +103,24 @@ export function ActivatorShell({ children }: { children: ReactNode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("activator.shell.notifications")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex flex-col items-start gap-0.5"><span className="font-medium">New pending request</span><span className="text-xs text-muted-foreground">Snapchat+ 1 Month · 2 min ago</span></DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-0.5"><span className="font-medium">Activation completed</span><span className="text-xs text-muted-foreground">SV-…-0001 · 8 min ago</span></DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-0.5"><span className="font-medium">Earning credited</span><span className="text-xs text-muted-foreground">+350 DZD · 1 hour ago</span></DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-0.5">
+                <span className="font-medium">{t("activator.shell.notif.newPending")}</span>
+                <span className="text-xs text-muted-foreground">{t("activator.shell.notif.newPendingDetail")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-0.5">
+                <span className="font-medium">{t("activator.shell.notif.completed")}</span>
+                <span className="text-xs text-muted-foreground">{t("activator.shell.notif.completedDetail")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-0.5">
+                <span className="font-medium">{t("activator.shell.notif.earningCredited")}</span>
+                <span className="text-xs text-muted-foreground">{t("activator.shell.notif.earningCreditedDetail")}</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button className="hidden items-center gap-1 rounded-md px-2 py-2 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">EN <ChevronDown className="h-3 w-3" /></button>
+          <LanguageToggle />
           <ThemeToggle />
 
           <DropdownMenu>
@@ -126,17 +139,17 @@ export function ActivatorShell({ children }: { children: ReactNode }) {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                    <LogOut className="mr-2 h-4 w-4" /> {t("activator.shell.signOut")}
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Sign out?</AlertDialogTitle>
-                    <AlertDialogDescription>You'll need to log in again to access the activator portal.</AlertDialogDescription>
+                    <AlertDialogTitle>{t("activator.shell.signOutTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("activator.shell.signOutBody")}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleLogout}>Sign Out</AlertDialogAction>
+                    <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLogout}>{t("activator.shell.signOut")}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
