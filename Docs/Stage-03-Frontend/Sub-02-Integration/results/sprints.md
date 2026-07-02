@@ -183,7 +183,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 6: Network & Places — Geography + Distributors + Delivery Companies   — Status: ⬜ Pending
+### Sprint 6: Network & Places — Geography + Distributors + Delivery Companies   — Status: ✅ Done
 
 **Goals**
 - Reference-data and distributor pipeline: 2 `GEOGRAPHY_ROUTES`, 6 `DISTRIBUTOR_ROUTES`, 4 `DELIVERY_COMPANY_ROUTES` (plan §2.9–§2.11).
