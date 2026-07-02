@@ -12,6 +12,9 @@ import { deliveryCompanyHandlers } from "./delivery-companies.handlers";
 import { setHandlers } from "./sets.handlers";
 import { lotHandlers } from "./lots.handlers";
 import { cardHandlers } from "./cards.handlers";
+import { orderHandlers } from "./orders.handlers";
+import { subscriptionPlanHandlers } from "./subscription-plans.handlers";
+import { logHandlers } from "./logs.handlers";
 
 // Populated incrementally — each sprint appends its domain's handlers array here
 // (plan.md §4.2).
@@ -28,6 +31,9 @@ const handlers: RequestHandler[] = [
   ...setHandlers,
   ...lotHandlers,
   ...cardHandlers,
+  ...orderHandlers,
+  ...subscriptionPlanHandlers,
+  ...logHandlers,
 ];
 
 export const server = setupServer(...handlers);

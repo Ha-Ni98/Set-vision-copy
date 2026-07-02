@@ -229,7 +229,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 8: Commerce & Audit — Orders + Subscription Plans + Logs   — Status: ⬜ Pending
+### Sprint 8: Commerce & Audit — Orders + Subscription Plans + Logs   — Status: ✅ Done
 
 **Goals**
 - Order flow with its fan-out invalidations, the commission matrix, and the audit log read path: 5 `ORDER_ROUTES`, 6 `SUBSCRIPTION_PLAN_ROUTES`, 1 `LOG_ROUTES` (plan §2.7–§2.8, §2.14).
