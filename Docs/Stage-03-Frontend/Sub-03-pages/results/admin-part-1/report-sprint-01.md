@@ -2,7 +2,7 @@
 sprint: 1
 title: Foundation — Schemas, i18n, Routes & Lazy scaffolding
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: de2fa52
 ---
 
 # Sprint 1 Report — Foundation
