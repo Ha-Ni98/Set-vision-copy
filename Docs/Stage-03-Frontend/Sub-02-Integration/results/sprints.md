@@ -127,7 +127,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 4: Realtime Client   — Status: ⬜ Pending
+### Sprint 4: Realtime Client   — Status: ✅ Done
 
 **Goals**
 - `src/lib/realtime.ts` per plan §5: role + portal sockets, handshake auth from the token store, shared `refreshTokens()` on `UNAUTHORIZED`, and all six gateway events mapped to registry invalidations (§5.2).

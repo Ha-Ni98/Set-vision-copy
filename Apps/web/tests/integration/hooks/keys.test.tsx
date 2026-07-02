@@ -15,6 +15,15 @@ vi.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key, language: "en" }),
 }));
 
+// useVerifyKey/useSubmitActivation subscribe to the realtime portal socket on success
+// (Sprint 4) — this file tests the keys hooks' own behavior, not realtime wiring (that's
+// tests/unit/lib/realtime.test.ts), so the module is mocked to a no-op rather than letting
+// a real socket.io-client connection attempt leak out of these tests.
+vi.mock("@/lib/realtime", () => ({
+  subscribeActivation: vi.fn(),
+  unsubscribeActivation: vi.fn(),
+}));
+
 import { useVerifyKey } from "@/hooks/useVerifyKey";
 import { useSubmitActivation } from "@/hooks/useSubmitActivation";
 import { useUpdateActivation } from "@/hooks/useUpdateActivation";
