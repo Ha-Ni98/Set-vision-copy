@@ -2,7 +2,7 @@
 sprint: 2
 title: Primitives — Admin Shell + Dashboard
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: ef8f2bf
 ---
 
 # Sprint 2 Report — Admin Shell + Dashboard Primitives
