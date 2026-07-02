@@ -2,7 +2,7 @@
 sprint: 2
 title: UI Standardization & i18n
 status: ✅ Done
-commit: TBD
+commit: 96c1cd7
 ---
 
 # Sprint 2 Report — UI Standardization & i18n
