@@ -2,7 +2,7 @@
 sprint: 1
 title: Core Pipeline
 status: ✅ Done
-commit: tbd
+commit: 83e0a20
 ---
 
 # Sprint 1 Report — Core Pipeline
