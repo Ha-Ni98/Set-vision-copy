@@ -46,10 +46,11 @@ export function useCommissions() {
   });
 }
 
-// Only the commission matrix's own key needs invalidating — plans/durations lists are
-// unaffected by a single cell edit.
+// Both commission-related keys invalidate — matrix and duration tiers — but not the plans
+// list itself, which a single cell edit never touches (plan.md §3.2).
 function invalidateCommissions(queryClient: QueryClient): void {
   queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans.commissions() });
+  queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans.commissionDurations() });
 }
 
 export function useUpdateCommission() {

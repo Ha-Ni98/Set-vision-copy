@@ -252,7 +252,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 9: Statistics & Closeout   — Status: ⬜ Pending
+### Sprint 9: Statistics & Closeout   — Status: ✅ Done
 
 **Goals**
 - The 9 read-only `STATISTICS_ROUTES` mapped (plan §2.16), and the sub-stage exit audit: 92/92 routes live, registry complete, readiness checklist re-verified.

@@ -51,32 +51,41 @@ describe("orders query hooks", () => {
   });
 });
 
-describe("useCreateOrder / useDeleteOrder invalidate only the orders domain", () => {
-  async function expectOrdersAllInvalidated(
+describe("useCreateOrder / useDeleteOrder invalidate orders and lots (plan.md §3.2 — lots reserved/freed)", () => {
+  async function expectOrdersAndLotsInvalidated(
     wrapper: ReturnType<typeof createQueryWrapper>,
     fire: () => void,
     isSuccess: () => boolean,
   ) {
     let ordersCalls = 0;
+    let lotsCalls = 0;
     server.use(
       http.get(orderUrls.getAll, () => {
         ordersCalls += 1;
         return ok(mockPaginatedOrders);
       }),
+      http.get(lotUrls.getAll, () => {
+        lotsCalls += 1;
+        return ok(mockPaginatedLots);
+      }),
     );
     const { result: listResult } = renderHook(() => useOrders({}), { wrapper });
+    const { result: lotsResult } = renderHook(() => useLots({}), { wrapper });
     await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
+    await waitFor(() => expect(lotsResult.current.isSuccess).toBe(true));
     expect(ordersCalls).toBe(1);
+    expect(lotsCalls).toBe(1);
 
     fire();
     await waitFor(() => expect(isSuccess()).toBe(true));
     await waitFor(() => expect(ordersCalls).toBe(2));
+    await waitFor(() => expect(lotsCalls).toBe(2));
   }
 
-  it("useCreateOrder invalidates the orders list", async () => {
+  it("useCreateOrder invalidates both", async () => {
     const wrapper = createQueryWrapper();
     const { result } = renderHook(() => useCreateOrder(), { wrapper });
-    await expectOrdersAllInvalidated(
+    await expectOrdersAndLotsInvalidated(
       wrapper,
       () =>
         result.current.mutate({
@@ -95,10 +104,10 @@ describe("useCreateOrder / useDeleteOrder invalidate only the orders domain", ()
     );
   });
 
-  it("useDeleteOrder invalidates the orders list", async () => {
+  it("useDeleteOrder invalidates both", async () => {
     const wrapper = createQueryWrapper();
     const { result } = renderHook(() => useDeleteOrder(), { wrapper });
-    await expectOrdersAllInvalidated(
+    await expectOrdersAndLotsInvalidated(
       wrapper,
       () => result.current.mutate("id"),
       () => result.current.isSuccess,

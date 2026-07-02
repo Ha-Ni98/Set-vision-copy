@@ -18,13 +18,18 @@ export function useOrder(id: string) {
   });
 }
 
+// Creating/deleting an order reserves/frees its lots, so both domains invalidate
+// (plan.md §3.2).
+function invalidateOrdersAndLots(queryClient: QueryClient): void {
+  queryClient.invalidateQueries({ queryKey: qk.orders.all() });
+  queryClient.invalidateQueries({ queryKey: qk.lots.all() });
+}
+
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ordersService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qk.orders.all() });
-    },
+    onSuccess: () => invalidateOrdersAndLots(queryClient),
   });
 }
 
@@ -50,8 +55,6 @@ export function useDeleteOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ordersService.remove,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qk.orders.all() });
-    },
+    onSuccess: () => invalidateOrdersAndLots(queryClient),
   });
 }

@@ -92,12 +92,13 @@ describe("useCreateSubscriptionPlan / useToggleSubscriptionPlan invalidate the s
   });
 });
 
-describe("useUpdateCommission invalidates only the commissions key, not the plans/durations lists", () => {
-  it("invalidates commissions only", async () => {
+describe("useUpdateCommission invalidates the commissions + commission-durations keys, not the plans list (plan.md §3.2)", () => {
+  it("invalidates commissions and commission-durations, leaves the plans list alone", async () => {
     const wrapper = createQueryWrapper();
 
     let plansCalls = 0;
     let commissionsCalls = 0;
+    let durationsCalls = 0;
     server.use(
       http.get(subscriptionPlanUrls.getAll, () => {
         plansCalls += 1;
@@ -107,14 +108,21 @@ describe("useUpdateCommission invalidates only the commissions key, not the plan
         commissionsCalls += 1;
         return ok(mockCommissionMatrix);
       }),
+      http.get(subscriptionPlanUrls.getCommissionDurations, () => {
+        durationsCalls += 1;
+        return ok(mockCommissionDurations);
+      }),
     );
 
     const { result: plansResult } = renderHook(() => useSubscriptionPlans({}), { wrapper });
     const { result: commissionsResult } = renderHook(() => useCommissions(), { wrapper });
+    const { result: durationsResult } = renderHook(() => useCommissionDurations(), { wrapper });
     await waitFor(() => expect(plansResult.current.isSuccess).toBe(true));
     await waitFor(() => expect(commissionsResult.current.isSuccess).toBe(true));
+    await waitFor(() => expect(durationsResult.current.isSuccess).toBe(true));
     expect(plansCalls).toBe(1);
     expect(commissionsCalls).toBe(1);
+    expect(durationsCalls).toBe(1);
 
     const { result: mutationResult } = renderHook(() => useUpdateCommission(), { wrapper });
     mutationResult.current.mutate({
@@ -125,6 +133,7 @@ describe("useUpdateCommission invalidates only the commissions key, not the plan
     await waitFor(() => expect(mutationResult.current.isSuccess).toBe(true));
 
     await waitFor(() => expect(commissionsCalls).toBe(2));
+    await waitFor(() => expect(durationsCalls).toBe(2));
     expect(plansCalls).toBe(1);
   });
 });
