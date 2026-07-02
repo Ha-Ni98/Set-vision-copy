@@ -2,7 +2,7 @@
 sprint: 4
 title: Data Decoupling
 status: ✅ Done
-commit: TBD
+commit: d377081
 ---
 
 # Sprint 4 Report — Data Decoupling
