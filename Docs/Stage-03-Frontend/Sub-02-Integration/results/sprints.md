@@ -34,7 +34,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 1: Core Pipeline   — Status: ⬜ Pending
+### Sprint 1: Core Pipeline   — Status: ✅ Done
 
 **Goals**
 - The Bearer data pipeline exists end-to-end: token store, single axios instance with request-attach + 401 refresh-retry state machine, hardened query client, central query-key registry (plan §1.2–§1.5).
