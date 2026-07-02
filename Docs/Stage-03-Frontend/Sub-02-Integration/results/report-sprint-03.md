@@ -2,7 +2,7 @@
 sprint: 3
 title: Activator Flow — Keys + Activations
 status: ✅ Done
-commit: tbd
+commit: 1c620b0
 ---
 
 # Sprint 3 Report — Activator Flow (Keys + Activations)
