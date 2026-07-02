@@ -206,7 +206,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 7: Inventory — Sets + Lots + Cards   — Status: ⬜ Pending
+### Sprint 7: Inventory — Sets + Lots + Cards   — Status: ✅ Done
 
 **Goals**
 - Card-lifecycle pipeline: 4 `SET_ROUTES`, 4 `LOT_ROUTES`, 7 `CARD_ROUTES` with their cross-domain invalidations (sets↔cards, lots↔cards; plan §2.12–§2.15, §3.2).
