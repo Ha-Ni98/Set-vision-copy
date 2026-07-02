@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as activationsService from "@/services/activations.service";
 import { useTranslation } from "@/hooks/useTranslation";
+import { qk } from "@/lib/query-keys";
 
 export function useActivateRequest() {
   const queryClient = useQueryClient();
@@ -10,10 +11,10 @@ export function useActivateRequest() {
     mutationFn: activationsService.activate,
     onSuccess: () => {
       toast.success(t("activator.requests.card.doneToast"));
-      queryClient.invalidateQueries({ queryKey: ["activations", "active"] });
-      queryClient.invalidateQueries({ queryKey: ["activator", "my-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["activations", "my-history"] });
-      queryClient.invalidateQueries({ queryKey: ["activations", "recent"] });
+      queryClient.invalidateQueries({ queryKey: qk.activations.active() });
+      queryClient.invalidateQueries({ queryKey: qk.activators.myStats() });
+      queryClient.invalidateQueries({ queryKey: qk.activations.myHistoryAll() });
+      queryClient.invalidateQueries({ queryKey: qk.activations.recent() });
     },
   });
 }

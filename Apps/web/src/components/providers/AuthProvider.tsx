@@ -1,10 +1,17 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserRole, type LoginCommand, type SessionUserDTO } from "@my-app/contract";
-import * as authService from "@/services/auth.service";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
+import type { LoginCommand } from "@my-app/contract";
+import { useSession } from "@/hooks/useSession";
+import { useLogin } from "@/hooks/useLogin";
+import { useLogout } from "@/hooks/useLogout";
+import { connectRoleSocket, disconnectRoleSocket } from "@/lib/realtime";
 
 interface AuthCtx {
   isAuthenticated: boolean;
+  // True once the session query has settled (success or error) at least once — lets
+  // ProtectedRoute/PublicOnlyRoute hold rendering during the cold-start restore instead of
+  // flashing to /login before the silent refresh (axios's 401 interceptor) has a chance to
+  // resolve (plan.md §2.1).
+  isReady: boolean;
   displayName: string | null;
   login: (command: LoginCommand) => Promise<void>;
   isLoggingIn: boolean;
@@ -14,46 +21,33 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const queryClient = useQueryClient();
+  const sessionQuery = useSession();
+  const loginMutation = useLogin();
+  const logoutMutation = useLogout();
 
-  // TODO(Sub-02): delete this local state once `me()` reflects a real session. The
-  // auth.service stub always resolves null (there is no backend to authenticate against
-  // yet), so invalidating/refetching the me-query after a "successful" stub login can't
-  // reflect it. This bridges that gap without ever writing into the query cache by hand —
-  // once me() is real, a cookie set by the login response makes invalidate+refetch alone
-  // correct, and stubSession goes away.
-  const [stubSession, setStubSession] = useState<SessionUserDTO | null>(null);
+  const session = sessionQuery.data ?? null;
+  const isAuthenticated = !!session;
+  const role = session?.role;
 
-  const meQuery = useQuery({
-    queryKey: ["auth", "me"],
-    queryFn: authService.me,
-    staleTime: Infinity,
-    retry: false,
-  });
-
-  const loginMutation = useMutation({
-    mutationFn: authService.login,
-    onSuccess: () => {
-      setStubSession({ id: "", username: "", role: UserRole.ACTIVATOR, fullName: "" });
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-    },
-  });
-
-  const logoutMutation = useMutation({
-    mutationFn: authService.logout,
-    onSuccess: () => {
-      setStubSession(null);
-      queryClient.clear();
-    },
-  });
-
-  const session = meQuery.data ?? stubSession;
+  // Role socket lifecycle (plan.md §5.1): connects once a session with a role is present,
+  // disconnects on logout (queryClient.clear() drops the cached session, so `role` goes
+  // undefined on the very next render) or unmount. Keyed on the role value, not the session
+  // object, so an unrelated me() refetch with the same role never reconnects the socket.
+  useEffect(() => {
+    if (!isAuthenticated || !role) {
+      disconnectRoleSocket();
+      return;
+    }
+    connectRoleSocket(role);
+    return () => disconnectRoleSocket();
+  }, [isAuthenticated, role]);
 
   return (
     <Ctx.Provider
       value={{
-        isAuthenticated: !!session,
-        displayName: session?.fullName || null,
+        isAuthenticated,
+        isReady: !sessionQuery.isPending,
+        displayName: session?.fullName ?? null,
         login: async (command) => {
           await loginMutation.mutateAsync(command);
         },

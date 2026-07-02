@@ -1,5 +1,6 @@
 import {
-  ClientActivationStatus,
+  KEY_ROUTES,
+  type ApiResponse,
   type VerifyKeyCommand,
   type KeyVerificationDTO,
   type SubmitActivationCommand,
@@ -7,28 +8,61 @@ import {
   type SubmitAdditionalInfoCommand,
   type ClientActivationStatusDTO,
 } from "@my-app/contract";
+import { api } from "@/lib/axios";
+import { apiPath, withParams } from "@/lib/api-path";
 
-// TODO(Sub-02): api.post(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.VERIFY), command)
-export async function verifyKey(_command: VerifyKeyCommand): Promise<KeyVerificationDTO> {
-  return { status: ClientActivationStatus.INVALID };
+export async function verifyKey(command: VerifyKeyCommand): Promise<KeyVerificationDTO> {
+  const res = await api.post<ApiResponse<KeyVerificationDTO>>(
+    apiPath(KEY_ROUTES.BASE, KEY_ROUTES.VERIFY),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }
 
-// TODO(Sub-02): api.post(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.SUBMIT), command)
-export async function submitActivation(_command: SubmitActivationCommand): Promise<void> {
-  return;
+export async function submitActivation(
+  command: SubmitActivationCommand,
+): Promise<ClientActivationStatusDTO> {
+  const res = await api.post<ApiResponse<ClientActivationStatusDTO>>(
+    apiPath(KEY_ROUTES.BASE, KEY_ROUTES.SUBMIT),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }
 
-// TODO(Sub-02): api.patch(withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.UPDATE), { activationId }), command)
-export async function updateActivation(_activationId: string, _command: UpdateActivationCommand): Promise<void> {
-  return;
+// The API registers this as POST, not PATCH (verified against Apps/api's key.routes.ts) —
+// the Sub-01 stub's TODO comment named the wrong verb.
+export async function updateActivation(
+  activationId: string,
+  command: UpdateActivationCommand,
+): Promise<ClientActivationStatusDTO> {
+  const res = await api.post<ApiResponse<ClientActivationStatusDTO>>(
+    withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.UPDATE), { activationId }),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }
 
-// TODO(Sub-02): api.post(withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.ADDITIONAL), { activationId }), command)
-export async function submitAdditionalInfo(_activationId: string, _command: SubmitAdditionalInfoCommand): Promise<void> {
-  return;
+export async function submitAdditionalInfo(
+  activationId: string,
+  command: SubmitAdditionalInfoCommand,
+): Promise<ClientActivationStatusDTO> {
+  const res = await api.post<ApiResponse<ClientActivationStatusDTO>>(
+    withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.ADDITIONAL), { activationId }),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }
 
-// TODO(Sub-02): api.get(withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.STATUS), { activationId }))
-export async function getActivationStatus(activationId: string): Promise<ClientActivationStatusDTO> {
-  return { activationId, status: ClientActivationStatus.INVALID };
+export async function getActivationStatus(
+  activationId: string,
+): Promise<ClientActivationStatusDTO> {
+  const res = await api.get<ApiResponse<ClientActivationStatusDTO>>(
+    withParams(apiPath(KEY_ROUTES.BASE, KEY_ROUTES.STATUS), { activationId }),
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }
