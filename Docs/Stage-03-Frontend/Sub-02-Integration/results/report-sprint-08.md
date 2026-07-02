@@ -2,7 +2,7 @@
 sprint: 8
 title: Commerce & Audit — Orders + Subscription Plans + Logs
 status: ✅ Done
-commit: TBD
+commit: e862af2
 ---
 
 # Sprint 8 Report — Commerce & Audit
