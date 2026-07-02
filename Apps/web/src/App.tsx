@@ -7,8 +7,9 @@ import { PageLoader } from "@/components/shared/PageLoader";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { RouteErrorBoundary } from "@/components/shared/RouteErrorBoundary";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/providers/AuthContext";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useTranslation } from "@/hooks/useTranslation";
+import { setRedirect } from "@/lib/axios";
 
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
   },
   { path: "*", element: <CatchAllRoute /> },
 ]);
+
+// Bridges the axios 401 interceptor to React Router's navigation, registered once here
+// rather than via a hook, since the interceptor lives outside any component tree.
+setRedirect((path) => router.navigate(path));
 
 export default function App() {
   const { t } = useTranslation();

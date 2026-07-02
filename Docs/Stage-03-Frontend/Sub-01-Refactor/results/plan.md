@@ -113,7 +113,7 @@ No full-screen spinners anywhere; `PageLoader` is for `React.lazy` code-splittin
 
 ---
 
-## 4. Data Extraction (Component → Hook → Service)
+## 4. Data Extraction (Component → Hook → Service) — ✅ Done (Sprint 4, 2026-07-02 — see `sprints.md`)
 
 Infra first (rules §3): `lib/axios.ts` (single instance, `VITE_API_URL`, cookie auth, 401→`/login` with loop-prevention + `setRedirect` bridge), `lib/api-path.ts` (`apiPath`/`withParams` verbatim from rules), `lib/query-client.ts` (QueryCache/MutationCache global toasts, 401 excluded). Services import route constants from `@my-app/contract`, return unwrapped `T`, throw on failure. **This sub-stage stubs service bodies with typed empty defaults** (axios wiring is Sub-02-Integration); hooks, keys, and UI states are final now so integration is a body-swap.
 
@@ -142,17 +142,19 @@ Infra first (rules §3): `lib/axios.ts` (single instance, `VITE_API_URL`, cookie
 
 ---
 
-## 5. Readiness Checklist (exit criteria for Sub-01)
+## 5. Readiness Checklist (exit criteria for Sub-01) — ✅ 9/9 green (Sprint 4, 2026-07-02)
 
-- [ ] Unapproved libs removed; `Apps/web` on React 18.3.1 / Vite 5.4.19 / Tailwind 3.4.17 / React Router / TanStack Query 5.83 / RHF + Zod 4.
-- [ ] `src/` matches rules §1 layout exactly; no `contexts/`, no `routes/`, no `mock-data.ts`.
-- [ ] Zero in-component `useEffect` fetching / `axios` / mock imports; all server state via hooks→services typed by `@my-app/contract`.
-- [ ] Zero inline JSX strings; all text via reactive `useTranslation` from `config/translations.json` (EN/FR), enum labels centralized.
-- [ ] `PublicLayout`/`ActivatorLayout` separate routing concerns; protected routes redirect via router; layout survives loading/error; every data section has Skeleton + error/empty state.
-- [ ] Single axios instance + `api-path` + query-client per rules §3 (bodies wired in Sub-02); global error toasts on caches; 401 handled by interceptor only.
-- [ ] Monorepo on one Zod major (contract ^4, web ^4); `zodResolver` compiles against contract schemas.
-- [ ] Theme via next-themes (no FOUC); language via context; demo artifacts gone.
-- [ ] §8 decisions applied: static StatsRow copy · DTO-shaped recent table · client-side sort · empty `activate`/notifications stubs · `ACTIVE_SLOTS_CAP` constant · no BIRTHDAY field.
+- [x] Unapproved libs removed; `Apps/web` on React 18.3.1 / Vite 5.4.19 / Tailwind 3.4.17 / React Router / TanStack Query 5.83 / RHF + Zod 4.
+- [x] `src/` matches rules §1 layout exactly; no `contexts/`, no `routes/`, no `mock-data.ts`.
+- [x] Zero in-component `useEffect` fetching / `axios` / mock imports; all server state via hooks→services typed by `@my-app/contract`.
+- [x] Zero inline JSX strings; all text via reactive `useTranslation` from `config/translations.json` (EN/FR), enum labels centralized.
+- [x] `PublicLayout`/`ActivatorLayout` separate routing concerns; protected routes redirect via router; layout survives loading/error; every data section has Skeleton + error/empty state.
+- [x] Single axios instance + `api-path` + query-client per rules §3 (bodies wired in Sub-02); global error toasts on caches; 401 handled by interceptor only.
+- [x] Monorepo on one Zod major (contract ^4, web ^4); `zodResolver` compiles against contract schemas.
+- [x] Theme via next-themes (no FOUC); language via context; demo artifacts gone.
+- [x] §8 decisions applied: static StatsRow copy · DTO-shaped recent table · client-side sort · empty `activate`/notifications stubs · `ACTIVE_SLOTS_CAP` constant · no BIRTHDAY field.
+
+Sub-01 (Refactor) is complete. Full verification detail in `sprints.md` Sprint 4 and `report-sprint-04.md`.
 
 ## 6. Suggested execution order (feeds Phase 02 sprints)
 

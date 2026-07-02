@@ -25,9 +25,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, KeyRound, RotateCcw, ShieldAlert, Smartphone, Store, User, X } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useFlagWrongInfo } from "@/hooks/useFlagWrongInfo";
+import { useRequestAdditionalInfo } from "@/hooks/useRequestAdditionalInfo";
+import { useActivateRequest } from "@/hooks/useActivateRequest";
+import { useReleaseActivation } from "@/hooks/useReleaseActivation";
+import { useFreezeActivation } from "@/hooks/useFreezeActivation";
 
 // USERNAME/EMAIL/PHONE_NUMBER/PASSWORD are the AccountInformation values this product's
 // account form actually collects (BIRTHDAY/OTP excluded — see codebase-map §8.Q8).
@@ -40,14 +44,27 @@ const CORRECTABLE_FIELDS = [
 
 interface Props {
   req: ActiveRequestDTO;
-  onCompleted: (id: string) => void;
 }
 
-export function ActiveRequestCard({ req, onCompleted }: Props) {
+// The card no longer takes an onCompleted callback: activate/release invalidate the
+// `["activations","active"]` query on success, and the item disappears from the list
+// naturally once RequestsPage refetches — no local array splicing needed. One consequence:
+// the MVP's fade-out exit animation (a manual setTimeout-then-remove) doesn't have an
+// equivalent under query-cache-driven removal without an exit-animation library, which
+// isn't part of the approved stack — the card just disappears on refetch instead.
+export function ActiveRequestCard({ req }: Props) {
   const { t } = useTranslation();
+  // `status` still tracked locally for the badge: the sub-status implied by the last
+  // action taken (AWAITING_OTP/AWAITING_CORRECTION/ADMIN_REVIEW) isn't itself part of
+  // ActiveRequestDTO — it reflects the optimistic last action until the list refetches.
   const [status, setStatus] = useState<ActivationStat>(req.state);
   const [adminLocked, setAdminLocked] = useState(false);
-  const [fading, setFading] = useState(false);
+
+  const flagWrongInfo = useFlagWrongInfo();
+  const requestAdditionalInfo = useRequestAdditionalInfo();
+  const activateRequest = useActivateRequest();
+  const releaseActivation = useReleaseActivation();
+  const freezeActivation = useFreezeActivation();
 
   // Wrong info
   const [wrongOpen, setWrongOpen] = useState(false);
@@ -63,15 +80,22 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
     const next = selectedFields.includes(f) ? selectedFields.filter((x) => x !== f) : [...selectedFields, f];
     setWrongValue("fields", next, { shouldValidate: true });
   };
-  const submitWrong = () => {
-    toast.success(t("activator.requests.card.wrongInfoToast"));
-    setStatus(ActivationStat.WRONG_INFORMATION);
-    setWrongOpen(false);
-    resetWrong({ fields: [] });
+  const submitWrong = (data: FlagWrongInfoCommand) => {
+    flagWrongInfo.mutate(
+      { id: req.id, command: data },
+      {
+        onSuccess: () => {
+          setStatus(ActivationStat.WRONG_INFORMATION);
+          setWrongOpen(false);
+          resetWrong({ fields: [] });
+        },
+      },
+    );
   };
 
   // Done — no contract command exists yet for this action (codebase-map §8.Q4); the dialog
-  // is ported as-is, validated by a local schema, and stays a UI-only no-op until a later stage.
+  // is ported as-is and validated locally, but the collected email isn't sent anywhere —
+  // `activate` stays a typed no-op until an ActivateCommand lands upstream.
   const doneSchema = z.object({
     email: z.string().min(1, t("common.validation.required")).email(t("common.validation.invalidEmail")),
   });
@@ -82,10 +106,7 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
     formState: { errors: doneErrors },
   } = useForm<z.infer<typeof doneSchema>>({ resolver: zodResolver(doneSchema) });
   const submitDone = () => {
-    toast.success(t("activator.requests.card.doneToast"));
-    setDoneOpen(false);
-    setFading(true);
-    setTimeout(() => onCompleted(req.id), 350);
+    activateRequest.mutate(req.id, { onSuccess: () => setDoneOpen(false) });
   };
 
   // Admin / freeze
@@ -95,25 +116,33 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
     handleSubmit: handleAdminSubmit,
     formState: { errors: adminErrors },
   } = useForm<FreezeRequestCommand>({ resolver: zodResolver(FreezeRequestSchema) });
-  const submitAdmin = () => {
-    toast.success(t("activator.requests.card.adminToast"));
-    setStatus(ActivationStat.FREEZE);
-    setAdminLocked(true);
-    setAdminOpen(false);
+  const submitAdmin = (data: FreezeRequestCommand) => {
+    freezeActivation.mutate(
+      { id: req.id, command: data },
+      {
+        onSuccess: () => {
+          setStatus(ActivationStat.FREEZE);
+          setAdminLocked(true);
+          setAdminOpen(false);
+        },
+      },
+    );
   };
 
+  // The OTP button's whole purpose is requesting the OTP field specifically — there's no
+  // field picker in this UI, so the command is hardcoded to that one field.
   const onOtp = () => {
-    toast.success(t("activator.requests.card.otpToast"));
-    setStatus(ActivationStat.ADDITIONAL_INFORMATION);
+    requestAdditionalInfo.mutate(
+      { id: req.id, command: { fields: [AccountInformation.OTP] } },
+      { onSuccess: () => setStatus(ActivationStat.ADDITIONAL_INFORMATION) },
+    );
   };
   const onCancel = () => {
-    toast.info(t("activator.requests.card.cancelToast"));
-    setFading(true);
-    setTimeout(() => onCompleted(req.id), 350);
+    releaseActivation.mutate(req.id);
   };
 
   return (
-    <div className={`rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-all ${fading ? "animate-fade-out" : ""}`}>
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-all">
       <div className="flex items-start justify-between gap-3">
         <StatusBadge status={status} />
         <LiveTimer since={req.takenAt} />
@@ -165,13 +194,13 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setWrongOpen(false)}>{t("common.actions.cancel")}</Button>
-                <Button type="submit">{t("common.actions.confirm")}</Button>
+                <Button type="submit" disabled={flagWrongInfo.isPending}>{t("common.actions.confirm")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
 
-        <Button variant="outline" size="sm" onClick={onOtp} disabled={adminLocked} className={status === ActivationStat.ADDITIONAL_INFORMATION ? "border-warning text-warning-foreground bg-warning/10" : ""}>
+        <Button variant="outline" size="sm" onClick={onOtp} disabled={adminLocked || requestAdditionalInfo.isPending} className={status === ActivationStat.ADDITIONAL_INFORMATION ? "border-warning text-warning-foreground bg-warning/10" : ""}>
           <Smartphone className="mr-1 h-3.5 w-3.5" /> {t("activator.requests.card.otp")}
         </Button>
 
@@ -192,7 +221,7 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDoneOpen(false)}>{t("common.actions.cancel")}</Button>
-                <Button type="submit">{t("activator.requests.card.confirmActivation")}</Button>
+                <Button type="submit" disabled={activateRequest.isPending}>{t("activator.requests.card.confirmActivation")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -200,7 +229,7 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={adminLocked}>
+            <Button variant="outline" size="sm" disabled={adminLocked || releaseActivation.isPending}>
               <RotateCcw className="mr-1 h-3.5 w-3.5" /> {t("common.actions.cancel")}
             </Button>
           </AlertDialogTrigger>
@@ -232,7 +261,7 @@ export function ActiveRequestCard({ req, onCompleted }: Props) {
               {adminErrors.reason && <p className="mt-1 text-xs text-destructive">{t("common.validation.required")}</p>}
               <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setAdminOpen(false)}>{t("common.actions.cancel")}</Button>
-                <Button type="submit">{t("common.actions.submit")}</Button>
+                <Button type="submit" disabled={freezeActivation.isPending}>{t("common.actions.submit")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>

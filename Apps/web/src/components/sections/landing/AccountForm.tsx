@@ -2,20 +2,22 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AccountInformation, ClientActivationStatus } from "@my-app/contract";
-import type { KeyVerificationDTO } from "@my-app/contract";
+import type { AccountField } from "@my-app/contract";
+import type { KeyLookupResult } from "@/types/key-flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Eye, EyeOff, MessageCircle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubmitActivation } from "@/hooks/useSubmitActivation";
+import { useUpdateActivation } from "@/hooks/useUpdateActivation";
 import { createAccountFormSchema, type AccountFormValues } from "./account-form.schema";
 
 // Stable English keys used only to match against mock submittedFields entries — decoupled
 // from the (language-reactive) display labels below, since the contract's submittedFields
 // carries free-text labels rather than an AccountInformation discriminator (see Sprint 2 report).
-const MOCK_FIELD_LABELS = {
+const SUBMITTED_FIELD_LABELS = {
   fullName: "Full Name",
   phone: "Phone Number",
   username: "Snapchat Username",
@@ -30,7 +32,7 @@ const PENDING_STATUSES = new Set<ClientActivationStatus>([
 ]);
 
 interface Props {
-  keyData: KeyVerificationDTO;
+  keyData: KeyLookupResult;
   onSubmitted: () => void;
 }
 
@@ -43,10 +45,13 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
   const [editing, setEditing] = useState(!isPendingStatus);
   const [showPwd, setShowPwd] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
-  const findSubmitted = (key: keyof typeof MOCK_FIELD_LABELS) =>
-    keyData.submittedFields?.find((f) => f.fieldLabel === MOCK_FIELD_LABELS[key])?.value ?? "";
+  const submitActivation = useSubmitActivation();
+  const updateActivation = useUpdateActivation();
+  const submitting = submitActivation.isPending || updateActivation.isPending;
+
+  const findSubmitted = (key: keyof typeof SUBMITTED_FIELD_LABELS) =>
+    keyData.submittedFields?.find((f) => f.fieldLabel === SUBMITTED_FIELD_LABELS[key])?.value ?? "";
   const isFlagged = (field: AccountInformation) =>
     isCorrection && (keyData.flaggedFields?.some((f) => f.field === field) ?? false);
 
@@ -72,15 +77,33 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
 
   const readonly = !editing;
 
-  const onSubmit = () => {
-    setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      toast.success(isCorrection ? t("public.landing.form.updatedToast") : t("public.landing.form.submittedToast"));
+  const onSubmit = (values: AccountFormValues) => {
+    const accountFields: AccountField[] = [
+      { field: AccountInformation.USERNAME, value: values.username },
+      { field: AccountInformation.EMAIL, value: values.email },
+      ...(values.phoneNumber ? [{ field: AccountInformation.PHONE_NUMBER, value: values.phoneNumber }] : []),
+      { field: AccountInformation.PASSWORD, value: values.password },
+    ];
+    const onMutationSuccess = () => {
       setStatus(ClientActivationStatus.PROCESSING);
       setEditing(false);
       onSubmitted();
-    }, 500);
+    };
+
+    if (isCorrection) {
+      // NEEDS_CORRECTION always carries an activationId (there's an existing activation
+      // to correct) — the contract doesn't encode that invariant in the type, so this
+      // trusts it the way rules ask internal code to trust framework/contract guarantees.
+      updateActivation.mutate(
+        { activationId: keyData.activationId!, command: { accountFields } },
+        { onSuccess: onMutationSuccess },
+      );
+    } else {
+      submitActivation.mutate(
+        { key: keyData.key, fullName: values.fullName, phone: values.phone, accountFields },
+        { onSuccess: onMutationSuccess },
+      );
+    }
   };
 
   const clearFields = () =>

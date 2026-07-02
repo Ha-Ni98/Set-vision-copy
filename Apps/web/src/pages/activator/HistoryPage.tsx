@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ActivationStat } from "@my-app/contract";
-import type { ActivatorHistoryItemDTO, RecentActivationDTO } from "@my-app/contract";
-import { MOCK_GLOBAL_RECENT, MOCK_PERSONAL_HISTORY, formatDZD, formatTime } from "@/lib/mock-data";
+import type { ActivatorHistoryItemDTO, RecentActivationDTO, GetActivatorHistoryQuery } from "@my-app/contract";
+import { formatDZD, formatTime } from "@/lib/utils";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
@@ -15,42 +15,44 @@ import {
 } from "@/components/ui/select";
 import { Search, ChevronLeft, ChevronRight, Phone, KeyRound, Clock as ClockIcon, Coins, AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useMyHistory } from "@/hooks/useMyHistory";
+import { useRecentActivations } from "@/hooks/useRecentActivations";
 
 const STATUS_OPTIONS = Object.values(ActivationStat);
 const PER_PAGE = 10;
 
-// isLoading*/isError* are hardcoded false this sprint — Sprint 4's useRecentActivations /
-// useMyHistory hooks drive them for real (two separate queries, two separate flags).
 export default function HistoryPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [status, setStatus] = useState<"ALL" | ActivationStat>("ALL");
   const [sort, setSort] = useState<"NEW" | "OLD" | "EARN">("NEW");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const isLoadingRecent = false;
-  const isErrorRecent = false;
-  const isLoadingHistory = false;
-  const isErrorHistory = false;
 
-  const filtered = useMemo(() => {
-    let arr: ActivatorHistoryItemDTO[] = [...MOCK_PERSONAL_HISTORY];
-    if (status !== "ALL") arr = arr.filter((r) => r.state === status);
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      arr = arr.filter((r) =>
-        r.client.fullName.toLowerCase().includes(s) ||
-        r.key.toLowerCase().includes(s) ||
-        r.client.phone.includes(s) ||
-        r.subscriptionLabel.toLowerCase().includes(s)
-      );
-    }
+  // Server-driven — page/limit/status/search go to the backend (stubbed empty this
+  // stage); sorting stays client-side over whatever page comes back (§8.Q3).
+  const query: GetActivatorHistoryQuery = useMemo(
+    () => ({
+      page,
+      limit: PER_PAGE,
+      status: status === "ALL" ? undefined : status,
+      search: q.trim() || undefined,
+    }),
+    [page, status, q],
+  );
+
+  const { data: recentData, isLoading: isLoadingRecent, isError: isErrorRecent } = useRecentActivations();
+  const { data: historyData, isLoading: isLoadingHistory, isError: isErrorHistory } = useMyHistory(query);
+
+  const recentList = recentData ?? [];
+  const historyItems = historyData?.items ?? [];
+  const meta = historyData?.meta ?? { page: 1, limit: PER_PAGE, total: 0, totalPages: 1 };
+
+  const sortedRows = useMemo(() => {
+    let arr = [...historyItems];
     if (sort === "OLD") arr = arr.reverse();
     else if (sort === "EARN") arr = arr.sort((a, b) => (b.earning ?? 0) - (a.earning ?? 0));
     return arr;
-  }, [status, sort, q]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const pageRows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  }, [historyItems, sort]);
 
   const recentColumns: ColumnDef<RecentActivationDTO, any>[] = [
     { id: "subscription", header: t("activator.history.recentTable.subscription"), cell: ({ row }) => <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span> },
@@ -66,7 +68,7 @@ export default function HistoryPage() {
     { id: "key", header: t("activator.history.myTable.key"), cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span> },
     { id: "status", header: t("activator.history.myTable.status"), cell: ({ row }) => <StatusBadge status={row.original.state} /> },
     { id: "time", header: t("activator.history.myTable.time"), cell: ({ row }) => <span className="font-mono">{row.original.durationSeconds ? formatTime(row.original.durationSeconds) : "—"}</span> },
-    { id: "earning", header: t("activator.history.myTable.earning"), cell: ({ row }) => <span className="font-semibold">{row.original.earning ? formatDZD(row.original.earning) : "—"}</span> },
+    { id: "earning", header: t("activator.history.myTable.earning"), cell: ({ row }) => <span className="font-semibold">{row.original.earning ? formatDZD(row.original.earning, language) : "—"}</span> },
   ];
 
   return (
@@ -80,7 +82,7 @@ export default function HistoryPage() {
         ) : (
           <DataTable
             columns={recentColumns}
-            data={MOCK_GLOBAL_RECENT}
+            data={recentList}
             getRowKey={(r) => r.id}
             renderMobileRow={(r) => (
               <div className="p-4">
@@ -132,7 +134,7 @@ export default function HistoryPage() {
         ) : (
           <DataTable
             columns={historyColumns}
-            data={pageRows}
+            data={sortedRows}
             getRowKey={(r) => r.id}
             renderMobileRow={(r) => (
               <div className="space-y-2 p-4">
@@ -145,7 +147,7 @@ export default function HistoryPage() {
                   <div className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {r.client.phone}</div>
                   <div className="inline-flex items-center gap-1 font-mono"><KeyRound className="h-3 w-3" /> {r.key.slice(-9)}</div>
                   <div className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {r.durationSeconds ? formatTime(r.durationSeconds) : "—"}</div>
-                  <div className="inline-flex items-center gap-1 font-semibold text-foreground"><Coins className="h-3 w-3" /> {r.earning ? formatDZD(r.earning) : "—"}</div>
+                  <div className="inline-flex items-center gap-1 font-semibold text-foreground"><Coins className="h-3 w-3" /> {r.earning ? formatDZD(r.earning, language) : "—"}</div>
                 </div>
               </div>
             )}
@@ -154,11 +156,11 @@ export default function HistoryPage() {
         )}
 
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t("activator.history.recordCount", { count: filtered.length })}</span>
+          <span className="text-xs text-muted-foreground">{t("activator.history.recordCount", { count: meta.total })}</span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /> {t("common.actions.previous")}</Button>
-            <span className="text-sm text-muted-foreground">{t("activator.history.pageOf", { page, total: totalPages })}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>{t("common.actions.next")} <ChevronRight className="h-4 w-4" /></Button>
+            <span className="text-sm text-muted-foreground">{t("activator.history.pageOf", { page: meta.page, total: meta.totalPages })}</span>
+            <Button variant="outline" size="sm" disabled={page >= meta.totalPages} onClick={() => setPage((p) => p + 1)}>{t("common.actions.next")} <ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       </section>

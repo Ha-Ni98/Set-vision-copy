@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "@/components/providers/AuthContext";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 // Router-level auth gates, declarative (<Navigate>) rather than the MVP's imperative
 // useEffect+navigate() redirects. MVP behavior kept exactly — no return-to-target invention.

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Bell, Menu, LogOut, ChevronsUpDown } from "lucide-react";
-import { useAuth } from "@/components/providers/AuthContext";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export function ActivatorHeader() {

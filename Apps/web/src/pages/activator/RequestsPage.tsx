@@ -1,7 +1,5 @@
-import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { ActiveRequestDTO, PendingActivationDTO } from "@my-app/contract";
-import { MOCK_ACTIVE_REQUESTS, MOCK_PENDING_POOL } from "@/lib/mock-data";
+import type { PendingActivationDTO } from "@my-app/contract";
 import { ActiveRequestCard } from "@/components/sections/activator/ActiveRequestCard";
 import { LiveTimer } from "@/components/shared/LiveTimer";
 import { DataTable } from "@/components/shared/DataTable";
@@ -12,29 +10,21 @@ import { RequestCardSkeleton } from "@/components/shared/RequestCardSkeleton";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { Button } from "@/components/ui/button";
 import { Zap, KeyRound, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useActiveRequests } from "@/hooks/useActiveRequests";
+import { usePendingActivations } from "@/hooks/usePendingActivations";
+import { useTakeActivation } from "@/hooks/useTakeActivation";
+import { ACTIVE_SLOTS_CAP } from "@/config/constants";
 
-const ACTIVE_SLOTS_CAP = 3;
-
-// isLoading*/isError* are hardcoded false this sprint — Sprint 4's useActiveRequests /
-// usePendingActivations hooks drive them for real (two separate queries, two separate flags).
 export default function RequestsPage() {
   const { t } = useTranslation();
-  const [active, setActive] = useState<ActiveRequestDTO[]>(MOCK_ACTIVE_REQUESTS);
-  const [pool, setPool] = useState<PendingActivationDTO[]>(MOCK_PENDING_POOL);
-  const isLoadingActive = false;
-  const isErrorActive = false;
-  const isLoadingPending = false;
-  const isErrorPending = false;
+  const { data: activeData, isLoading: isLoadingActive, isError: isErrorActive } = useActiveRequests();
+  const { data: pendingData, isLoading: isLoadingPending, isError: isErrorPending } = usePendingActivations();
+  const takeActivation = useTakeActivation();
 
+  const active = activeData ?? [];
+  const pool = pendingData ?? [];
   const slotsUsed = active.length;
-
-  const removeActive = (id: string) => setActive((a) => a.filter((x) => x.id !== id));
-  const takeRequest = (id: string) => {
-    toast.success(t("activator.requests.takenToast"));
-    setPool((p) => p.filter((x) => x.id !== id));
-  };
 
   const columns: ColumnDef<PendingActivationDTO, any>[] = [
     { id: "subscription", header: t("activator.requests.table.subscription"), cell: ({ row }) => <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span> },
@@ -45,7 +35,7 @@ export default function RequestsPage() {
       header: t("common.actions.action"),
       cell: ({ row }) => (
         <div className="text-right">
-          <Button size="sm" onClick={() => takeRequest(row.original.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP}>
+          <Button size="sm" onClick={() => takeActivation.mutate(row.original.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending}>
             <Zap className="mr-1 h-3.5 w-3.5" /> {t("common.actions.activate")}
           </Button>
         </div>
@@ -82,7 +72,7 @@ export default function RequestsPage() {
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {active.map((req) => (
-              <ActiveRequestCard key={req.id} req={req} onCompleted={removeActive} />
+              <ActiveRequestCard key={req.id} req={req} />
             ))}
           </div>
         )}
@@ -112,7 +102,7 @@ export default function RequestsPage() {
                   <LiveTimer since={p.requestedAt} mode="wait" />
                 </div>
                 <div className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><KeyRound className="h-3 w-3" /> {p.keyMasked}</div>
-                <Button onClick={() => takeRequest(p.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP} className="w-full"><Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}</Button>
+                <Button onClick={() => takeActivation.mutate(p.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending} className="w-full"><Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}</Button>
               </div>
             )}
             emptyState={

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, type LoginCommand } from "@my-app/contract";
-import { useAuth } from "@/components/providers/AuthContext";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +17,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 // which never mounts this page for an authenticated session.
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, isLoggingIn } = useAuth();
   const nav = useNavigate();
   const [showP, setShowP] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [shake, setShake] = useState(false);
 
@@ -29,19 +28,16 @@ export default function LoginPage() {
     mode: "onSubmit",
   });
 
-  const submit = (data: LoginCommand) => {
+  const submit = async (data: LoginCommand) => {
     setErr("");
-    setLoading(true);
-    setTimeout(() => {
-      const ok = login(data.username, data.password);
-      setLoading(false);
-      if (ok) nav("/dashboard");
-      else {
-        setErr(t("auth.login.error"));
-        setShake(true);
-        setTimeout(() => setShake(false), 500);
-      }
-    }, 500);
+    try {
+      await login(data);
+      nav("/dashboard");
+    } catch {
+      setErr(t("auth.login.error"));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
   };
 
   return (
@@ -81,8 +77,8 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" disabled={loading} className="h-11 w-full text-base">
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("auth.login.submitting")}</> : t("auth.login.submit")}
+            <Button type="submit" disabled={isLoggingIn} className="h-11 w-full text-base">
+              {isLoggingIn ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("auth.login.submitting")}</> : t("auth.login.submit")}
             </Button>
           </form>
         </div>

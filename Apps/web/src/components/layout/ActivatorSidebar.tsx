@@ -1,16 +1,23 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useActiveRequests } from "@/hooks/useActiveRequests";
 import { ACTIVATOR_NAV_LINKS } from "@/config/nav-links";
 
 export function ActivatorSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const loc = useLocation();
+  // Rendered in two places (desktop aside + mobile Sheet) — TanStack Query dedupes
+  // identical queryKeys, so this doesn't cause a second network call.
+  const { data: activeRequests } = useActiveRequests();
+  const requestsBadge = activeRequests && activeRequests.length > 0 ? activeRequests.length : null;
+
   return (
     <nav className="flex flex-col gap-1 p-3">
       {ACTIVATOR_NAV_LINKS.map((item) => {
         const active = loc.pathname === item.to;
         const Icon = item.icon;
+        const badge = item.to === "/requests" ? requestsBadge : null;
         return (
           <Link
             key={item.to}
@@ -27,9 +34,9 @@ export function ActivatorSidebarNav({ onNavigate }: { onNavigate?: () => void })
               <Icon className="h-4 w-4" />
               {t(item.labelKey)}
             </span>
-            {item.badge !== null && (
+            {badge !== null && (
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-destructive-foreground">
-                {item.badge}
+                {badge}
               </span>
             )}
           </Link>
