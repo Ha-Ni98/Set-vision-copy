@@ -97,7 +97,7 @@ Route total: 4+21+19+12+15+12+9 = **92/92** (plan §2 tables are the per-route s
 
 ---
 
-### Sprint 3: Activator Flow — Keys + Activations   — Status: ⬜ Pending
+### Sprint 3: Activator Flow — Keys + Activations   — Status: ✅ Done
 
 **Goals**
 - The two MVP-visible service files fully live: all 5 `KEY_ROUTES` and all 16 `ACTIVATION_ROUTES` per plan §2.2–§2.3, including D3 (`activate` is real) and the corrected verbs/return types (plan §7.3).

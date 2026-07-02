@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { FreezeRequestCommand } from "@my-app/contract";
 import * as activationsService from "@/services/activations.service";
 import { useTranslation } from "@/hooks/useTranslation";
+import { qk } from "@/lib/query-keys";
 
 export function useFreezeActivation() {
   const queryClient = useQueryClient();
@@ -12,10 +13,11 @@ export function useFreezeActivation() {
       activationsService.freeze(id, command),
     onSuccess: () => {
       toast.success(t("activator.requests.card.adminToast"));
-      queryClient.invalidateQueries({ queryKey: ["activations", "active"] });
+      queryClient.invalidateQueries({ queryKey: qk.activations.active() });
+      // Deliberately still the raw ["activator","my-stats"] literal — see useTakeActivation.
       queryClient.invalidateQueries({ queryKey: ["activator", "my-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["activations", "my-history"] });
-      queryClient.invalidateQueries({ queryKey: ["activations", "recent"] });
+      queryClient.invalidateQueries({ queryKey: qk.activations.myHistoryAll() });
+      queryClient.invalidateQueries({ queryKey: qk.activations.recent() });
     },
   });
 }

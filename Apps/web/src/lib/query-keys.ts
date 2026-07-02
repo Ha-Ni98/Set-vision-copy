@@ -40,7 +40,13 @@ export const qk = {
     pending: () => ["activations", "pending"] as const,
     active: () => ["activations", "active"] as const,
     recent: () => ["activations", "recent"] as const,
+    // `xxxAll()` is the family root — no query param, so invalidating it (TanStack matches
+    // by key *prefix*) sweeps every cached page/filter combination at once. `xxx(query)` is
+    // for the specific useQuery call. Mutations invalidate the root; hooks read the
+    // specific one. Same split applies to any future parameterized list key.
+    myHistoryAll: () => ["activations", "my-history"] as const,
     myHistory: (query: GetActivatorHistoryQuery) => ["activations", "my-history", query] as const,
+    listAll: () => ["activations", "list"] as const,
     list: (query: GetActivationsQuery) => ["activations", "list", query] as const,
     detail: (id: string) => ["activations", "detail", id] as const,
   },

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { FlagWrongInfoCommand } from "@my-app/contract";
 import * as activationsService from "@/services/activations.service";
 import { useTranslation } from "@/hooks/useTranslation";
+import { qk } from "@/lib/query-keys";
 
 export function useFlagWrongInfo() {
   const queryClient = useQueryClient();
@@ -12,7 +13,7 @@ export function useFlagWrongInfo() {
       activationsService.flagWrongInfo(id, command),
     onSuccess: () => {
       toast.success(t("activator.requests.card.wrongInfoToast"));
-      queryClient.invalidateQueries({ queryKey: ["activations", "active"] });
+      queryClient.invalidateQueries({ queryKey: qk.activations.active() });
     },
   });
 }
