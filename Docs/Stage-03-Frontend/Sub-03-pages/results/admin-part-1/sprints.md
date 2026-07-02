@@ -100,26 +100,36 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ---
 
-### Sprint 3: Primitives — Activators + Distributors   — Status: ⬜ Pending
+### Sprint 3: Primitives — Activators + Distributors   — Status: ✅ Done
 
 **Goals**
 - All Activators and Distributors list + detail dumb components + states built from props (plan §D2–D5). Shared `RecordPaymentModal` + `GeneratedPasswordPanel` created once; dependent wilaya→commune select UX built.
 
 **Tasks**
 - *Activators* (plan §D2.2, §D3.2):
-  - [ ] List (#ui): `ActivatorsPage.tsx`, `ActivatorsStatsRow`, `ActivatorsTable` (memo `ColumnDef`, **no password column**), `ActivatorSearch`, `ActivatorActionsMenu` (View · Enable/Disable · Delete · Record Payment).
-  - [ ] Shared modal shells — RHF wired in S5 (#ui): `CreateActivatorModal`, `GeneratedPasswordPanel` (one-time secret + `CopyButton`), `RecordPaymentModal`.
-  - [ ] Detail (#ui): `ActivatorDetailPage.tsx`, `ProfileCard` (+ `EditActivatorModal` field markup), `StatsRevenueGrid` (6 tiles), `PerformanceChart` (recharts `LineChart` + `ChartSkeleton` + empty branch), `PaymentsHistoryTable` (memo `ColumnDef`, soft-deleted styling).
+  - [x] List (#ui): `ActivatorsPage.tsx`, ~~`ActivatorsStatsRow`~~ **reuses Dashboard's `StatsRow` directly (see execution notes)**, `ActivatorsTable` (memo `ColumnDef`, **no password column**), `ActivatorSearch`, `ActivatorActionsMenu` (View · Enable/Disable · Delete · Record Payment).
+  - [x] Shared modal shells — RHF wired in S5 (#ui): `CreateActivatorModal`, `GeneratedPasswordPanel` (one-time secret + `CopyButton`), `RecordPaymentModal`.
+  - [x] Detail (#ui): `ActivatorDetailPage.tsx`, `ProfileCard` (+ `EditActivatorModal` field markup), `StatsRevenueGrid` (6 tiles), `PerformanceChart` (recharts `LineChart` + `ChartSkeleton` + empty branch), `PaymentsHistoryTable` (memo `ColumnDef`, soft-deleted styling).
 - *Distributors* (plan §D4.2, §D5.2):
-  - [ ] List (#ui): `DistributorsPage.tsx`, `DistributorsStatsRow`, `DistributorsFilters` (search + `WilayaSelect` + `CommuneSelect`), `DistributorsTable` (memo `ColumnDef`, resolved names), `DistributorActionsMenu`, `CreateDistributorModal`.
-  - [ ] Detail (#ui): `DistributorDetailPage.tsx`, `DistributorProfileCard` (inline-edit markup + selects), `DistributorStatsGrid` (Sold Keys · Remaining Cards · Orders · Activations), `OrdersHistoryCompact`, `CardsHistoryCompact` (memo `ColumnDef`).
+  - [x] List (#ui): `DistributorsPage.tsx`, ~~`DistributorsStatsRow`~~ **reuses `StatsRow`**, `DistributorsFilters` (search + `WilayaSelect` + `CommuneSelect`), `DistributorsTable` (memo `ColumnDef`, resolved names), `DistributorActionsMenu`, `CreateDistributorModal`.
+  - [x] Detail (#ui): `DistributorDetailPage.tsx`, `DistributorProfileCard` (inline-edit markup + selects), `DistributorStatsGrid` (Sold Keys · Remaining Cards · Orders · Activations), `OrdersHistoryCompact`, `CardsHistoryCompact` (memo `ColumnDef`).
 - *States, both areas* (#state):
-  - [ ] Skeletons for stats/table/profile/chart/payments/compact-tables; **commune select disabled + spinner until wilaya chosen**.
-  - [ ] `EmptyState` variants: no activators / no-match+Clear / no payments+CTA / empty chart; no distributors / no-match+Clear Filters / no orders / no cards.
-  - [ ] `NotFoundState`: table Retry; **invalid `:id` → "…not found." + back `<Link>`** on both detail pages; select fetch-error → inline "Couldn't load — retry."
+  - [x] Skeletons for stats/table/profile/chart/payments/compact-tables; **commune select disabled + spinner until wilaya chosen**.
+  - [x] `EmptyState` variants: no activators / no-match+Clear / no payments+CTA / empty chart; no distributors / no-match+Clear Filters / no orders / no cards.
+  - [x] `NotFoundState`: table Retry; **invalid `:id` → "…not found." + back `<Link>`** on both detail pages (code path present, not the state screenshotted — see execution notes); select fetch-error → inline "Couldn't load — retry."
 
 **Validation**
-- [ ] Copy via `useTranslation`. / [ ] `tsc` clean. / [ ] All states render from props; chart empty-branch + disabled/loading/error select states present. / [ ] Existing Vitest green. / [ ] Committed.
+- [x] Copy via `useTranslation`. / [x] `tsc` clean. / [x] All states render from props; chart empty-branch + disabled/loading/error select states present. / [x] Existing Vitest green. / [x] Committed.
+
+**Execution notes (see report-sprint-03.md for full detail):**
+- **`StatusBadge` generalized** (the gap flagged in S1): extracted a shared `StatusPill` and added `CardStatusBadge`/`OrderStatusBadge`/`EnabledBadge` alongside the existing `ActivationStat`-only `StatusBadge`, all in the same file — needed for Distributor Detail's Cards/Orders history and the enabled/disabled columns.
+- **Reuse over duplication:** `StatsRow` (built generically in S2 for Dashboard) is reused as-is for both Activators' and Distributors' 4-card rows — no `ActivatorsStatsRow`/`DistributorsStatsRow` built. Its `subLabelKey` was made optional to fit pages whose cards have no sub-label text (only Dashboard's do).
+- **`recharts` installed** — pre-approved per front-end-rules.md §6A ("Available" list) but not actually in `package.json` before this sprint; confirmed the other three "available" libraries (`vaul`, `embla-carousel-react`) are similarly absent, so "available" means pre-approved-to-add, not pre-installed. No other dependency shifted (checked `package-lock.json` diff).
+- **`durationToneClass` extracted to a new `lib/duration-tone.ts`**, not left in `LiveTimer.tsx` — mixing a component export with a plain-function export there triggered a `react-refresh/only-export-components` lint warning (breaks Fast Refresh granularity); this is a clean, zero-behavior-change split, not a workaround.
+- **`DataTable` has no per-row className hook** — `PaymentsHistoryTable`'s soft-deleted dimming/strikethrough is applied per-cell instead of at the row level, without modifying the shared component.
+- Found and fixed three semantically-wrong key reuses before commit (an Orders-history column showing the section title as its header, a payment-password body double-displaying the password, an empty `<span/>` for a since-removed avg-time trend indicator the Detail page's spec never asked for).
+- **Browser-verified with a real admin session**, not just the unauthenticated check S2 could manage: stood up the local API against a fresh `setvision_dev` Postgres database (schema `db push`ed — no migrations exist yet in this repo) and seeded one test admin account, then drove headless Chromium through an actual login + every new page/modal. All screenshots confirm correct rendering (shell, both list pages, both detail pages exercising their designed loading/success/empty/error mix, the Create modals, the wilaya→commune dependency, and independent per-group sidebar collapse). Full setup/teardown detail in report-sprint-03.md.
+- **Found, not fixed (outside this sprint's scope): `LoginPage.tsx:35` hardcodes `nav("/dashboard")` post-login with no role check** — an admin logging in via the form lands on the activator dashboard, which then crashes into the route error boundary (401/403s from activator-scoped calls an admin token can't use). Pre-existing Sub-01/Sub-02 code; none of my sprints touch `LoginPage.tsx`. Every `/admin/*` page works correctly once reached directly by URL. Flagged to the user for a decision on when to fix.
 
 **Risks**
 - Larger sprint (two areas) → review in list-then-detail order. recharts responsive container; shared-modal reuse across list & detail; dependent-select empty/disabled states; compact-table overflow.

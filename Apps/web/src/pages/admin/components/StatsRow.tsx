@@ -12,7 +12,8 @@ export interface DashboardStatCardData {
   icon: ReactNode;
   labelKey: string;
   value: string | null;
-  subLabelKey: string;
+  /** Omit for cards with no sub-label (e.g. Activators/Distributors lists) — Dashboard's cards have one. */
+  subLabelKey?: string;
   subLabelVars?: Record<string, string | number>;
   isLoading: boolean;
   isError: boolean;
@@ -53,9 +54,11 @@ export function StatsRow({ cards }: Props) {
             label={t(card.labelKey)}
             value={card.value ?? "—"}
             trend={
-              <span className="text-xs text-muted-foreground">
-                {t(card.subLabelKey, card.subLabelVars)}
-              </span>
+              card.subLabelKey ? (
+                <span className="text-xs text-muted-foreground">
+                  {t(card.subLabelKey, card.subLabelVars)}
+                </span>
+              ) : undefined
             }
           />
         );

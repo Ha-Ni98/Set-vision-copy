@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
+import { toneClass } from "@/lib/duration-tone";
 
 // "elapsed" tracks an activator's own in-progress work; "wait" tracks how long a client
 // has been waiting in the pending pool — waiting tolerates a longer "still fine" window.
-const WARN_AT_MINUTES = { elapsed: 5, wait: 5 } as const;
-const DANGER_AT_MINUTES = { elapsed: 10, wait: 15 } as const;
-
-export function LiveTimer({ since, mode = "elapsed" }: { since: string; mode?: "elapsed" | "wait" }) {
+export function LiveTimer({
+  since,
+  mode = "elapsed",
+}: {
+  since: string;
+  mode?: "elapsed" | "wait";
+}) {
   const [, force] = useState(0);
   useEffect(() => {
     const t = setInterval(() => force((n) => n + 1), 1000);
@@ -17,9 +21,7 @@ export function LiveTimer({ since, mode = "elapsed" }: { since: string; mode?: "
   const m = Math.floor(total / 60);
   const s = total % 60;
   const text = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  const minutes = total / 60;
-  const color =
-    minutes < WARN_AT_MINUTES[mode] ? "text-success" : minutes < DANGER_AT_MINUTES[mode] ? "text-warning" : "text-destructive";
+  const color = toneClass(total / 60, mode);
 
   return (
     <span className={`inline-flex items-center gap-1 font-mono text-sm font-semibold ${color}`}>
