@@ -2,7 +2,7 @@
 sprint: 5
 title: People & Money — Activators + Admins + Payments
 status: ✅ Done
-commit: tbd
+commit: 6f65ae1
 ---
 
 # Sprint 5 Report — People & Money
