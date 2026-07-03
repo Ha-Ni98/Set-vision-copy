@@ -2,7 +2,7 @@
 sprint: 7
 title: Unit tests — Shell + Dashboard + Activators + Distributors
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: 3fb2d2b
 ---
 
 # Sprint 7 Report — Tests (final sprint of the 7-sprint plan)
