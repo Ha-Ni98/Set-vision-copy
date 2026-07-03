@@ -2,7 +2,7 @@
 sprint: 6
 title: Polish — responsive, performance, a11y, theming
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: 6aba91e
 ---
 
 # Sprint 6 Report — Polish
