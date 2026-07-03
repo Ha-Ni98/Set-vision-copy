@@ -2,7 +2,7 @@
 sprint: 3
 title: Assembly & Wiring — Activations + Detail + Logs
 status: ✅ Done
-commit: TBD
+commit: d96ba6a
 ---
 
 # Sprint 3 Report — Assembly & Wiring (Activations + Detail + Logs)
