@@ -620,6 +620,8 @@
   "admin.settings.admins.deleteConfirm.title": { "en": "Delete this admin?", "fr": "Supprimer cet admin ?", "ar": "" },
   "admin.settings.admins.resetPasswordConfirm.title": { "en": "Reset this admin's password?", "fr": "Réinitialiser le mot de passe de cet admin ?", "ar": "" },
   "admin.settings.admins.resetPasswordConfirm.body": { "en": "A new temporary password will be generated and shown once.", "fr": "Un nouveau mot de passe temporaire sera généré et affiché une seule fois.", "ar": "" },
+  "admin.settings.admins.resetPasswordConfirm.successTitle": { "en": "Password reset.", "fr": "Mot de passe réinitialisé.", "ar": "" },
+  "admin.settings.admins.resetPasswordConfirm.successBody": { "en": "Share this password securely — it won't be shown again.", "fr": "Partagez ce mot de passe en toute sécurité — il ne sera plus affiché.", "ar": "" },
   "admin.settings.admins.cannotDeleteSelf": { "en": "You cannot delete your own account.", "fr": "Vous ne pouvez pas supprimer votre propre compte.", "ar": "" },
   "admin.settings.admins.cannotDeleteLast": { "en": "At least one admin account must remain.", "fr": "Au moins un compte admin doit être conservé.", "ar": "" },
   "admin.settings.commission.title": { "en": "Commission Matrix", "fr": "Matrice de commission", "ar": "" },

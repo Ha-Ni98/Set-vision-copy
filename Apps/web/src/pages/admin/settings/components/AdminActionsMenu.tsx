@@ -20,6 +20,8 @@ interface Props {
    * both are page-level facts (session id, list length), not knowable from the row alone
    * (plan §B5). */
   deleteDisabled: boolean;
+  /** Which of the two §B5 guards is active — drives the disabled item's tooltip. */
+  deleteDisabledReason?: "self" | "last";
 }
 
 export function AdminActionsMenu({
@@ -29,6 +31,7 @@ export function AdminActionsMenu({
   onRequestResetPassword,
   onRequestDelete,
   deleteDisabled,
+  deleteDisabledReason,
 }: Props) {
   const { t } = useTranslation();
 
@@ -54,6 +57,15 @@ export function AdminActionsMenu({
         <DropdownMenuItem
           onClick={() => onRequestDelete(admin)}
           disabled={deleteDisabled}
+          title={
+            deleteDisabled
+              ? t(
+                  deleteDisabledReason === "self"
+                    ? "admin.settings.admins.cannotDeleteSelf"
+                    : "admin.settings.admins.cannotDeleteLast",
+                )
+              : undefined
+          }
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="mr-2 h-4 w-4" /> {t("common.actions.delete")}

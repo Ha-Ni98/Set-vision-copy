@@ -21,64 +21,54 @@ import {
 import { Search, Users, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSession } from "@/hooks/useSession";
+import {
+  useAdmins,
+  useCreateAdmin,
+  useUpdateAdmin,
+  useToggleAdmin,
+  useResetAdminPassword,
+  useDeleteAdmin,
+} from "@/hooks/useAdmins";
 import { formatDateTime } from "@/lib/utils";
+import { GeneratedPasswordPanel } from "../../activators/components/GeneratedPasswordPanel";
 import { AdminActionsMenu } from "./AdminActionsMenu";
 import { AddAdminModal } from "./AddAdminModal";
 import { EditAdminModal } from "./EditAdminModal";
 
-interface Props {
-  search: string;
-  onSearchChange: (value: string) => void;
-  data?: AdminDTO[];
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-  hasFilters: boolean;
-  onClearFilters: () => void;
-  currentAdminId?: string;
-  createOpen: boolean;
-  onCreateOpenChange: (open: boolean) => void;
-  onCreateSubmit: () => void;
-  createPending?: boolean;
-  generatedPassword?: string | null;
-  onToggle: (admin: AdminDTO) => void;
-  onResetPassword: (admin: AdminDTO) => void;
-  onDelete: (admin: AdminDTO) => void;
-  onEditSubmit: (admin: AdminDTO) => void;
-  editPending?: boolean;
-  isMutating?: boolean;
-}
-
-export function AdminAccountsTab({
-  search,
-  onSearchChange,
-  data,
-  isLoading,
-  isError,
-  onRetry,
-  hasFilters,
-  onClearFilters,
-  currentAdminId,
-  createOpen,
-  onCreateOpenChange,
-  onCreateSubmit,
-  createPending,
-  generatedPassword,
-  onToggle,
-  onResetPassword,
-  onDelete,
-  onEditSubmit,
-  editPending,
-  isMutating,
-}: Props) {
+// Self-contained, like every Part-3 modal/heatmap component — calls its own hooks rather
+// than receiving data via page-level props. Combined with Radix Tabs unmounting inactive
+// panels by default, this tab's queries only ever run once the tab is first activated.
+export function AdminAccountsTab() {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<AdminDTO | null>(null);
   const [toggleRow, setToggleRow] = useState<AdminDTO | null>(null);
   const [resetRow, setResetRow] = useState<AdminDTO | null>(null);
+  const [resetGeneratedPassword, setResetGeneratedPassword] = useState<string | null>(null);
   const [deleteRow, setDeleteRow] = useState<AdminDTO | null>(null);
 
-  const totalAdmins = data?.length ?? 0;
+  const debouncedSearch = useDebouncedValue(search);
+  const sessionQuery = useSession();
+  const adminsQuery = useAdmins({ page: 1, limit: 100, search: debouncedSearch || undefined });
+
+  const createAdmin = useCreateAdmin();
+  const updateAdmin = useUpdateAdmin();
+  const toggleAdmin = useToggleAdmin();
+  const resetAdminPassword = useResetAdminPassword();
+  const deleteAdmin = useDeleteAdmin();
+  const isMutating =
+    toggleAdmin.isPending ||
+    resetAdminPassword.isPending ||
+    deleteAdmin.isPending ||
+    updateAdmin.isPending;
+
+  const hasFilters = search.length > 0;
+  const totalAdmins = adminsQuery.data?.items.length ?? 0;
 
   const columns = useMemo<ColumnDef<AdminDTO>[]>(
     () => [
@@ -98,19 +88,24 @@ export function AdminAccountsTab({
       {
         id: "actions",
         header: t("admin.settings.admins.table.actions"),
-        cell: ({ row }) => (
-          <AdminActionsMenu
-            admin={row.original}
-            onRequestEdit={setEditRow}
-            onRequestToggle={setToggleRow}
-            onRequestResetPassword={setResetRow}
-            onRequestDelete={setDeleteRow}
-            deleteDisabled={row.original.id === currentAdminId || totalAdmins <= 1}
-          />
-        ),
+        cell: ({ row }) => {
+          const isSelf = row.original.id === sessionQuery.data?.id;
+          const isLast = totalAdmins <= 1;
+          return (
+            <AdminActionsMenu
+              admin={row.original}
+              onRequestEdit={setEditRow}
+              onRequestToggle={setToggleRow}
+              onRequestResetPassword={setResetRow}
+              onRequestDelete={setDeleteRow}
+              deleteDisabled={isSelf || isLast}
+              deleteDisabledReason={isSelf ? "self" : isLast ? "last" : undefined}
+            />
+          );
+        },
       },
     ],
-    [t, language, currentAdminId, totalAdmins],
+    [t, language, sessionQuery.data?.id, totalAdmins],
   );
 
   return (
@@ -120,29 +115,31 @@ export function AdminAccountsTab({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder={t("admin.settings.admins.search.placeholder")}
             className="pl-9"
           />
         </div>
-        <Button onClick={() => onCreateOpenChange(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           {t("admin.settings.admins.create.title")}
         </Button>
       </div>
 
-      {isLoading ? (
+      {adminsQuery.isLoading ? (
         <TableSkeleton rows={4} columns={6} />
-      ) : isError ? (
+      ) : adminsQuery.isError ? (
         <NotFoundState
           title={t("admin.dashboard.sectionError")}
           body={t("admin.dashboard.sectionErrorBody")}
-          action={<Button onClick={onRetry}>{t("common.actions.tryAgain")}</Button>}
+          action={
+            <Button onClick={() => adminsQuery.refetch()}>{t("common.actions.tryAgain")}</Button>
+          }
         />
       ) : (
         <DataTable
           columns={columns}
-          data={data ?? []}
+          data={adminsQuery.data?.items ?? []}
           getRowKey={(row) => row.id}
           renderMobileRow={(row) => (
             <div className="flex items-center justify-between gap-3 p-4 text-sm">
@@ -164,7 +161,7 @@ export function AdminAccountsTab({
               body=""
               decoration={
                 hasFilters ? (
-                  <Button variant="outline" onClick={onClearFilters} className="mt-2">
+                  <Button variant="outline" onClick={() => setSearch("")} className="mt-2">
                     {t("common.actions.clear")}
                   </Button>
                 ) : undefined
@@ -176,9 +173,16 @@ export function AdminAccountsTab({
 
       <AddAdminModal
         open={createOpen}
-        onOpenChange={onCreateOpenChange}
-        onSubmit={onCreateSubmit}
-        isPending={createPending}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) setGeneratedPassword(null);
+        }}
+        onSubmit={(values) =>
+          createAdmin.mutate(values, {
+            onSuccess: (data) => setGeneratedPassword(data.generatedPassword),
+          })
+        }
+        isPending={createAdmin.isPending}
         generatedPassword={generatedPassword}
       />
 
@@ -186,10 +190,13 @@ export function AdminAccountsTab({
         open={editRow !== null}
         onOpenChange={(open) => !open && setEditRow(null)}
         admin={editRow}
-        isPending={editPending}
-        onSubmit={() => {
-          if (editRow) onEditSubmit(editRow);
-          setEditRow(null);
+        isPending={updateAdmin.isPending}
+        onSubmit={(values) => {
+          if (!editRow) return;
+          updateAdmin.mutate(
+            { id: editRow.id, command: values },
+            { onSuccess: () => setEditRow(null) },
+          );
         }}
       />
 
@@ -210,7 +217,7 @@ export function AdminAccountsTab({
             <AlertDialogAction
               disabled={isMutating}
               onClick={() => {
-                if (toggleRow) onToggle(toggleRow);
+                if (toggleRow) toggleAdmin.mutate(toggleRow.id);
                 setToggleRow(null);
               }}
             >
@@ -220,28 +227,61 @@ export function AdminAccountsTab({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={resetRow !== null} onOpenChange={(open) => !open && setResetRow(null)}>
+      <AlertDialog
+        open={resetRow !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetRow(null);
+            setResetGeneratedPassword(null);
+          }
+        }}
+      >
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("admin.settings.admins.resetPasswordConfirm.title")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("admin.settings.admins.resetPasswordConfirm.body")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isMutating}
-              onClick={() => {
-                if (resetRow) onResetPassword(resetRow);
-                setResetRow(null);
-              }}
-            >
-              {t("common.actions.resetPassword")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {resetGeneratedPassword ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("admin.settings.admins.resetPasswordConfirm.successTitle")}
+                </AlertDialogTitle>
+                <AlertDialogDescription />
+              </AlertDialogHeader>
+              <GeneratedPasswordPanel
+                password={resetGeneratedPassword}
+                titleKey="admin.settings.admins.resetPasswordConfirm.successTitle"
+                bodyKey="admin.settings.admins.resetPasswordConfirm.successBody"
+              />
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setResetRow(null)}>
+                  {t("common.actions.confirm")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("admin.settings.admins.resetPasswordConfirm.title")}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("admin.settings.admins.resetPasswordConfirm.body")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={isMutating}
+                  onClick={() => {
+                    if (!resetRow) return;
+                    resetAdminPassword.mutate(resetRow.id, {
+                      onSuccess: (data) => setResetGeneratedPassword(data.generatedPassword),
+                    });
+                  }}
+                >
+                  {t("common.actions.resetPassword")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
 
@@ -257,7 +297,7 @@ export function AdminAccountsTab({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isMutating}
               onClick={() => {
-                if (deleteRow) onDelete(deleteRow);
+                if (deleteRow) deleteAdmin.mutate(deleteRow.id);
                 setDeleteRow(null);
               }}
             >

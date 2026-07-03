@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -7,14 +6,12 @@ import { CommissionMatrixTab } from "./components/CommissionMatrixTab";
 import { SubscriptionPlansTab } from "./components/SubscriptionPlansTab";
 import { DeliveryCompaniesTab } from "./components/DeliveryCompaniesTab";
 
-// Static composition — no data hooks yet (wired in Sprint 5, plan.md §D4). Exactly 4 tabs —
-// Timeout/Active-Hours are omitted from the tab bar entirely (§E-1, user decision).
+// Exactly 4 tabs — Timeout/Active-Hours are omitted from the tab bar entirely (§E-1, user
+// decision). Each tab component is self-contained (owns its own hooks), so Radix's default
+// unmount-when-inactive behavior on TabsContent is what actually gives each tab's queries
+// "enabled on first activation, no upfront fan-out" — no manual `enabled` flags needed here.
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const [adminSearch, setAdminSearch] = useState("");
-  const [createAdminOpen, setCreateAdminOpen] = useState(false);
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
-  const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,56 +26,19 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="admins">
-          <AdminAccountsTab
-            search={adminSearch}
-            onSearchChange={setAdminSearch}
-            isLoading
-            isError={false}
-            onRetry={() => {}}
-            hasFilters={adminSearch.length > 0}
-            onClearFilters={() => setAdminSearch("")}
-            createOpen={createAdminOpen}
-            onCreateOpenChange={setCreateAdminOpen}
-            onCreateSubmit={() => {}}
-            onToggle={() => {}}
-            onResetPassword={() => {}}
-            onDelete={() => {}}
-            onEditSubmit={() => {}}
-          />
+          <AdminAccountsTab />
         </TabsContent>
 
         <TabsContent value="commission">
-          <CommissionMatrixTab
-            isLoading
-            isError={false}
-            onRetry={() => {}}
-            onCellSubmit={() => {}}
-          />
+          <CommissionMatrixTab />
         </TabsContent>
 
         <TabsContent value="plans">
-          <SubscriptionPlansTab
-            isLoading
-            isError={false}
-            onRetry={() => {}}
-            createOpen={createPlanOpen}
-            onCreateOpenChange={setCreatePlanOpen}
-            onCreateSubmit={() => {}}
-            onToggle={() => {}}
-          />
+          <SubscriptionPlansTab />
         </TabsContent>
 
         <TabsContent value="companies">
-          <DeliveryCompaniesTab
-            isLoading
-            isError={false}
-            onRetry={() => {}}
-            createOpen={createCompanyOpen}
-            onCreateOpenChange={setCreateCompanyOpen}
-            onCreateSubmit={() => {}}
-            onEditSubmit={() => {}}
-            onToggle={() => {}}
-          />
+          <DeliveryCompaniesTab />
         </TabsContent>
       </Tabs>
     </div>

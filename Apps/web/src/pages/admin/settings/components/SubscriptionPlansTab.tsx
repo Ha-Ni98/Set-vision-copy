@@ -25,35 +25,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Power, CreditCard, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  useSubscriptionPlans,
+  useCreateSubscriptionPlan,
+  useToggleSubscriptionPlan,
+} from "@/hooks/useSubscriptionPlans";
 import { AddPlanModal } from "./AddPlanModal";
 
-interface Props {
-  data?: SubscriptionPlanDTO[];
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-  createOpen: boolean;
-  onCreateOpenChange: (open: boolean) => void;
-  onCreateSubmit: () => void;
-  createPending?: boolean;
-  onToggle: (plan: SubscriptionPlanDTO) => void;
-  isMutating?: boolean;
-}
-
-export function SubscriptionPlansTab({
-  data,
-  isLoading,
-  isError,
-  onRetry,
-  createOpen,
-  onCreateOpenChange,
-  onCreateSubmit,
-  createPending,
-  onToggle,
-  isMutating,
-}: Props) {
+export function SubscriptionPlansTab() {
   const { t } = useTranslation();
+  const [createOpen, setCreateOpen] = useState(false);
   const [toggleRow, setToggleRow] = useState<SubscriptionPlanDTO | null>(null);
+
+  const plansQuery = useSubscriptionPlans({});
+  const createPlan = useCreateSubscriptionPlan();
+  const togglePlan = useToggleSubscriptionPlan();
 
   const columns = useMemo<ColumnDef<SubscriptionPlanDTO>[]>(
     () => [
@@ -99,24 +85,26 @@ export function SubscriptionPlansTab({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button onClick={() => onCreateOpenChange(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           {t("admin.settings.plans.create.title")}
         </Button>
       </div>
 
-      {isLoading ? (
+      {plansQuery.isLoading ? (
         <TableSkeleton rows={4} columns={5} />
-      ) : isError ? (
+      ) : plansQuery.isError ? (
         <NotFoundState
           title={t("admin.dashboard.sectionError")}
           body={t("admin.dashboard.sectionErrorBody")}
-          action={<Button onClick={onRetry}>{t("common.actions.tryAgain")}</Button>}
+          action={
+            <Button onClick={() => plansQuery.refetch()}>{t("common.actions.tryAgain")}</Button>
+          }
         />
       ) : (
         <DataTable
           columns={columns}
-          data={data ?? []}
+          data={plansQuery.data ?? []}
           getRowKey={(row) => row.id}
           renderMobileRow={(row) => (
             <div className="flex items-center justify-between gap-3 p-4 text-sm">
@@ -142,9 +130,9 @@ export function SubscriptionPlansTab({
 
       <AddPlanModal
         open={createOpen}
-        onOpenChange={onCreateOpenChange}
-        onSubmit={onCreateSubmit}
-        isPending={createPending}
+        onOpenChange={setCreateOpen}
+        onSubmit={(values) => createPlan.mutate(values, { onSuccess: () => setCreateOpen(false) })}
+        isPending={createPlan.isPending}
       />
 
       <AlertDialog open={toggleRow !== null} onOpenChange={(open) => !open && setToggleRow(null)}>
@@ -162,9 +150,9 @@ export function SubscriptionPlansTab({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isMutating}
+              disabled={togglePlan.isPending}
               onClick={() => {
-                if (toggleRow) onToggle(toggleRow);
+                if (toggleRow) togglePlan.mutate(toggleRow.id);
                 setToggleRow(null);
               }}
             >

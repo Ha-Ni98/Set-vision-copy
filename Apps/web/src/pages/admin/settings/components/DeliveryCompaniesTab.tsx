@@ -25,40 +25,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Pencil, Power, Truck, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  useDeliveryCompanies,
+  useCreateDeliveryCompany,
+  useUpdateDeliveryCompany,
+  useToggleDeliveryCompany,
+} from "@/hooks/useDeliveryCompanies";
 import { CompanyModal } from "./CompanyModal";
 
-interface Props {
-  data?: DeliveryCompanyDTO[];
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-  createOpen: boolean;
-  onCreateOpenChange: (open: boolean) => void;
-  onCreateSubmit: () => void;
-  createPending?: boolean;
-  onEditSubmit: (company: DeliveryCompanyDTO) => void;
-  editPending?: boolean;
-  onToggle: (company: DeliveryCompanyDTO) => void;
-  isMutating?: boolean;
-}
-
-export function DeliveryCompaniesTab({
-  data,
-  isLoading,
-  isError,
-  onRetry,
-  createOpen,
-  onCreateOpenChange,
-  onCreateSubmit,
-  createPending,
-  onEditSubmit,
-  editPending,
-  onToggle,
-  isMutating,
-}: Props) {
+export function DeliveryCompaniesTab() {
   const { t } = useTranslation();
+  const [createOpen, setCreateOpen] = useState(false);
   const [editRow, setEditRow] = useState<DeliveryCompanyDTO | null>(null);
   const [toggleRow, setToggleRow] = useState<DeliveryCompanyDTO | null>(null);
+
+  const companiesQuery = useDeliveryCompanies({});
+  const createCompany = useCreateDeliveryCompany();
+  const updateCompany = useUpdateDeliveryCompany();
+  const toggleCompany = useToggleDeliveryCompany();
 
   const columns = useMemo<ColumnDef<DeliveryCompanyDTO>[]>(
     () => [
@@ -98,24 +82,26 @@ export function DeliveryCompaniesTab({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button onClick={() => onCreateOpenChange(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           {t("admin.settings.companies.create.title")}
         </Button>
       </div>
 
-      {isLoading ? (
+      {companiesQuery.isLoading ? (
         <TableSkeleton rows={4} columns={4} />
-      ) : isError ? (
+      ) : companiesQuery.isError ? (
         <NotFoundState
           title={t("admin.dashboard.sectionError")}
           body={t("admin.dashboard.sectionErrorBody")}
-          action={<Button onClick={onRetry}>{t("common.actions.tryAgain")}</Button>}
+          action={
+            <Button onClick={() => companiesQuery.refetch()}>{t("common.actions.tryAgain")}</Button>
+          }
         />
       ) : (
         <DataTable
           columns={columns}
-          data={data ?? []}
+          data={companiesQuery.data ?? []}
           getRowKey={(row) => row.id}
           renderMobileRow={(row) => (
             <div className="flex items-center justify-between gap-3 p-4 text-sm">
@@ -138,19 +124,24 @@ export function DeliveryCompaniesTab({
 
       <CompanyModal
         open={createOpen}
-        onOpenChange={onCreateOpenChange}
-        onSubmit={onCreateSubmit}
-        isPending={createPending}
+        onOpenChange={setCreateOpen}
+        onSubmit={(values) =>
+          createCompany.mutate(values, { onSuccess: () => setCreateOpen(false) })
+        }
+        isPending={createCompany.isPending}
       />
 
       <CompanyModal
         open={editRow !== null}
         onOpenChange={(open) => !open && setEditRow(null)}
         company={editRow}
-        isPending={editPending}
-        onSubmit={() => {
-          if (editRow) onEditSubmit(editRow);
-          setEditRow(null);
+        isPending={updateCompany.isPending}
+        onSubmit={(values) => {
+          if (!editRow) return;
+          updateCompany.mutate(
+            { id: editRow.id, command: values },
+            { onSuccess: () => setEditRow(null) },
+          );
         }}
       />
 
@@ -169,9 +160,9 @@ export function DeliveryCompaniesTab({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isMutating}
+              disabled={toggleCompany.isPending}
               onClick={() => {
-                if (toggleRow) onToggle(toggleRow);
+                if (toggleRow) toggleCompany.mutate(toggleRow.id);
                 setToggleRow(null);
               }}
             >

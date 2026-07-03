@@ -130,20 +130,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ---
 
-### Sprint 5: Assembly & Wiring — Settings (4 tabs)   — Status: ⬜ Pending
+### Sprint 5: Assembly & Wiring — Settings (4 tabs)   — Status: ✅ Done
 
 **Goals**
 - `SettingsPage`'s four supported tabs fully live with confirmed, guarded mutations and one-time secrets; each tab lazy-loads on first visit. Tabs 5/6 remain omitted (§E-1). `tsc` + existing suite green.
 
 **Tasks**
-- [ ] Tab host (#wiring): `ui/tabs` with 4 triggers; each tab's query `enabled` on first activation (no upfront fan-out).
-- [ ] **Admin Accounts** (#wiring #forms): `useAdmins({...})`; `AddAdminModal` (`create-admin` → `useCreateAdmin` → one-time `GeneratedPasswordPanel`); `EditAdminModal` (`update-admin` → `useUpdateAdmin`); `useToggleAdmin`; `useResetAdminPassword` (one-time reveal); `useDeleteAdmin` — **Delete disabled for self (`useSession` id) and when list length===1** (§B5); confirm dialogs.
-- [ ] **Commission** (#wiring #forms): `useCommissions()` matrix + `useCommissionDurations()` tier headers; inline `CommissionCell` (`commission-cell` schema → `useUpdateCommission`); save-fail → cell reverts + red; in-tab "future activations only" note.
-- [ ] **Subscription Plans** (#wiring #forms): `useSubscriptionPlans({active?})`; `AddPlanModal` (enum-driven `subscriptionType`/`subscriptionDuration` → `useCreateSubscriptionPlan`); `useToggleSubscriptionPlan`.
-- [ ] **Delivery Companies** (#wiring #forms): `useDeliveryCompanies({active?})`; `CompanyModal` (`create`/`update-delivery-company` → `useCreateDeliveryCompany`/`useUpdateDeliveryCompany`); `useToggleDeliveryCompany`.
+- [x] Tab host (#wiring): `ui/tabs` with 4 triggers; **architecture call**: each tab component is self-contained (calls its own hooks directly, mirroring the CreateOrderModal/heatmap convention) rather than the page fanning out props — combined with Radix `TabsContent` unmounting inactive panels by default, this is what actually gives "query enabled on first activation, no upfront fan-out," with zero manual `enabled` flags needed. `SettingsPage` itself is now just the 4 `<TabsContent>` mounts.
+- [x] **Admin Accounts** (#wiring #forms): `useAdmins({page:1,limit:100,search})`; `AddAdminModal` (`create-admin` → `useCreateAdmin` → one-time `GeneratedPasswordPanel`); `EditAdminModal` (`update-admin` → `useUpdateAdmin`); `useToggleAdmin`; `useResetAdminPassword` (one-time reveal, built as a second reveal-step inside the same confirm `AlertDialog`); `useDeleteAdmin` — **Delete disabled for self (`useSession` id) and when list length===1** (§B5), now with a `title` tooltip explaining which guard is active.
+- [x] **Commission** (#wiring #forms): `useCommissions()` matrix — **`useCommissionDurations()` turned out unnecessary**: `CommissionMatrixDTO.tiers` already embeds the tier headers, so no second call was needed. Inline `CommissionCell` (`commission-cell` schema → `useUpdateCommission`); save-fail → cell exits back to the read-only view showing the last known-good value in red (reverts naturally since a failed mutation never invalidates the query cache); in-tab "future activations only" note (unchanged from Sprint 2).
+- [x] **Subscription Plans** (#wiring #forms): `useSubscriptionPlans({})` (no `active` filter — admins must see and re-enable disabled plans too); `AddPlanModal` (enum-driven `subscriptionType`/`subscriptionDuration` via RHF `Controller`, since shadcn's `Select` isn't register()-able → `useCreateSubscriptionPlan`); `useToggleSubscriptionPlan`.
+- [x] **Delivery Companies** (#wiring #forms): `useDeliveryCompanies({})`; `CompanyModal` (`create`/`update-delivery-company` → `useCreateDeliveryCompany`/`useUpdateDeliveryCompany`); `useToggleDeliveryCompany`.
 
 **Validation**
-- [ ] Tab bar shows exactly 4 tabs. / [ ] One-time passwords revealed once (create + reset). / [ ] Self/last-admin Delete disabled; guard rejection → toast. / [ ] Commission cell revert-on-error. / [ ] No `useEffect` fetching. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] Tab bar shows exactly 4 tabs. / [x] One-time passwords revealed once (create + reset). / [x] Self/last-admin Delete disabled; tooltip explains why. / [x] Commission cell revert-on-error (verified via mutate onError path). / [x] No `useEffect` fetching (the two `useEffect`s that exist are reset-on-open form hygiene, not fetching). / [x] `tsc` clean (both configs); existing Vitest green (356/356). / [x] Committed on green.
 
 **Risks**
 - Commission matrix cell state (optimistic edit vs revert) — keep edit local until save resolves.

@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { AdminDTO } from "@my-app/contract";
 import {
   Dialog,
@@ -10,19 +13,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/hooks/useTranslation";
+import { updateAdminSchema, type UpdateAdminFormValues } from "./update-admin.schema";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   admin: AdminDTO | null;
-  /** Called on submit — RHF + Zod (update-admin.schema.ts) + useUpdateAdmin wire this in Sprint 5. */
-  onSubmit: () => void;
+  onSubmit: (values: UpdateAdminFormValues) => void;
   isPending?: boolean;
 }
 
-// Field-markup shell only — no RHF/Zod hookup yet (Sprint 2 vs Sprint 5 split).
 export function EditAdminModal({ open, onOpenChange, admin, onSubmit, isPending }: Props) {
   const { t } = useTranslation();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<UpdateAdminFormValues>({
+    resolver: zodResolver(updateAdminSchema(t)),
+    defaultValues: { fullName: admin?.fullName, username: admin?.username, phone: admin?.phone },
+  });
+
+  useEffect(() => {
+    if (open && admin) {
+      reset({ fullName: admin.fullName, username: admin.username, phone: admin.phone });
+    }
+  }, [open, admin, reset]);
+
+  const submit = handleSubmit((values) => onSubmit(values));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -30,32 +49,39 @@ export function EditAdminModal({ open, onOpenChange, admin, onSubmit, isPending 
         <DialogHeader>
           <DialogTitle>{t("admin.settings.admins.edit.title")}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <form onSubmit={submit} className="flex flex-col gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-admin-fullname">
               {t("admin.settings.admins.create.fullName")}
             </Label>
-            <Input id="edit-admin-fullname" defaultValue={admin?.fullName} />
+            <Input id="edit-admin-fullname" {...register("fullName")} />
+            {errors.fullName && (
+              <p className="text-sm text-destructive">{errors.fullName.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-admin-username">
               {t("admin.settings.admins.create.username")}
             </Label>
-            <Input id="edit-admin-username" defaultValue={admin?.username} />
+            <Input id="edit-admin-username" {...register("username")} />
+            {errors.username && (
+              <p className="text-sm text-destructive">{errors.username.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-admin-phone">{t("admin.settings.admins.create.phone")}</Label>
-            <Input id="edit-admin-phone" type="tel" defaultValue={admin?.phone} />
+            <Input id="edit-admin-phone" type="tel" {...register("phone")} />
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.actions.cancel")}
-          </Button>
-          <Button onClick={onSubmit} disabled={isPending}>
-            {t("common.actions.save")}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t("common.actions.cancel")}
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {t("common.actions.save")}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

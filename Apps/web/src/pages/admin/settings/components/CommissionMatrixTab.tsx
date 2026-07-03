@@ -1,41 +1,35 @@
-import type { CommissionMatrixDTO } from "@my-app/contract";
+import { useState } from "react";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCommissions, useUpdateCommission } from "@/hooks/useSubscriptionPlans";
 import { CommissionCell } from "./CommissionCell";
 
-interface Props {
-  data?: CommissionMatrixDTO;
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-  onCellSubmit: (subscriptionPlanId: string, commissionDurationId: string) => void;
-  savingCellKey?: string | null;
-  erroredCellKey?: string | null;
-}
-
-export function CommissionMatrixTab({
-  data,
-  isLoading,
-  isError,
-  onRetry,
-  onCellSubmit,
-  savingCellKey,
-  erroredCellKey,
-}: Props) {
+// Self-contained (Part-3 modal/heatmap convention) — `useCommissions()` already embeds the
+// tier headers in its own response (`CommissionMatrixDTO.tiers`), so a separate
+// `useCommissionDurations()` call isn't needed here after all.
+export function CommissionMatrixTab() {
   const { t } = useTranslation();
+  const commissionsQuery = useCommissions();
+  const updateCommission = useUpdateCommission();
+  const [savingCellKey, setSavingCellKey] = useState<string | null>(null);
+  const [erroredCellKey, setErroredCellKey] = useState<string | null>(null);
 
-  if (isLoading) return <TableSkeleton rows={4} columns={5} />;
-  if (isError) {
+  if (commissionsQuery.isLoading) return <TableSkeleton rows={4} columns={5} />;
+  if (commissionsQuery.isError) {
     return (
       <NotFoundState
         title={t("admin.dashboard.sectionError")}
         body={t("admin.dashboard.sectionErrorBody")}
-        action={<Button onClick={onRetry}>{t("common.actions.tryAgain")}</Button>}
+        action={
+          <Button onClick={() => commissionsQuery.refetch()}>{t("common.actions.tryAgain")}</Button>
+        }
       />
     );
   }
+
+  const data = commissionsQuery.data;
 
   return (
     <div className="flex flex-col gap-3">
@@ -64,7 +58,24 @@ export function CommissionMatrixTab({
                         commission={cell.commission}
                         isSaving={savingCellKey === key}
                         hasError={erroredCellKey === key}
-                        onSubmit={() => onCellSubmit(row.planId, cell.commissionDurationId)}
+                        onSubmit={(values) => {
+                          setSavingCellKey(key);
+                          setErroredCellKey(null);
+                          updateCommission.mutate(
+                            {
+                              subscriptionPlanId: row.planId,
+                              commissionDurationId: cell.commissionDurationId,
+                              commission: values.commission,
+                            },
+                            {
+                              onSuccess: () => setSavingCellKey(null),
+                              onError: () => {
+                                setSavingCellKey(null);
+                                setErroredCellKey(key);
+                              },
+                            },
+                          );
+                        }}
                       />
                     </td>
                   );
