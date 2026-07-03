@@ -39,5 +39,8 @@ dist-ssr
 .env
 *.local
 
+# Ignore helper files
+react-algeria-map/*
+
 
 

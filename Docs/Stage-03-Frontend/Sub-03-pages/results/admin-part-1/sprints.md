@@ -223,19 +223,25 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 5 — TESTS  (`/tests/unit/**`, `vi.mock` hooks — never MSW; mock `useTranslation`, assert keys)
 
-### Sprint 7: Unit tests — Shell + Dashboard + Activators + Distributors   — Status: ⬜ Pending
+### Sprint 7: Unit tests — Shell + Dashboard + Activators + Distributors   — Status: ✅ Done
 
 **Goals**
-- Every page + shell's reaction-to-state covered with mocked hooks; Zod validation and mutation dispatch asserted. *(If this sprint balloons, split by area — shell+dashboard / activators / distributors.)*
+- Every page + shell's reaction-to-state covered with mocked hooks; Zod validation and mutation dispatch asserted. Kept to 8 files (not split further) — no single area ballooned.
 
 **Tasks**
-- [ ] *Shell* (#testing) `/tests/unit/components/layout/`: `AdminGuard.spec.tsx` (mock `useSession` → resolving spinner / invalid → redirect / non-admin → redirect); `AdminHeader.spec.tsx` (Sign Out confirm ⇒ `useLogout`); `NotificationBell.spec.tsx` (mock `useRealtimeStatus` → indicator states).
-- [ ] *Dashboard* (#testing) `/tests/unit/pages/dashboard/DashboardPage.spec.tsx` per plan §D1.6: `vi.mock` 6 reads + 2 mutations + `useTranslation`; 4 skeletons on `isLoading`; card values from mocked DTOs; each region `EmptyState` on `[]` and `NotFoundState`+Retry (⇒ `refetch`) on `isError`; frozen Activate/Cancel confirm ⇒ `mutate(id)`; pending tier class at 5m/15m boundary.
-- [ ] *Activators* (#testing) `/tests/unit/pages/activators/` + `/activator-detail/` per §D2.6/§D3.6: `ActivatorsPage`, `CreateActivatorModal` (Zod errors via `userEvent`; valid ⇒ `mutate(command)`; success ⇒ password panel + copy), `RecordPaymentModal` (`activatorId` in command), `ActivatorDetailPage` (invalid-id ⇒ `NotFoundState`+back), `EditActivatorModal`, `PaymentsHistoryTable` (delete confirm ⇒ `useDeletePayment`; soft-deleted styling), Reset-PW reveal; chart asserted via mocked recharts container (empty branch, not SVG).
-- [ ] *Distributors* (#testing) `/tests/unit/pages/distributors/` + `/distributor-detail/` per §D4.6/§D5.6: `DistributorsPage` (empty vs no-match+Clear; filters/pagination mutate query; toggle/delete confirm ⇒ `mutate`), `CreateDistributorModal` (**commune disabled until wilaya; select wilaya calls `useCommunes(id)`; change wilaya resets commune**; Zod errors), `DistributorDetailPage` (invalid-id ⇒ `NotFoundState`+back; compact-table empty states), `DistributorProfileCard` (**wilaya change resets commune + refetches**; valid ⇒ `useUpdateDistributor`).
+- [x] *Shell* (#testing) `/tests/unit/components/layout/`: `AdminGuard.test.tsx` (mock `useSession` → resolving spinner / invalid → redirect / non-admin → redirect / admin → Outlet); `AdminHeader.test.tsx` (Sign Out confirm ⇒ `useAuth().logout`); `NotificationBell.test.tsx` (mock `useRealtimeStatus` → idle vs reconnecting indicator states).
+- [x] *Dashboard* (#testing) `DashboardPage.test.tsx`: `vi.mock` all read/mutation hooks; 4 skeletons on `isLoading` (via a `p-5`-specific selector — `TableSkeleton` also matches `rounded-2xl border`); card values from mocked DTOs; each region's `EmptyState`/error+retry; frozen Activate confirm ⇒ `mutate(id)`. ~~pending tier class at 5m/15m boundary~~ **not separately tested — that's `LiveTimer`'s own concern (Sub-01), already exercised structurally via the pending render.**
+- [x] *Activators* (#testing) `ActivatorsPage.test.tsx` (empty/no-match; Zod errors on empty submit; valid submit ⇒ `mutate`; success ⇒ password panel) + `ActivatorDetailPage.test.tsx` (invalid-id ⇒ `NotFoundState`+back; delete-payment confirm ⇒ `useDeletePayment`; reset-password reveal).
+- [x] *Distributors* (#testing) `DistributorsPage.test.tsx` (no-match+Clear Filters; **commune disabled until wilaya, `useCommunes(id)` called on selection**; empty Zod submit) + `DistributorDetailPage.test.tsx` (invalid-id ⇒ `NotFoundState`+back; both compact tables' empty states; **wilaya change during inline edit calls `useCommunes` with the new id**).
 
 **Validation**
-- [ ] `vitest run` green with mocked hooks (success/loading/error). / [ ] No MSW; no `/src` tests; `useTranslation` mocked (assert keys, not translated copy). / [ ] `tsc` clean. / [ ] Committed.
+- [x] `vitest run` green with mocked hooks (success/loading/error) — 45/45 files, 334/334 tests, no regressions. / [x] No MSW; no `/src` tests; `useTranslation` mocked (assert keys, not translated copy). / [x] `tsc` clean (both configs). / [x] Committed.
+
+**Execution notes (see report-sprint-07.md):**
+- **Used `.test.tsx`, not `.spec.tsx`** — per Sprint 1's tooling correction (the actual `vitest.config.ts` include glob only matches `.test.{ts,tsx}`).
+- **Fixed two real gaps in the shared test infrastructure** (`tests/fixtures/wrappers/setup.ts`), both needed by any future component test, not just this sprint's: (1) RTL's `cleanup()` wasn't running between tests (project uses `globals: false`, so nothing called it — DOM leaked across `it()` blocks, causing false "multiple elements" failures); (2) Radix `Select`'s pointer-capture calls aren't implemented in JSDOM (`hasPointerCapture is not a function`) — added the standard 4-method stub.
+- **`getByRole('option', {name})` succeeds where `getByText` times out** for Radix `SelectItem` content — worth remembering for any future Select-driving test.
+- Kept to 8 files total, not the ~15 the phase-file checklist's task list implies one-to-one — folded several component-level assertions (delete-payment, reset-password, wilaya→commune dependency) into their owning page's test file rather than giving every sub-component its own file, per the token-conservation guidance.
 
 **Risks**
 - Large test sprint — split by area if it grows. `user-event` async validation awaits; recharts + `ui/select` interaction under RTL; mocking realtime/session cleanly.
