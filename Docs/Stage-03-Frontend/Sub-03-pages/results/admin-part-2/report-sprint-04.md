@@ -2,7 +2,7 @@
 sprint: 4
 title: Assembly & Wiring — Sets & Lots + Cards
 status: ✅ Done
-commit: TBD
+commit: 1db151d
 ---
 
 # Sprint 4 Report — Assembly & Wiring — Sets & Lots + Cards
