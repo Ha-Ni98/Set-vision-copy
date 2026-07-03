@@ -222,6 +222,8 @@
   "admin.shell.bell.label": { "en": "Notifications", "fr": "Notifications", "ar": "" },
   "admin.shell.bell.reconnecting": { "en": "Reconnecting…", "fr": "Reconnexion en cours…", "ar": "" },
   "admin.shell.bell.empty": { "en": "No notifications yet", "fr": "Aucune notification pour le moment", "ar": "" },
+  "admin.shell.openMenu": { "en": "Open menu", "fr": "Ouvrir le menu", "ar": "" },
+  "admin.activators.table.perPage": { "en": "Rows per page", "fr": "Lignes par page", "ar": "" },
 
   "admin.dashboard.subtitle": { "en": "Live overview of activations, activators, and distributors.", "fr": "Aperçu en direct des activations, activateurs et distributeurs.", "ar": "" },
   "admin.dashboard.stats.totalActivations.title": { "en": "Total Activations", "fr": "Total des activations", "ar": "" },

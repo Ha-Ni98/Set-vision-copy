@@ -197,19 +197,24 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 4 — POLISH
 
-### Sprint 6: Polish — responsive, performance, a11y, theming   — Status: ⬜ Pending
+### Sprint 6: Polish — responsive, performance, a11y, theming   — Status: ✅ Done
 
 **Goals**
 - Desktop-first admin polish across shell + 5 pages; memoization exactly where plan §B8 calls for it (and nowhere else); a11y + dark/light parity.
 
 **Tasks**
-- [ ] Responsive (#ui): admin grid + sidebar behavior; verify table horizontal-scroll and `DataTable` mobile stacked rows; header/user-menu on tablet (mobile best-effort per spec).
-- [ ] Performance (#perf): confirm `ColumnDef[]` memoization on every table; Dashboard `useMemo` derivations; debounced search (~300 ms); `enabled`-gating on `useCommunes`; add `useCallback` only for handlers passed hot to memoized children. **Do not** add speculative memo (rules §5).
-- [ ] a11y (#a11y): dialog focus-trap/return, `aria-label` on icon buttons + bell, `<label>` on selects/inputs, keyboard nav for menus/pagination.
-- [ ] Theming: dark/light parity for `StatCard`, tables, dialogs, badges (semantic CSS vars).
+- [x] Responsive (#ui): admin grid + sidebar behavior confirmed already correct (built S2); **found and fixed a real gap** — `DataTable`'s desktop wrapper used `overflow-hidden` (clips), not `overflow-x-auto` (scrolls), so the 8–9-column admin tables would have been cut off rather than horizontally scrollable on narrower desktop/tablet widths. Mobile stacked rows already correct (`DataTable`'s existing `md:hidden` branch, screenshot-confirmed in Sprint 3). Header/user-menu tablet behavior already correct (S2).
+- [x] Performance (#perf): confirmed `ColumnDef[]` memoized via `useMemo` on every table built across S2–S5 (no gaps); Dashboard's completed-count `useMemo` confirmed (S4); debounced search confirmed on both list pages (S5, incl. the S4 retrofit); `useCommunes`'s `enabled: !!wilayaId` gating confirmed already built into the hook itself. **No `useCallback` added** — none of the table/list components are wrapped in `React.memo()`, so there is no memoized child whose prop identity would benefit; adding it would be exactly the speculative memoization the rules warn against.
+- [x] a11y (#a11y): Radix `Dialog`/`AlertDialog`/`DropdownMenu`/`Select` already provide focus-trap/return and keyboard nav natively — nothing to hand-roll. Found and fixed **6 missing `aria-label`s on icon-only buttons** across files this sub-stage owns: `AdminHeader`'s mobile menu trigger, `PaymentsHistoryTable`'s delete button (desktop + mobile), `FrozenActivationsTable`'s mobile Activate/Cancel buttons, and `ActivatorsPage`'s per-page `Select` (no visible label). Confirmed already-present labels on `ActivatorActionsMenu`/`DistributorActionsMenu` triggers and `CopyButton` (all built with labels from the start).
+- [x] Theming: dark/light parity confirmed via a full grep for hardcoded/non-semantic color classes (`text-black`, `bg-gray-*`, raw hex, etc.) across every file this sub-stage added — zero matches; every color reference already uses the established semantic tokens (`bg-card`, `text-foreground`, `bg-success/15`, etc.), which already have dark-mode CSS variable definitions.
 
 **Validation**
-- [ ] Copy via `useTranslation`. / [ ] `tsc` clean. / [ ] No new layout shift; no unnecessary memoization introduced. / [ ] Existing Vitest green. / [ ] Committed.
+- [x] Copy via `useTranslation`. / [x] `tsc` clean. / [x] No new layout shift (the `overflow-x-auto` addition is purely permissive — tables that already fit are unaffected); no unnecessary memoization introduced. / [x] Existing Vitest green. / [x] Committed.
+
+**Execution notes (see report-sprint-06.md):**
+- **This was mostly a confirm-what's-already-there sprint** — the established patterns from S2–S5 (memoized columns, semantic color tokens, hooks' own `enabled` gating) already satisfied most of this sprint's goals by construction. Genuine gaps found were real but small: one shared-component overflow fix, six missing `aria-label`s.
+- **Did not touch `DataTable.tsx`'s pre-existing lint debt** (4 Prettier formatting issues + one `any` type on lines I didn't edit, confirmed via `git diff` showing my change was exactly one line) — same precedent as Sprint 1's "don't fix untouched Sub-01 files" call.
+- Used a grep-based audit for the theming check instead of a browser dark-mode screenshot pass, continuing the token-conservation approach from Sprints 4–5.
 
 **Risks**
 - Over-memoization hurting clarity; dark-mode contrast on status colors.

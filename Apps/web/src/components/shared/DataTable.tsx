@@ -20,7 +20,7 @@ export function DataTable<TData>({ columns, data, getRowKey, renderMobileRow, em
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <div className="hidden md:block">
+      <div className="hidden overflow-x-auto md:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

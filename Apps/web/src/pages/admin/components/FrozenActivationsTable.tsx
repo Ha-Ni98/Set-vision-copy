@@ -106,6 +106,7 @@ export function FrozenActivationsTable({
                 size="sm"
                 variant="outline"
                 onClick={() => setDialogRow({ row, action: "activate" })}
+                aria-label={t("common.actions.activate")}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </Button>
@@ -114,6 +115,7 @@ export function FrozenActivationsTable({
                 variant="outline"
                 className="text-destructive"
                 onClick={() => setDialogRow({ row, action: "cancel" })}
+                aria-label={t("common.actions.cancel")}
               >
                 <ShieldAlert className="h-3.5 w-3.5" />
               </Button>

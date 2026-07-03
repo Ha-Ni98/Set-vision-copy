@@ -87,7 +87,12 @@ export function PaymentsHistoryTable({
         header: "",
         cell: ({ row }) =>
           row.original.isDeleted ? null : (
-            <Button variant="ghost" size="icon" onClick={() => setDeleteId(row.original.id)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteId(row.original.id)}
+              aria-label={t("common.actions.delete")}
+            >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           ),
@@ -126,7 +131,12 @@ export function PaymentsHistoryTable({
               </div>
             </div>
             {!row.isDeleted && (
-              <Button variant="ghost" size="icon" onClick={() => setDeleteId(row.id)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDeleteId(row.id)}
+                aria-label={t("common.actions.delete")}
+              >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             )}

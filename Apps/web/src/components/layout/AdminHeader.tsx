@@ -45,7 +45,12 @@ export function AdminHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/90 px-4 backdrop-blur-md">
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            aria-label={t("admin.shell.openMenu")}
+          >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>

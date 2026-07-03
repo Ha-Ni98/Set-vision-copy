@@ -110,7 +110,7 @@ export default function ActivatorsPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-24">
+          <SelectTrigger className="w-24" aria-label={t("admin.activators.table.perPage")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
