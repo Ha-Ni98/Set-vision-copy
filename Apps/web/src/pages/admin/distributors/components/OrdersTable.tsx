@@ -23,6 +23,7 @@ import { useLanguage } from "@/components/providers/LanguageProvider";
 import { formatDateTime, formatDZD } from "@/lib/utils";
 import { OrderActionsMenu } from "./OrderActionsMenu";
 import { MarkDeliveredModal } from "./MarkDeliveredModal";
+import type { MarkDeliveredFormValues } from "./mark-delivered.schema";
 
 interface Props {
   data?: OrderDTO[];
@@ -34,8 +35,7 @@ interface Props {
   onCreateFirst?: () => void;
   onView: (order: OrderDTO) => void;
   onMarkInDelivery: (order: OrderDTO) => void;
-  /** Called once the delivered-count value has been captured — Sprint 3 wires the real value. */
-  onMarkDelivered: (order: OrderDTO) => void;
+  onMarkDelivered: (order: OrderDTO, values: MarkDeliveredFormValues) => void;
   onMarkReturned: (order: OrderDTO) => void;
   onDelete: (order: OrderDTO) => void;
   /** `useTransitionOrder`/`useDeleteOrder` pending state — wired in Sprint 3. */
@@ -191,8 +191,8 @@ export function OrdersTable({
         onOpenChange={(open) => !open && setMarkDeliveredRow(null)}
         isPending={isMutating}
         maxCount={markDeliveredRow?.cardsCount ?? 0}
-        onSubmit={() => {
-          if (markDeliveredRow) onMarkDelivered(markDeliveredRow);
+        onSubmit={(values) => {
+          if (markDeliveredRow) onMarkDelivered(markDeliveredRow, values);
           setMarkDeliveredRow(null);
         }}
       />

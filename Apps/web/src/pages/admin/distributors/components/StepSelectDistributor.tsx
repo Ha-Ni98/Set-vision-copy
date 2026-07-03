@@ -17,6 +17,7 @@ interface Props {
   onRetry: () => void;
   selectedDistributorId: string;
   onSelectDistributor: (id: string) => void;
+  error?: string;
 }
 
 // Step 1 of the create-order wizard — real hook wiring (useDistributors + client isEnabled
@@ -30,6 +31,7 @@ export function StepSelectDistributor({
   onRetry,
   selectedDistributorId,
   onSelectDistributor,
+  error,
 }: Props) {
   const { t } = useTranslation();
 
@@ -95,6 +97,7 @@ export function StepSelectDistributor({
           })}
         </div>
       )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

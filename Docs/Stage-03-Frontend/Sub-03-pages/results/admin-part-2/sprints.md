@@ -83,21 +83,21 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 3 — ASSEMBLY & WIRING
 
-### Sprint 3: Assembly & Wiring — Orders   — Status: ⬜ Pending
+### Sprint 3: Assembly & Wiring — Orders   — Status: ✅ Done
 
 **Goals**
 - `OrdersPage` fully live: summary stats, filterable/paginated table, detail drawer, the 4-step create-order wizard (RHF + all reads + per-step `trigger()` + submit), and every state-gated transition/delete. Layout survives each region's loading/error. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] Wire `OrdersPage` (#wiring): `useOrdersSummary()` → 4 stat cards; `useOrders({ page, limit, search, distributorId, wilayaId, deliveryCompanyId, state, dateFrom, dateTo })` with `useDebouncedValue` search + `SimplePagination`; seed `distributorId` once from `?distributor=`.
-- [ ] Filters (#wiring): `useWilayas()`, `useDeliveryCompanies({ active: true })`, state + date-range controls feeding the query.
-- [ ] Detail drawer (#wiring): `useOrder(id)` (`enabled: !!id`) → `OrderDetailDTO.lots[]` breakdown; receiver/distributor name → `<Link to="/admin/distributors/{id}">`.
-- [ ] Create-Order wizard (#wiring #forms): one `useForm(create-order)` + local `step` state; `StepSelectDistributor` (`useDistributors({ search, limit:100 })`, client-filter `isEnabled`); `StepSelectLots` (`useAvailableLotsForOrder({ subscriptionPlanId? })` + `useSubscriptionPlans({ active:true })`, controlled `lotIds`, live card-count, empty → `<Link>` to sets-lots); `StepReceiverInfo` (prefill from chosen distributor, `useWilayas`/`useCommunes(receiverWilayaId)`, commune gated on wilaya); `StepDeliveryConfig` (`useDeliveryCompanies({active:true})`, `deliveryType`, prices); `StepConfirmSummary` → `useCreateOrder.mutate(command)`. Advance only when `form.trigger([...stepFields])` passes.
-- [ ] Transitions/delete (#wiring): `OrderActionsMenu` gated by `orderStat` (Delete=`PENDING_DELIVERY`; Mark IN_DELIVERY=`PENDING_DELIVERY`; Mark DELIVERED/RETURNED=`IN_DELIVERY`); `MarkDeliveredModal` (mark-delivered schema, default `deliveredCount = order.cardsCount`) → `useTransitionOrder`; IN_DELIVERY/RETURNED/Delete confirm `AlertDialog`s → `useTransitionOrder`/`useDeleteOrder`.
-- [ ] Optimization (#perf): memoized `ColumnDef[]`, live Step-2 card-count total; rely on the **in-hook** cross-domain invalidation (orders+lots+cards+distributors) — never invalidate from the page.
+- [x] Wire `OrdersPage` (#wiring): `useOrdersSummary()` → 4 stat cards; `useOrders({ page, limit, search, distributorId, wilayaId, deliveryCompanyId, state, dateFrom, dateTo })` with `useDebouncedValue` search + `SimplePagination`; seed `distributorId` once from `?distributor=`.
+- [x] Filters (#wiring): `useWilayas()`, `useDeliveryCompanies({ active: true })`, state + date-range controls feeding the query.
+- [x] Detail drawer (#wiring): `useOrder(id)` (`enabled: !!id`) → `OrderDetailDTO.lots[]` breakdown; receiver/distributor name → `<Link to="/admin/distributors/{id}">`.
+- [x] Create-Order wizard (#wiring #forms): one `useForm(create-order)` + local `step` state — **the wizard host (`CreateOrderModal`) now owns every wizard-scoped hook itself** (rather than the page threading a dozen props down, see report); `StepSelectDistributor` (`useDistributors({ search, limit:100 })`, client-filter `isEnabled`); `StepSelectLots` (`useAvailableLotsForOrder({ subscriptionPlanId? })` + `useSubscriptionPlans({ active:true })`, controlled `lotIds`, live card-count, empty → `<Link>` to sets-lots); `StepReceiverInfo` (prefill from chosen distributor, `useWilayas`/`useCommunes(receiverWilayaId)`, commune gated on wilaya); `StepDeliveryConfig` (`useDeliveryCompanies({active:true})`, `deliveryType`, prices); `StepConfirmSummary` → `useCreateOrder.mutate(command)`. Advance only when `form.trigger([...stepFields])` passes.
+- [x] Transitions/delete (#wiring): `OrderActionsMenu` gated by `orderStat` (Delete=`PENDING_DELIVERY`; Mark IN_DELIVERY=`PENDING_DELIVERY`; Mark DELIVERED/RETURNED=`IN_DELIVERY`); `MarkDeliveredModal` (mark-delivered schema, default `deliveredCount = order.cardsCount`) → `useTransitionOrder`; IN_DELIVERY/RETURNED/Delete confirm `AlertDialog`s → `useTransitionOrder`/`useDeleteOrder`.
+- [x] Optimization (#perf): memoized `ColumnDef[]`, live Step-2 card-count total; rely on the **in-hook** cross-domain invalidation (orders+lots+cards+distributors) — never invalidate from the page.
 
 **Validation**
-- [ ] No `useEffect` fetching; failed writes rely on the global `mutationCache` toast; wizard/modal stay open + values preserved on error. / [ ] Disallowed actions hidden per gating. / [ ] Layout survives every region's loading/error. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] No `useEffect` fetching; failed writes rely on the global `mutationCache` toast; wizard/modal stay open + values preserved on error. / [x] Disallowed actions hidden per gating. / [x] Layout survives every region's loading/error. / [x] `tsc` clean; existing Vitest green. / [x] Committed on green.
 
 **Risks**
 - Wizard `step` state × RHF `trigger()` gating; `z.coerce` price/int fields (Part-1 split).

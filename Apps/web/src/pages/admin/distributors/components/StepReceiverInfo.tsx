@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import type { UseFormRegister, FieldErrors } from "react-hook-form";
 import type { WilayaDTO, CommuneDTO } from "@my-app/contract";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import type { CreateOrderFormInput } from "./create-order.schema";
 
 interface Props {
+  register: UseFormRegister<CreateOrderFormInput>;
+  errors: FieldErrors<CreateOrderFormInput>;
   wilayaId: string;
   onWilayaChange: (id: string) => void;
+  communeId: string;
+  onCommuneChange: (id: string) => void;
   wilayas?: WilayaDTO[];
   wilayasLoading: boolean;
   wilayasError: boolean;
@@ -23,14 +28,16 @@ interface Props {
   communesError: boolean;
 }
 
-// Step 3 of the create-order wizard — RHF register()/Controller wiring + distributor
-// prefill land in Sprint 3; this is the static field-markup shell only (mirrors
-// CreateDistributorModal's Sprint-3-static-shell precedent). `wilayaId` is parent-owned
-// (the page's useCommunes(wilayaId) call needs it); `communeId` has no downstream
-// dependents so it's local, real UI state.
+// Step 3 of the create-order wizard — real RHF wiring (Sprint 3). `wilayaId`/`communeId`
+// are both host-owned (the host's useCommunes(wilayaId) call needs the current value) and
+// mirrored into the form via the host's setValue on change.
 export function StepReceiverInfo({
+  register,
+  errors,
   wilayaId,
   onWilayaChange,
+  communeId,
+  onCommuneChange,
   wilayas,
   wilayasLoading,
   wilayasError,
@@ -39,27 +46,29 @@ export function StepReceiverInfo({
   communesError,
 }: Props) {
   const { t } = useTranslation();
-  const [communeId, setCommuneId] = useState("");
   const communeDisabled = !wilayaId || communesLoading || communesError;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="space-y-2">
         <Label htmlFor="order-received-name">{t("admin.orders.create.receivedName")}</Label>
-        <Input id="order-received-name" />
+        <Input id="order-received-name" {...register("receivedName")} />
+        {errors.receivedName && (
+          <p className="text-sm text-destructive">{errors.receivedName.message}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="order-received-phone">{t("admin.orders.create.receivedPhone")}</Label>
-        <Input id="order-received-phone" type="tel" />
+        <Input id="order-received-phone" type="tel" {...register("receivedPhone")} />
+        {errors.receivedPhone && (
+          <p className="text-sm text-destructive">{errors.receivedPhone.message}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label>{t("admin.orders.create.wilaya")}</Label>
         <Select
           value={wilayaId}
-          onValueChange={(v) => {
-            onWilayaChange(v);
-            setCommuneId("");
-          }}
+          onValueChange={onWilayaChange}
           disabled={wilayasLoading || wilayasError}
         >
           <SelectTrigger>
@@ -83,10 +92,11 @@ export function StepReceiverInfo({
             ))}
           </SelectContent>
         </Select>
+        {errors.wilayaId && <p className="text-sm text-destructive">{errors.wilayaId.message}</p>}
       </div>
       <div className="space-y-2">
         <Label>{t("admin.orders.create.commune")}</Label>
-        <Select value={communeId} onValueChange={setCommuneId} disabled={communeDisabled}>
+        <Select value={communeId} onValueChange={onCommuneChange} disabled={communeDisabled}>
           <SelectTrigger>
             {communesLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -110,6 +120,7 @@ export function StepReceiverInfo({
             ))}
           </SelectContent>
         </Select>
+        {errors.communeId && <p className="text-sm text-destructive">{errors.communeId.message}</p>}
       </div>
     </div>
   );

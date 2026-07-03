@@ -30,6 +30,7 @@ interface Props {
   onRetry: () => void;
   selectedLotIds: string[];
   onToggleLot: (id: string) => void;
+  error?: string;
 }
 
 // Step 2 of the create-order wizard — real hook wiring (useAvailableLotsForOrder +
@@ -46,6 +47,7 @@ export function StepSelectLots({
   onRetry,
   selectedLotIds,
   onToggleLot,
+  error,
 }: Props) {
   const { t } = useTranslation();
 
@@ -135,6 +137,7 @@ export function StepSelectLots({
           </p>
         </>
       )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

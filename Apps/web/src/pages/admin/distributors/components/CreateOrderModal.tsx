@@ -1,13 +1,7 @@
-import { useState } from "react";
-import type {
-  DistributorDTO,
-  SubscriptionPlanDTO,
-  LotDTO,
-  WilayaDTO,
-  CommuneDTO,
-  DeliveryCompanyDTO,
-  DeliveryType,
-} from "@my-app/contract";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { DeliveryType, type CreateOrderCommand } from "@my-app/contract";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +11,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useDistributors } from "@/hooks/useDistributors";
+import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { useAvailableLotsForOrder } from "@/hooks/useLots";
+import { useWilayas, useCommunes } from "@/hooks/useGeography";
+import { useDeliveryCompanies } from "@/hooks/useDeliveryCompanies";
+import {
+  createOrderSchema,
+  type CreateOrderFormValues,
+  type CreateOrderFormInput,
+} from "./create-order.schema";
 import { StepSelectDistributor } from "./StepSelectDistributor";
 import { StepSelectLots } from "./StepSelectLots";
 import { StepReceiverInfo } from "./StepReceiverInfo";
@@ -31,104 +36,133 @@ const STEP_KEYS = [
   "admin.orders.create.steps.confirmSummary",
 ] as const;
 
+const STEP_FIELDS: (keyof CreateOrderFormValues)[][] = [
+  ["distributorId"],
+  ["lotIds"],
+  ["receivedName", "receivedPhone", "wilayaId", "communeId"],
+  ["deliveryCompanyId", "deliveryType", "orderPrice", "deliverPrice"],
+  [],
+];
+
+const DEFAULT_VALUES: CreateOrderFormInput = {
+  distributorId: "",
+  lotIds: [],
+  receivedName: "",
+  receivedPhone: "",
+  wilayaId: "",
+  communeId: "",
+  deliveryCompanyId: "",
+  deliveryType: DeliveryType.HOME,
+  orderPrice: 0,
+  deliverPrice: 0,
+};
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called on Confirm — RHF (create-order.schema.ts) + per-step `trigger()` gating +
-   * useCreateOrder wire this in Sprint 3. Advancing steps here is unconditional. */
-  onSubmit: () => void;
+  onSubmit: (command: CreateOrderCommand) => void;
   isPending?: boolean;
-
-  distributorSearch: string;
-  onDistributorSearchChange: (value: string) => void;
-  distributors?: DistributorDTO[];
-  distributorsLoading: boolean;
-  distributorsError: boolean;
-  onRetryDistributors: () => void;
-  distributorId: string;
-  onDistributorChange: (id: string) => void;
-
-  plans?: SubscriptionPlanDTO[];
-  plansLoading: boolean;
-  plansError: boolean;
-  subscriptionPlanId: string;
-  onPlanChange: (id: string) => void;
-  lots?: LotDTO[];
-  lotsLoading: boolean;
-  lotsError: boolean;
-  onRetryLots: () => void;
-  lotIds: string[];
-  onToggleLot: (id: string) => void;
-
-  wilayaId: string;
-  onWilayaChange: (id: string) => void;
-  wilayas?: WilayaDTO[];
-  wilayasLoading: boolean;
-  wilayasError: boolean;
-  communes?: CommuneDTO[];
-  communesLoading: boolean;
-  communesError: boolean;
-
-  deliveryCompanies?: DeliveryCompanyDTO[];
-  deliveryCompaniesLoading: boolean;
-  deliveryCompaniesError: boolean;
-
-  summaryDistributorName?: string;
-  summaryCardsTotal: number;
-  summaryDeliveryType?: DeliveryType;
 }
 
-// Stepper host — static shell only (plan.md's Sprint 2 vs. Sprint 3 split). Step-index
-// navigation is real, local UI state; `form.trigger([...stepFields])` gating, RHF, and the
-// final `useCreateOrder.mutate(command)` call are Sprint 3 concerns.
-export function CreateOrderModal({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-  distributorSearch,
-  onDistributorSearchChange,
-  distributors,
-  distributorsLoading,
-  distributorsError,
-  onRetryDistributors,
-  distributorId,
-  onDistributorChange,
-  plans,
-  plansLoading,
-  plansError,
-  subscriptionPlanId,
-  onPlanChange,
-  lots,
-  lotsLoading,
-  lotsError,
-  onRetryLots,
-  lotIds,
-  onToggleLot,
-  wilayaId,
-  onWilayaChange,
-  wilayas,
-  wilayasLoading,
-  wilayasError,
-  communes,
-  communesLoading,
-  communesError,
-  deliveryCompanies,
-  deliveryCompaniesLoading,
-  deliveryCompaniesError,
-  summaryDistributorName,
-  summaryCardsTotal,
-  summaryDeliveryType,
-}: Props) {
+// Stepper host — owns the wizard's single RHF form + local `step` state (plan.md decision
+// #5) and every read this wizard needs (each step's data hook is called here, not threaded
+// down as a dozen props). Advancing a step only calls `trigger()` on that step's fields.
+export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Props) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
+  const [distributorSearch, setDistributorSearch] = useState("");
+  const [lotsPlanId, setLotsPlanId] = useState("");
+  const debouncedDistributorSearch = useDebouncedValue(distributorSearch);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    trigger,
+    reset,
+    formState: { errors },
+  } = useForm<CreateOrderFormInput, unknown, CreateOrderFormValues>({
+    resolver: zodResolver(createOrderSchema(t)),
+    defaultValues: DEFAULT_VALUES,
+  });
+
+  const distributorId = watch("distributorId");
+  const lotIds = watch("lotIds");
+  const wilayaId = watch("wilayaId");
+  const communeId = watch("communeId");
+  const deliveryCompanyId = watch("deliveryCompanyId");
+  const deliveryType = watch("deliveryType");
+  const orderPrice = watch("orderPrice");
+  const deliverPrice = watch("deliverPrice");
+
+  // Distributors are fetched by search only (no server `enabled` filter, F-5) — enabled
+  // distributors are client-filtered from the fetched page.
+  const distributorsQuery = useDistributors({
+    search: debouncedDistributorSearch || undefined,
+    limit: 100,
+  });
+  const enabledDistributors = useMemo(
+    () => (distributorsQuery.data?.items ?? []).filter((d) => d.isEnabled),
+    [distributorsQuery.data],
+  );
+  const plansQuery = useSubscriptionPlans({ active: true });
+  const lotsQuery = useAvailableLotsForOrder({ subscriptionPlanId: lotsPlanId || undefined });
+  const wilayasQuery = useWilayas();
+  const communesQuery = useCommunes(wilayaId || undefined);
+  const deliveryCompaniesQuery = useDeliveryCompanies({ active: true });
+
   const isFirst = step === 0;
   const isLast = step === STEP_KEYS.length - 1;
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) setStep(0);
+    if (!next) {
+      setStep(0);
+      setDistributorSearch("");
+      setLotsPlanId("");
+      reset(DEFAULT_VALUES);
+    }
     onOpenChange(next);
   };
+
+  // Prefills the receiver step from the chosen distributor — a plain state derivation on
+  // user action, not a fetch, so it's fine outside a data hook (rules §2).
+  const handleSelectDistributor = (id: string) => {
+    setValue("distributorId", id, { shouldValidate: true });
+    const distributor = enabledDistributors.find((d) => d.id === id);
+    if (distributor) {
+      setValue("receivedName", distributor.fullName);
+      setValue("receivedPhone", distributor.phone);
+      setValue("wilayaId", distributor.wilayaId);
+      setValue("communeId", distributor.communeId);
+    }
+  };
+
+  const handleToggleLot = (id: string) => {
+    const next = lotIds.includes(id) ? lotIds.filter((l) => l !== id) : [...lotIds, id];
+    setValue("lotIds", next, { shouldValidate: true });
+  };
+
+  const handleNext = async () => {
+    const valid = await trigger(STEP_FIELDS[step]);
+    if (valid) setStep((s) => s + 1);
+  };
+
+  const confirm = handleSubmit((values) => onSubmit(values));
+
+  const cardsTotal = useMemo(
+    () =>
+      (lotsQuery.data ?? [])
+        .filter((l) => lotIds.includes(l.id))
+        .reduce((sum, l) => sum + l.nbOfCards, 0),
+    [lotsQuery.data, lotIds],
+  );
+  const selectedDistributor = enabledDistributors.find((d) => d.id === distributorId);
+  const selectedWilaya = wilayasQuery.data?.find((w) => w.id === wilayaId);
+  const selectedCommune = communesQuery.data?.find((c) => c.id === communeId);
+  const selectedDeliveryCompany = deliveryCompaniesQuery.data?.find(
+    (c) => c.id === deliveryCompanyId,
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -142,55 +176,81 @@ export function CreateOrderModal({
         {step === 0 && (
           <StepSelectDistributor
             search={distributorSearch}
-            onSearchChange={onDistributorSearchChange}
-            distributors={distributors}
-            isLoading={distributorsLoading}
-            isError={distributorsError}
-            onRetry={onRetryDistributors}
+            onSearchChange={setDistributorSearch}
+            distributors={enabledDistributors}
+            isLoading={distributorsQuery.isLoading}
+            isError={distributorsQuery.isError}
+            onRetry={distributorsQuery.refetch}
             selectedDistributorId={distributorId}
-            onSelectDistributor={onDistributorChange}
+            onSelectDistributor={handleSelectDistributor}
+            error={errors.distributorId?.message}
           />
         )}
         {step === 1 && (
           <StepSelectLots
-            plans={plans}
-            plansLoading={plansLoading}
-            plansError={plansError}
-            subscriptionPlanId={subscriptionPlanId}
-            onPlanChange={onPlanChange}
-            lots={lots}
-            lotsLoading={lotsLoading}
-            lotsError={lotsError}
-            onRetry={onRetryLots}
+            plans={plansQuery.data}
+            plansLoading={plansQuery.isLoading}
+            plansError={plansQuery.isError}
+            subscriptionPlanId={lotsPlanId}
+            onPlanChange={setLotsPlanId}
+            lots={lotsQuery.data}
+            lotsLoading={lotsQuery.isLoading}
+            lotsError={lotsQuery.isError}
+            onRetry={lotsQuery.refetch}
             selectedLotIds={lotIds}
-            onToggleLot={onToggleLot}
+            onToggleLot={handleToggleLot}
+            error={errors.lotIds?.message}
           />
         )}
         {step === 2 && (
           <StepReceiverInfo
+            register={register}
+            errors={errors}
             wilayaId={wilayaId}
-            onWilayaChange={onWilayaChange}
-            wilayas={wilayas}
-            wilayasLoading={wilayasLoading}
-            wilayasError={wilayasError}
-            communes={communes}
-            communesLoading={communesLoading}
-            communesError={communesError}
+            onWilayaChange={(id) => {
+              setValue("wilayaId", id, { shouldValidate: true });
+              setValue("communeId", "");
+            }}
+            communeId={communeId}
+            onCommuneChange={(id) => setValue("communeId", id, { shouldValidate: true })}
+            wilayas={wilayasQuery.data}
+            wilayasLoading={wilayasQuery.isLoading}
+            wilayasError={wilayasQuery.isError}
+            communes={communesQuery.data}
+            communesLoading={communesQuery.isLoading}
+            communesError={communesQuery.isError}
           />
         )}
         {step === 3 && (
           <StepDeliveryConfig
-            deliveryCompanies={deliveryCompanies}
-            deliveryCompaniesLoading={deliveryCompaniesLoading}
-            deliveryCompaniesError={deliveryCompaniesError}
+            register={register}
+            errors={errors}
+            deliveryCompanyId={deliveryCompanyId}
+            onDeliveryCompanyChange={(id) =>
+              setValue("deliveryCompanyId", id, { shouldValidate: true })
+            }
+            deliveryType={deliveryType}
+            onDeliveryTypeChange={(v) =>
+              setValue("deliveryType", v as DeliveryType, { shouldValidate: true })
+            }
+            deliveryCompanies={deliveryCompaniesQuery.data}
+            deliveryCompaniesLoading={deliveryCompaniesQuery.isLoading}
+            deliveryCompaniesError={deliveryCompaniesQuery.isError}
           />
         )}
         {step === 4 && (
           <StepConfirmSummary
-            distributorName={summaryDistributorName}
+            distributorName={selectedDistributor?.fullName}
             lotsCount={lotIds.length}
-            cardsTotal={summaryCardsTotal}
-            deliveryType={summaryDeliveryType}
+            cardsTotal={cardsTotal}
+            receivedName={watch("receivedName")}
+            receivedPhone={watch("receivedPhone")}
+            wilayaName={selectedWilaya?.frName}
+            communeName={selectedCommune?.frName}
+            deliveryCompanyName={selectedDeliveryCompany?.name}
+            deliveryType={deliveryType}
+            orderPrice={Number(orderPrice)}
+            deliverPrice={Number(deliverPrice)}
           />
         )}
 
@@ -204,11 +264,11 @@ export function CreateOrderModal({
             {t("common.actions.back")}
           </Button>
           {isLast ? (
-            <Button onClick={onSubmit} disabled={isPending}>
+            <Button onClick={confirm} disabled={isPending}>
               {t("common.actions.confirm")}
             </Button>
           ) : (
-            <Button type="button" onClick={() => setStep((s) => s + 1)}>
+            <Button type="button" onClick={handleNext}>
               {t("common.actions.next")}
             </Button>
           )}
