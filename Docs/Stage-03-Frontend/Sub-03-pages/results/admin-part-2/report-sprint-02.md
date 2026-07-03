@@ -2,7 +2,7 @@
 sprint: 2
 title: Primitives & States — Orders, Sets & Lots, Cards
 status: ✅ Done
-commit: TBD
+commit: d6b492d
 ---
 
 # Sprint 2 Report — Primitives & States
