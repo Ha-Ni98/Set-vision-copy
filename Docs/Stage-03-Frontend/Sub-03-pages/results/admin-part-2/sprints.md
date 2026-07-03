@@ -60,20 +60,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 2 — PRIMITIVES & STATES
 
-### Sprint 2: Primitives & States — Orders, Sets & Lots, Cards   — Status: ⬜ Pending
+### Sprint 2: Primitives & States — Orders, Sets & Lots, Cards   — Status: ✅ Done
 
 **Goals**
 - Every "dumb" presentational component for all three pages renders from props with a Shadcn `Skeleton` loader and a localized empty/error fallback. No hooks, no data fetching, no form validation — static modals/drawer/wizard-panels only. Existing suite + `tsc` green.
 
 **Tasks** *(all #ui; build test-ready — props-driven, no hook calls)*
-- [ ] **Orders** (`pages/admin/distributors/components/`): `OrdersStatsRow` (+ `StatCardSkeleton`), `OrdersFilters` (search + wilaya/company/state/date selects, presentational), `OrdersTable` (`DataTable` columns + `renderMobileRow`, `OrderStatusBadge`, delivery-type label), `OrderDetailDrawer` (static per-lot breakdown), the 5 wizard step panels `StepSelectDistributor`/`StepSelectLots`/`StepReceiverInfo`/`StepDeliveryConfig`/`StepConfirmSummary` (static markup + prop contracts anticipating S3 RHF), `MarkDeliveredModal` (static), `OrderActionsMenu` (renders the state-gated action set from a prop).
-- [ ] **Sets & Lots** (`pages/admin/activations/components/`): `SetsLotsStatsRow`, `SetsTable` (`SetStatusBadge`), `LotsTable` (`LotStatusBadge`), `SetsFilters`, `LotsFilters`, `CreateSetModal` (static form fields), `CreateLotModal` (static candidate checkbox list + Select/Deselect-All + live-count chrome), `SetActionsMenu`, `LotActionsMenu`.
-- [ ] **Cards** (`pages/admin/activations/components/`): `CardsStatsRow`, `CardsFilters` (key search + state/set/lot/distributor/plan/flag selects), `CardsTable` (`CardStatusBadge` + `CardFlagChips`, monospace key + `CopyButton`, conditional distributor cell), `CardFlagChips`, `CardDetailModal` (static derived-timeline layout + history `<Link>` slot), `CardActionsMenu`.
-- [ ] Each region wires its three states: `isLoading` → matching `Skeleton`/`TableSkeleton`; empty → `EmptyState` (with the plan's copy + CTA/`<Link>` slot); `isError` → `NotFoundState` with a `Retry` action slot. Compose the stub pages statically so each primitive is visually verifiable.
+- [x] **Orders** (`pages/admin/distributors/components/`): ~~`OrdersStatsRow`~~ **reuses the shared `StatsRow`** (Part-1 precedent), `OrdersFilters` (search + wilaya/company/state/date selects, presentational), `OrdersTable` (`DataTable` columns + `renderMobileRow`, `OrderStatusBadge`, delivery-type label), `OrderDetailDrawer` (static per-lot breakdown), the 5 wizard step panels `StepSelectDistributor`/`StepSelectLots`/`StepReceiverInfo`/`StepDeliveryConfig`/`StepConfirmSummary` (static markup + prop contracts anticipating S3 RHF) **plus a `CreateOrderModal` stepper-host shell** (local `step` state only, no RHF yet — same Sprint-2-vs-later split as Part-1's `CreateActivatorModal`), `MarkDeliveredModal` (static), `OrderActionsMenu` (renders the state-gated action set from a prop).
+- [x] **Sets & Lots** (`pages/admin/activations/components/`): ~~`SetsLotsStatsRow`~~ **reuses `StatsRow`**, `SetsTable` (`SetStatusBadge`), `LotsTable` (`LotStatusBadge`), `SetsFilters`, `LotsFilters`, `CreateSetModal` (static form fields), `CreateLotModal` (static candidate checkbox list + Select/Deselect-All + live-count chrome), `SetActionsMenu`, `LotActionsMenu`.
+- [x] **Cards** (`pages/admin/activations/components/`): ~~`CardsStatsRow`~~ **reuses `StatsRow`**, `CardsFilters` (key search + state/plan/distributor/flag selects; set/lot render as clearable pre-filter chips, not selects — no hook lists every set/lot number, see report), `CardsTable` (`CardStatusBadge` + `CardFlagChips`, monospace key + `CopyButton`, conditional distributor cell), `CardFlagChips`, `CardDetailModal` (static derived-timeline layout + history `<Link>` slot), `CardActionsMenu`.
+- [x] Each region wires its three states: `isLoading` → matching `Skeleton`/`TableSkeleton`; empty → `EmptyState` (with the plan's copy + CTA/`<Link>` slot); `isError` → `NotFoundState` with a `Retry` action slot. Compose the stub pages statically so each primitive is visually verifiable.
 
 **Validation**
-- [ ] Every primitive renders in isolation from props; loading/empty/error branches all present and localized. / [ ] No inline strings; no `useEffect` fetching.
-- [ ] Desktop-first; wide tables get `DataTable`'s stacked mobile row. / [ ] `tsc` clean; existing Vitest green; no `/src` tests. / [ ] Committed on green.
+- [x] Every primitive renders in isolation from props; loading/empty/error branches all present and localized. / [x] No inline strings; no `useEffect` fetching.
+- [x] Desktop-first; wide tables get `DataTable`'s stacked mobile row. / [x] `tsc` clean; existing Vitest green; no `/src` tests. / [x] Committed on green.
 
 **Risks**
 - `DataTable` renders desktop **and** mobile variants together in JSDOM — design action buttons/labels so S6 can disambiguate (`getAllBy…[0]`), per Part-1.
