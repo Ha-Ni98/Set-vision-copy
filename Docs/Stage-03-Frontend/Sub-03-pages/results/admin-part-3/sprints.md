@@ -39,7 +39,7 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 1 — FOUNDATION
 
-### Sprint 1: Foundation — Schemas, i18n & Routes   — Status: ⬜ Pending
+### Sprint 1: Foundation — Schemas, i18n & Routes   — Status: ✅ Done
 
 **Goals**
 - All 7 co-located Zod schemas exist and their output is assignable to the matching contract Command.
@@ -47,13 +47,13 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 - The 5 routes mount as `React.lazy()` stubs under the existing `AdminGuard`; `tsc` + existing suite pass with zero page UI built.
 
 **Tasks**
-- [ ] Co-located schemas (#schema), each with a compile-time `AssertAssignable` to its Command: `set-activator-price` (→ `SetActivatorPriceCommand`, `amount` ≥0 `.multipleOf(0.01)`); `create-admin` (`fullName` 3–100, `username` 3–30 `^[A-Za-z0-9_]+$`, `phone` `^(?:\+213|0)(5|6|7)\d{8}$`) + `update-admin` (all optional); `create-subscription-plan` (`subscriptionType`/`subscriptionDuration` `z.enum`); `create-delivery-company` + `update-delivery-company` (`name`, `registeredName`); `commission-cell` (→ `UpdateCommissionCommand`: `subscriptionPlanId`, `commissionDurationId`, `commission` ≥0 `.01`). Coerced-number fields use the Part-1 `z.input`/`z.infer` split.
-- [ ] i18n keys (#i18n): `admin.activations.*`, `admin.activationDetail.*`, `admin.statistics.*` (incl. `admin.statistics.period.*`, `admin.statistics.colorMode.*`), `admin.settings.*`, `admin.logs.*`; enum labels `enums.subscriptionType.*`, `enums.subscriptionDuration.*`, `enums.logActionType.*` (13 values). Reuse `enums.activationStat.*`/`enums.cardStat.*` (Parts 1–2). Flat key → `{ en, fr, ar:"" }`.
-- [ ] Route scaffolding (#routing): register `/admin/activations`, `/admin/activations/:id`, `/admin/statistics`, `/admin/settings`, `/admin/logs` with `React.lazy()` stubs (`<></>`), inside `<Suspense fallback={<PageLoader/>}>`, under the existing `AdminGuard`/`AdminLayout`. Verify `/admin/activations/:id` ranks **below** Part-2's static `/admin/activations/sets-lots` + `/cards` (static-over-dynamic).
+- [x] Co-located schemas (#schema), each with a compile-time `AssertAssignable` to its Command: `set-activator-price` (→ `SetActivatorPriceCommand`, `amount` ≥0 `.multipleOf(0.01)`); `create-admin` (`fullName` 3–100, `username` 3–30 `^[A-Za-z0-9_]+$`, `phone` `^(?:\+213|0)(5|6|7)\d{8}$`) + `update-admin` (all optional); `create-subscription-plan` (`subscriptionType`/`subscriptionDuration` `z.enum`); `create-delivery-company` + `update-delivery-company` (`name`, `registeredName`); `commission-cell` (→ `UpdateCommissionCommand`: `subscriptionPlanId`, `commissionDurationId`, `commission` ≥0 `.01`). Coerced-number fields use the Part-1 `z.input`/`z.infer` split.
+- [x] i18n keys (#i18n): `admin.activations.*`, `admin.activationDetail.*`, `admin.statistics.*` (incl. `admin.statistics.period.*`, `admin.statistics.colorMode.*`), `admin.settings.*`, `admin.logs.*`; enum labels `enums.subscriptionType.*`, `enums.subscriptionDuration.*`, `enums.logActionType.*` (13 values). Reuse `enums.activationStat.*`/`enums.cardStat.*` (Parts 1–2). Flat key → `{ en, fr, ar:"" }`. 169 new keys.
+- [x] Route scaffolding (#routing): register `/admin/activations`, `/admin/activations/:id`, `/admin/statistics`, `/admin/settings`, `/admin/logs` with `React.lazy()` stubs (`<></>`), inside `<Suspense fallback={<PageLoader/>}>`, under the existing `AdminGuard`/`AdminLayout`. `/admin/activations/:id` declared **after** Part-2's static `/admin/activations/sets-lots` + `/cards` siblings (static-over-dynamic ranking, same pattern as Part-2's `/orders` vs `/distributors/:id`).
 
 **Validation**
-- [ ] No inline strings. / [ ] `tsc --noEmit` clean (both configs). / [ ] Each schema assignable to its Command (assertion compiles).
-- [ ] Lazy routes resolve to stubs; `:id` doesn't shadow the Part-2 static activation routes; existing Vitest green; no `/src` tests. / [ ] Committed on green (scoped `git add`).
+- [x] No inline strings. / [x] `tsc --noEmit` clean (both configs). / [x] Each schema assignable to its Command (assertion compiles).
+- [x] Lazy routes resolve to stubs; `:id` doesn't shadow the Part-2 static activation routes; existing Vitest green; no `/src` tests. / [x] Committed on green (scoped `git add`).
 
 **Risks**
 - `/admin/activations/:id` vs Part-2 static siblings — confirm ranking.

@@ -29,6 +29,13 @@ const AdminDistributorDetailPage = lazy(
 const AdminOrdersPage = lazy(() => import("@/pages/admin/distributors/OrdersPage"));
 const AdminSetsLotsPage = lazy(() => import("@/pages/admin/activations/SetsLotsPage"));
 const AdminCardsPage = lazy(() => import("@/pages/admin/activations/CardsPage"));
+const AdminActivationsPage = lazy(() => import("@/pages/admin/activations/ActivationsPage"));
+const AdminActivationDetailPage = lazy(
+  () => import("@/pages/admin/activations/ActivationDetailPage"),
+);
+const AdminStatisticsPage = lazy(() => import("@/pages/admin/statistics/StatisticsPage"));
+const AdminSettingsPage = lazy(() => import("@/pages/admin/settings/SettingsPage"));
+const AdminLogsPage = lazy(() => import("@/pages/admin/logs/LogsPage"));
 
 const withSuspense = (Component: LazyExoticComponent<() => JSX.Element>) => (
   <Suspense fallback={<PageLoader />}>
@@ -150,6 +157,11 @@ const router = createBrowserRouter([
             errorElement: <RouteErrorBoundary />,
           },
           {
+            path: "/admin/activations",
+            element: withSuspense(AdminActivationsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
             path: "/admin/activations/sets-lots",
             element: withSuspense(AdminSetsLotsPage),
             errorElement: <RouteErrorBoundary />,
@@ -157,6 +169,29 @@ const router = createBrowserRouter([
           {
             path: "/admin/activations/cards",
             element: withSuspense(AdminCardsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            // Dynamic sibling of the two static routes above — declared after them so
+            // React Router's static-over-dynamic ranking resolves "sets-lots"/"cards"
+            // correctly instead of matching here (plan.md §C routing precedence note).
+            path: "/admin/activations/:id",
+            element: withSuspense(AdminActivationDetailPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/statistics",
+            element: withSuspense(AdminStatisticsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/settings",
+            element: withSuspense(AdminSettingsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/logs",
+            element: withSuspense(AdminLogsPage),
             errorElement: <RouteErrorBoundary />,
           },
         ],
