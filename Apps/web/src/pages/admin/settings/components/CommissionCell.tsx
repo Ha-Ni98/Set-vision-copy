@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, X, Pencil } from "lucide-react";
@@ -24,13 +24,14 @@ interface Props {
 
 // Inline click-to-edit cell — "editing" is genuine local UI behavior (not data wiring), same
 // class as the wilaya→commune dependency precedent from Part 1/2. Exits edit mode as soon as
-// the save settles either way (isSaving true→false); on failure the collapsed view reverts to
-// the last known-good `commission` value and flags red (plan §D4 Tab 2's revert-on-error).
+// Save is submitted (not on mutation settle — a synchronous exit works regardless of how fast
+// the mutation resolves), collapsing back to the still-cached `commission` prop; if the save
+// later fails, that same collapsed view just gains `hasError` styling (plan §D4 Tab 2's
+// revert-on-error — there's nothing to visually "revert" since the value was never optimistic).
 export function CommissionCell({ commission, onSubmit, isSaving, hasError }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
-  const wasSaving = useRef(false);
 
   const {
     register,
@@ -42,14 +43,10 @@ export function CommissionCell({ commission, onSubmit, isSaving, hasError }: Pro
     defaultValues: { commission: commission ?? 0 },
   });
 
-  useEffect(() => {
-    if (wasSaving.current && !isSaving) {
-      setIsEditing(false);
-    }
-    wasSaving.current = isSaving ?? false;
-  }, [isSaving]);
-
-  const submit = handleSubmit((values) => onSubmit(values));
+  const submit = handleSubmit((values) => {
+    onSubmit(values);
+    setIsEditing(false);
+  });
 
   if (!isEditing) {
     return (

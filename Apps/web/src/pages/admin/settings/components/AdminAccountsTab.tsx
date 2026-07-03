@@ -268,7 +268,10 @@ export function AdminAccountsTab() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-                <AlertDialogAction
+                {/* Plain Button, not AlertDialogAction — Action is Radix's DialogPrimitive.Close
+                    under the hood and always closes on click, which would skip the one-time
+                    reveal step below entirely. */}
+                <Button
                   disabled={isMutating}
                   onClick={() => {
                     if (!resetRow) return;
@@ -278,7 +281,7 @@ export function AdminAccountsTab() {
                   }}
                 >
                   {t("common.actions.resetPassword")}
-                </AlertDialogAction>
+                </Button>
               </AlertDialogFooter>
             </>
           )}

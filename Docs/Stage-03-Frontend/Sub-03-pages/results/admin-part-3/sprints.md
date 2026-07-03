@@ -175,22 +175,26 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 5 — TESTS
 
-### Sprint 7: Unit Tests — all five pages (+ heatmap name-map)   — Status: ⬜ Pending
+### Sprint 7: Unit Tests — all five pages (+ heatmap name-map)   — Status: ✅ Done
 
 **Goals**
 - One `.test.tsx` per page under `/tests/unit/pages/{activations,activation-detail,statistics,settings,logs}/` + a dedicated `wilaya-name-map` test, hooks + `useTranslation` mocked (no MSW). All green; both tsconfigs clean.
 
 **Tasks**
-- [ ] `activations/ActivationsPage.test.tsx` (#testing): stats/donut skeletons; empty vs no-match; retry⇒`refetch`; gating (Resolve only FREEZE; Set-Price only completed+unpriced) ⇒ correct `mutate`; URL pre-filter seeding.
-- [ ] `activation-detail/ActivationDetailPage.test.tsx` (#testing): invalid-id⇒`NotFoundState`+back; timeline WRONG/ADDITIONAL/FREEZE variants; activator-null empty; activator `<Link>` present, distributor rendered as text (documents §E-2); set-price⇒`mutate`.
-- [ ] `statistics/StatisticsPage.test.tsx` (#testing): filter change re-issues overview with mapped `period`; per-chart empty/error+retry; color-mode switch changes the metric→shade mapping; wilaya click⇒`useWilayaDrilldown` enabled + panel; assert empty-state branch, not recharts/SVG internals.
-- [ ] `settings/SettingsPage.test.tsx` (#testing): tab bar has exactly 4 tabs; admin add⇒one-time password; self/last-admin Delete disabled; commission cell edit⇒`useUpdateCommission` + revert-on-error; Add-Plan enum dropdowns⇒`useCreateSubscriptionPlan`; company add/toggle.
-- [ ] `logs/LogsPage.test.tsx` (#testing): skeleton; empty vs no-match+Clear; retry⇒`refetch`; user + action-type filters mutate query; `LogActionBadge` per type; relative time.
-- [ ] `lib/wilaya-name-map.test.ts` (#testing): **all 58** lib wilaya names resolve to a `wilayaName`/id (no drops) — the §E-5 safety net.
-- [ ] Reuse Part-1 shared infra (`mockTranslation`/`renderWithRouter`/`setup.ts` polyfills+cleanup); Radix `Select` via `getByRole('option',{name})`; scope ambiguous keys with `within()`.
+- [x] `activations/ActivationsPage.test.tsx` (#testing): stats/donut skeletons; empty vs no-match; retry⇒`refetch`; gating (Resolve only FREEZE; Set-Price only completed+unpriced) ⇒ correct `mutate`; URL pre-filter seeding. 7 tests.
+- [x] `activation-detail/ActivationDetailPage.test.tsx` (#testing): invalid-id⇒`NotFoundState`+back; timeline WRONG/ADDITIONAL/FREEZE variants; activator-null empty; activator `<Link>` present, distributor rendered as text (documents §E-2); set-price⇒`mutate`. 6 tests.
+- [x] `statistics/StatisticsPage.test.tsx` (#testing): filter change re-issues overview with the real `period` value; per-chart empty/error+retry (shared query, asserted ×6); color-mode switch changes the select's displayed value; wilaya click⇒`useWilayaDrilldown` enabled + drilldown panel; asserted empty-state branches only, never recharts/SVG internals. 5 tests.
+- [x] `settings/SettingsPage.test.tsx` (#testing): tab bar has exactly 4 tabs; admin add⇒one-time password; self/last-admin Delete disabled (with the §B5 tooltip verified via `aria-disabled`); reset-password one-time reveal; commission cell edit⇒`useUpdateCommission` + revert-on-error; Add-Plan enum dropdowns⇒`useCreateSubscriptionPlan`; company add/toggle. 10 tests.
+- [x] `logs/LogsPage.test.tsx` (#testing): skeleton; empty vs no-match+Clear; retry⇒`refetch`; user + action-type filters mutate query; `LogActionBadge` per type (substring-matched, since `StatusPill`'s "● {label}" is one text node); relative time. 6 tests.
+- [x] `wilaya-name-map.test.ts` (#testing): **all 58** lib wilaya names resolve to themselves (no drops) + realistic diacritic/apostrophe/case variants + an unmatched-name case. 3 tests. **Path reconciliation**: placed at `tests/unit/pages/statistics/wilaya-name-map.test.ts`, not `tests/unit/lib/`, since the source file actually lives at `pages/admin/statistics/components/wilaya-name-map.ts` (Sprint 2), not under `src/lib/` — mirrors the source location like every other page test, consistent with how `tests/unit/lib/` only holds tests for files genuinely under `src/lib/`.
+- [x] Reused Part-1/2 shared infra (`mockTranslation`/`renderWithRouter`(`renderWithRoutes`)/`createQueryWrapper`/`setup.ts` polyfills+cleanup) exactly as-is, no changes needed. Radix `Select` via `getByRole('option',{name})`; DataTable's simultaneous desktop+mobile rows handled via `getAllByText(...)[0]` or a substring regex where the exact text is split by a leading icon/bullet.
 
 **Validation**
-- [ ] `vitest run` green (success/loading/error). / [ ] No `/src` tests; files `.test.tsx`. / [ ] Both tsconfigs clean. / [ ] Committed on green.
+- [x] `vitest run` green — 54/54 files, 393/393 tests (356 baseline + 37 new). / [x] No `/src` tests; all new files `.test.tsx`/`.test.ts`. / [x] Both tsconfigs clean. / [x] Committed on green.
+
+**Two real bugs found and fixed while writing these tests** (not test-only workarounds):
+1. **`AlertDialogAction` is Radix's `DialogPrimitive.Close` under the hood** (confirmed by reading `node_modules/@radix-ui/react-alert-dialog/dist/index.mjs` directly) — it **always** closes the dialog on click, with no way to opt out via `preventDefault()`. `AdminAccountsTab`'s reset-password one-time-reveal flow used `AlertDialogAction` for the "confirm reset" step, meaning the dialog closed immediately before the reveal step could ever show — the reveal was completely unreachable in the real app, not just untestable. Fixed by swapping that one button for a plain `Button` (the `AlertDialogCancel` stays as-is, since Cancel closing immediately is correct).
+2. **`CommissionCell`'s revert-on-error relied on watching `isSaving` transition from `true`→`false`** — this only works if the mutation is genuinely asynchronous (a real network round-trip always yields at least one intermediate render with `isSaving:true`). Writing a test with a synchronous mocked `mutate` (calling `onError` immediately) exposed that React 18 batches the `true`-then-`false` writes into a single render, so the transition-watching `useEffect` never fires and the cell gets stuck in edit mode forever on a fast/instant failure — a real, if narrow, race condition, not just a test artifact. Fixed by exiting edit mode synchronously in the submit handler instead of waiting for the mutation to settle, which is simpler, doesn't depend on timing at all, and still reverts correctly (the collapsed view just re-reads the still-unchanged `commission` prop).
 
 **Risks**
 - Charts/heatmap under JSDOM — assert data/empty branches, mock the chart container (Part-1 precedent); the name-map test is pure data (no DOM).
