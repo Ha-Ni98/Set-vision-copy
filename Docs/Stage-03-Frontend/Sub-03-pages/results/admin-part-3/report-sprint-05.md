@@ -2,7 +2,7 @@
 sprint: 5
 title: Assembly & Wiring — Settings (4 tabs)
 status: ✅ Done
-commit: TBD
+commit: 9483b79
 ---
 
 # Sprint 5 Report — Assembly & Wiring (Settings, 4 tabs)
