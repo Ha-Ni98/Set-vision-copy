@@ -2,7 +2,7 @@
 sprint: 4
 title: Assembly — Dashboard + Distributors
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: 8211019
 ---
 
 # Sprint 4 Report — Dashboard + Distributors Assembly
