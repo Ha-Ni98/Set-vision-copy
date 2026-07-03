@@ -40,23 +40,24 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 1 — FOUNDATION
 
-### Sprint 1: Foundation — Schemas, sound hook, i18n & role-based login redirect   — Status: ⬜ Pending
+### Sprint 1: Foundation — Schemas, sound hook, i18n & role-based login redirect   — Status: ✅ Done
 
 **Goals**
 - The login/freeze schemas + plan-fields registry exist; `useNotificationSound` (net-new) works; all activator copy present (`en`/`fr` real, `ar:""`); the login redirect is role-based. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] Schemas (#schema), each `AssertAssignable` to its command: `login.schema.ts` (→ `LoginCommand`, username + password required); `freeze-request.schema.ts` (→ `FreezeRequestCommand`, `reason` min 1); optional `flag-wrong-info.schema.ts` (→ `{ fields: AccountInformation[] }` nonempty).
-- [ ] Plan-fields registry (#ui): `planKey → AccountInformation[]` (copyable card fields + Wrong-Info checkboxes + Request-additional options). Snapchat = USERNAME/EMAIL/PHONE_NUMBER/PASSWORD (+ OTP requestable).
-- [ ] `useNotificationSound` (#state, net-new): `{ muted, toggleMute, playChime }`, `muted` persisted to localStorage; add a short chime asset under `public/`.
-- [ ] i18n (#i18n): extend `activator.*` (shell, login incl. 429 lockout, dashboard, history, requests, action modals, notices); reuse `common.*`/`enums.activationStat.*`. `en`/`fr` real, `ar:""`.
-- [ ] Login redirect (#infra, E-4): replace `LoginPage.tsx:35` `nav("/dashboard")` with a **role-based** switch (`session.role` → activator `/dashboard`, admin `/admin`).
+- [x] Schemas (#schema), each `AssertAssignable` to its command: `login.schema.ts` (→ `LoginCommand`, `pages/login.schema.ts`); `freeze-request.schema.ts` (→ `FreezeRequestCommand`, `components/sections/activator/`); `flag-wrong-info.schema.ts` (→ `FlagWrongInfoCommand`, `{fields}` nonempty, same dir) — built (not left optional), matching the established co-located-schema convention.
+- [x] Plan-fields registry (#ui): `components/sections/activator/plan-fields.ts` — `correctableFields(subscriptionLabel)` / `requestableFields(subscriptionLabel)`, keyed by subscription label (the only plan identifier the DTOs carry, not a `planKey`/id). Snapchat+ = collected USERNAME/EMAIL/PHONE_NUMBER/PASSWORD, requestable OTP.
+- [x] `useNotificationSound` (#state, net-new): `{muted, toggleMute, playChime}`, `muted` persisted to localStorage (`sv_notif_muted`). **Chime synthesized via Web Audio API** (two-tone oscillator beep), not a shipped asset file — user-approved deviation from "asset under `public/`" (no `public/` dir existed yet; avoids sourcing/licensing a binary asset for a 0.4s beep).
+- [x] i18n (#i18n): added `auth.login.{emptyFields,lockout,network}` (3 keys) and `activator.shell.{soundOn,soundOff,connectionLost,sessionExpired}` (4 keys) — the concrete, unambiguous additions Sprint 1's own scope needs (login validation/lockout/network, shell sound-toggle/connection). **Scoping note**: dashboard/history/requests/action-modal copy is intentionally deferred to Sprint 2 (Primitives) rather than front-loaded here — unlike Admin Part 3's greenfield Sprint 1 (nothing existed, so all copy had to be invented upfront), this portal's pages are already 80%+ built; several existing keys (`activator.requests.card.done*`/`release*`) will be *replaced*, not just supplemented, once Sprint 2 rebuilds the Active-card actions to match the spec's real Activate/Cancel semantics (see Sprint 4 risk note below) — inventing their final replacement copy now, before that rebuild, risked producing keys that don't fit.
+- [x] Login redirect (#infra, E-4) — **user-decided architecture**: rather than adding an explicit role-based `nav()` call in `LoginPage.tsx` (the plan's literal wording), fixed `PublicOnlyRoute` (`ProtectedRoute.tsx`) to branch on `session.role` and **removed** `LoginPage`'s `nav("/dashboard")` entirely — the guard's reactive `<Navigate>` now handles both "already authenticated, hit `/login` directly" and "just logged in" cases from one place, matching this codebase's own documented preference for declarative route guards over imperative `useEffect`+`navigate()` (`ProtectedRoute.tsx`'s existing top comment). **Found the identical bug in `PublicOnlyRoute` itself** (hardcoded `<Navigate to="/dashboard">` for any authenticated user hitting `/login`, no role check) while investigating E-4 — not explicitly named in the plan's E-4 gap (which only cited `LoginPage.tsx:35`), fixed as the same class of bug.
 
 **Validation**
-- [ ] No inline strings. / [ ] `tsc` clean (both configs). / [ ] Schemas assignable to their commands. / [ ] `useNotificationSound` persists mute; chime asset present. / [ ] Role-based redirect resolves correctly for both roles. / [ ] Existing Vitest green; no `/src` tests. / [ ] Committed on green (scoped add).
+- [x] No inline strings. / [x] `tsc` clean (both configs). / [x] Schemas assignable to their commands (compiles). / [x] `useNotificationSound` persists mute (localStorage); chime plays via Web Audio synthesis (approved deviation, no asset file). / [x] Role-based redirect verified via Playwright against the live dev API for **both** roles and **both** trigger paths (post-login redirect + already-authenticated direct `/login` hit): activator → `/dashboard`, admin → `/admin` in all four cases. / [x] Existing Vitest green (54/54 files, 393/393 tests); no `/src` tests. / [x] Committed on green (scoped add).
 
 **Risks**
-- Touching `LoginPage`'s redirect — confirm both roles route correctly and the `PublicOnlyRoute` guard still bounces authed users off `/login`.
+- Touching `LoginPage`'s redirect — confirmed both roles route correctly and `PublicOnlyRoute` still bounces authed users off `/login` (to their own role's home, not just `/dashboard`) — verified live, not just by reading the code.
+- **Carried forward to Sprint 4**: `ActiveRequestCard.tsx`'s existing "Cancel" button actually calls `useReleaseActivation` (`RELEASE` endpoint, puts the card back in the pending pool) instead of `useCancelActivation` (`CANCEL` endpoint, terminal `CANCELLED_BY_ACTIVATOR` state) — confirmed against the spec doc (`SV-PAGE-002-005_activator_portal_spec.md` line 272: `POST /api/requests/{id}/cancel` → `CANCELLED_BY_ACTIVATOR`) and the sprint plan's own D4 wording (`useCancelActivation`). A real bug, not touched this sprint (out of Foundation's scope) — flagged for Sprint 4's Active-card rewiring.
 
 ---
 

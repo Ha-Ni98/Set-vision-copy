@@ -1,8 +1,7 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginSchema, type LoginCommand } from "@my-app/contract";
+import axios from "axios";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,29 +11,44 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageToggle } from "@/components/shared/LanguageToggle";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { loginSchema, type LoginFormValues } from "./login.schema";
 
-// Redirect-if-already-authenticated is handled by the router's PublicOnlyRoute guard,
-// which never mounts this page for an authenticated session.
+function loginErrorKey(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    if (err.response?.status === 429) return "auth.login.lockout";
+    if (!err.response) return "auth.login.network";
+  }
+  return "auth.login.error";
+}
+
+// Redirect-if-already-authenticated (both before mounting AND right after a successful
+// login) is handled entirely by the router's PublicOnlyRoute guard reacting to the session
+// query — this page never navigates itself. useLogin's onSuccess already invalidates
+// qk.auth.me(), so the moment that refetch resolves, PublicOnlyRoute re-renders with a
+// session and redirects by role (activator-portal plan.md §B9/E-4). Declarative guard over
+// imperative navigate(), matching this file's own established precedent (ProtectedRoute.tsx).
 export default function LoginPage() {
   const { t } = useTranslation();
   const { login, isLoggingIn } = useAuth();
-  const nav = useNavigate();
   const [showP, setShowP] = useState(false);
   const [err, setErr] = useState("");
   const [shake, setShake] = useState(false);
 
-  const { register, handleSubmit } = useForm<LoginCommand>({
-    resolver: zodResolver(LoginSchema),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema(t)),
     mode: "onSubmit",
   });
 
-  const submit = async (data: LoginCommand) => {
+  const submit = async (data: LoginFormValues) => {
     setErr("");
     try {
       await login(data);
-      nav("/dashboard");
-    } catch {
-      setErr(t("auth.login.error"));
+    } catch (e) {
+      setErr(t(loginErrorKey(e)));
       setShake(true);
       setTimeout(() => setShake(false), 500);
     }
@@ -49,10 +63,14 @@ export default function LoginPage() {
       </div>
 
       <div className="relative flex min-h-screen items-center justify-center px-4">
-        <div className={`w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)] ${shake ? "animate-shake" : ""}`}>
+        <div
+          className={`w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)] ${shake ? "animate-shake" : ""}`}
+        >
           <div className="mb-6 flex flex-col items-center text-center">
             <Logo size={56} withText={false} />
-            <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-foreground">SETVISION</h1>
+            <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-foreground">
+              SETVISION
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("auth.login.subtitle")}</p>
           </div>
 
@@ -66,19 +84,42 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(submit)} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="username">{t("auth.login.username")}</Label>
-              <Input id="username" autoComplete="username" {...register("username")} required />
+              <Input id="username" autoComplete="username" {...register("username")} />
+              {errors.username && (
+                <p className="text-xs text-destructive">{errors.username.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">{t("auth.login.password")}</Label>
               <div className="relative">
-                <Input id="password" type={showP ? "text" : "password"} autoComplete="current-password" required className="pr-10" {...register("password")} />
-                <button type="button" onClick={() => setShowP((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
+                <Input
+                  id="password"
+                  type={showP ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowP((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
                   {showP ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-xs text-destructive">{errors.password.message}</p>
+              )}
             </div>
             <Button type="submit" disabled={isLoggingIn} className="h-11 w-full text-base">
-              {isLoggingIn ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("auth.login.submitting")}</> : t("auth.login.submit")}
+              {isLoggingIn ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("auth.login.submitting")}
+                </>
+              ) : (
+                t("auth.login.submit")
+              )}
             </Button>
           </form>
         </div>

@@ -1,6 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { UserRole } from "@my-app/contract";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useSession } from "@/hooks/useSession";
 
 // Router-level auth gates, declarative (<Navigate>) rather than the MVP's imperative
 // useEffect+navigate() redirects. MVP behavior kept exactly — no return-to-target invention.
@@ -23,9 +25,16 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
+// Reads useSession() directly rather than useAuth() — AuthCtx doesn't expose `role` (same
+// reasoning as AdminGuard's identical comment); this is the one other place that needs it,
+// to send an already-authenticated admin to /admin instead of /dashboard (activator-portal
+// plan.md §B9/E-4 — the sibling fix to LoginPage's own post-login redirect below).
 export function PublicOnlyRoute() {
-  const { isAuthenticated, isReady } = useAuth();
+  const { isReady } = useAuth();
+  const { data: session } = useSession();
   if (!isReady) return <AuthRestoring />;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (session) {
+    return <Navigate to={session.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />;
+  }
   return <Outlet />;
 }

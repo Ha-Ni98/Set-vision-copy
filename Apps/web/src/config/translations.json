@@ -60,7 +60,10 @@
   "common.validation.selectAtLeastOne": { "en": "Please select at least one.", "fr": "Veuillez sélectionner au moins un élément.", "ar": "" },
   "common.validation.maxValue": { "en": "Must be at most {max}.", "fr": "Doit être au plus {max}.", "ar": "" },
 
+  "auth.login.emptyFields": { "en": "Please fill in all fields.", "fr": "Veuillez remplir tous les champs.", "ar": "" },
   "auth.login.error": { "en": "Incorrect username or password. Please try again.", "fr": "Nom d'utilisateur ou mot de passe incorrect. Veuillez réessayer.", "ar": "" },
+  "auth.login.lockout": { "en": "Too many failed attempts. Try again in 5 minutes.", "fr": "Trop de tentatives échouées. Réessayez dans 5 minutes.", "ar": "" },
+  "auth.login.network": { "en": "Network error. Please check your connection and try again.", "fr": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.", "ar": "" },
   "auth.login.password": { "en": "Password", "fr": "Mot de passe", "ar": "" },
   "auth.login.submit": { "en": "Log In", "fr": "Se connecter", "ar": "" },
   "auth.login.submitting": { "en": "Signing in...", "fr": "Connexion en cours...", "ar": "" },
@@ -137,6 +140,10 @@
   "activator.shell.signOut": { "en": "Sign Out", "fr": "Se déconnecter", "ar": "" },
   "activator.shell.signOutTitle": { "en": "Sign out?", "fr": "Se déconnecter ?", "ar": "" },
   "activator.shell.signOutBody": { "en": "You'll need to log in again to access the activator portal.", "fr": "Vous devrez vous reconnecter pour accéder au portail activateur.", "ar": "" },
+  "activator.shell.soundOn": { "en": "Notification sound on", "fr": "Son des notifications activé", "ar": "" },
+  "activator.shell.soundOff": { "en": "Notification sound off", "fr": "Son des notifications désactivé", "ar": "" },
+  "activator.shell.connectionLost": { "en": "Connection lost. Reconnecting…", "fr": "Connexion perdue. Reconnexion…", "ar": "" },
+  "activator.shell.sessionExpired": { "en": "Session expired. Please log in again.", "fr": "Session expirée. Veuillez vous reconnecter.", "ar": "" },
 
   "activator.dashboard.title": { "en": "Dashboard", "fr": "Tableau de bord", "ar": "" },
   "activator.dashboard.subtitle": { "en": "Your activator performance at a glance.", "fr": "Vos performances d'activateur en un coup d'œil.", "ar": "" },
