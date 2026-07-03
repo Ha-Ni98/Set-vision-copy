@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 import type { WilayaHeatmapDTO } from "@my-app/contract";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,8 @@ export function WilayaHeatmap({
   selectedWilayaId,
 }: Props) {
   const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [hoveredLibName, setHoveredLibName] = useState<string | null>(null);
 
   const byLibName = useMemo(() => {
@@ -65,8 +68,8 @@ export function WilayaHeatmap({
     if (isLoading) return "oklch(var(--muted))";
     const entry = byLibName.get(libName);
     const value = entry?.[METRIC_KEY[colorMode]];
-    if (value == null || max === min) return purpleShade(0);
-    return purpleShade((value - min) / (max - min));
+    if (value == null || max === min) return purpleShade(0, isDark);
+    return purpleShade((value - min) / (max - min), isDark);
   };
 
   if (isError) {
@@ -83,9 +86,12 @@ export function WilayaHeatmap({
 
   return (
     <div className="relative">
+      {/* role="img" on the svg would make every descendant an opaque leaf to assistive tech —
+          this is a composite of individually-selectable wilayas, so the group/per-shape
+          roles below carry the real semantics instead. */}
       <svg
         viewBox={HEATMAP_VIEWBOX}
-        role="img"
+        role="group"
         aria-label={t("admin.statistics.heatmap.title")}
         className="h-auto w-full"
       >
@@ -93,12 +99,24 @@ export function WilayaHeatmap({
           const entry = byLibName.get(w.name);
           const isSelected = !!entry && entry.wilayaId === selectedWilayaId;
           const Shape = w.tag;
+          const label = entry?.wilayaName ?? w.name;
           return (
             <g
               key={w.name}
+              role={entry ? "button" : undefined}
+              aria-label={entry ? label : undefined}
+              tabIndex={entry ? 0 : -1}
               onMouseEnter={() => setHoveredLibName(w.name)}
               onMouseLeave={() => setHoveredLibName((h) => (h === w.name ? null : h))}
+              onFocus={() => setHoveredLibName(w.name)}
+              onBlur={() => setHoveredLibName((h) => (h === w.name ? null : h))}
               onClick={() => entry && onWilayaSelect(entry)}
+              onKeyDown={(e) => {
+                if (entry && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  onWilayaSelect(entry);
+                }
+              }}
               className={entry ? "cursor-pointer" : "cursor-default"}
             >
               <Shape

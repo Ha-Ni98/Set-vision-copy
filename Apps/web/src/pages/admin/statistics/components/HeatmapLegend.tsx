@@ -1,3 +1,4 @@
+import { useTheme } from "next-themes";
 import { useTranslation } from "@/hooks/useTranslation";
 import { purpleShade } from "./heatmap-color-scale";
 
@@ -5,6 +6,8 @@ const STEPS = 6;
 
 export function HeatmapLegend() {
   const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -14,7 +17,7 @@ export function HeatmapLegend() {
           <div
             key={i}
             className="h-3 w-5"
-            style={{ backgroundColor: purpleShade(i / (STEPS - 1)) }}
+            style={{ backgroundColor: purpleShade(i / (STEPS - 1), isDark) }}
           />
         ))}
       </div>

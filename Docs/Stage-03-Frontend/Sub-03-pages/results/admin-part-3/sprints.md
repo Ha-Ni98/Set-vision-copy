@@ -153,20 +153,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 4 — POLISH
 
-### Sprint 6: Polish — responsive, a11y, memoization, dark-mode heatmap   — Status: ⬜ Pending
+### Sprint 6: Polish — responsive, a11y, memoization, dark-mode heatmap   — Status: ✅ Done
 
 **Goals**
 - Desktop-first responsive pass, a11y on icon-only controls + the SVG map, memoization per plan §B8, semantic tokens incl. a **dark-mode heatmap gradient**, honest deviation copy. No behavior change. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] a11y (#a11y): `aria-label`s on Activations/Settings action menus, filter clears, color-mode select; the heatmap SVG gets `role="img"`/labelled wilaya groups (keyboard-focusable where feasible); charts get accessible titles.
-- [ ] Heatmap dark mode (#theming): purple light→dark scale reads in both themes via CSS vars; legend + outline states themed.
-- [ ] Memoization audit (#perf): heatmap color-scale + name-join memoized on `[data, colorMode]`; chart series pass-through; matrix/table `ColumnDef[]` memoized — only where plan §B8 calls for it.
-- [ ] Responsive (#responsive): charts/heatmap usable at 1280px+; wide tables horizontal-scroll; Settings tabs wrap sanely.
-- [ ] Honest copy (#i18n): period labels reflect the enum mapping (§E-3); no strings implying Timeout/Active-Hours exist.
+- [x] a11y (#a11y): audited every icon-only button/menu-trigger across all 5 pages — all already had `aria-label`s from S2-S5 (Activations/Settings action menus, filter clears via visible text, color-mode select). **Real gap found and fixed**: the heatmap SVG had `role="img"` on the outer `<svg>`, which makes *all descendants opaque to assistive tech* (role="img" is an atomic-leaf role) — wrong for a composite of 58 individually-clickable wilayas. Changed the outer svg to `role="group"`, and each wilaya's `<g>` now gets `role="button"`, `aria-label` (the resolved `wilayaName` when data exists), `tabIndex={0}` (only for wilayas with data — "keyboard-focusable where feasible"), and an `onKeyDown` handler (Enter/Space) plus `onFocus`/`onBlur` mirroring the existing hover-tooltip behavior so keyboard users get the same tooltip keyboard-equivalently. Charts already had accessible `<h3>` titles (matches Part-1's `PerformanceChart` precedent — no extra ARIA needed beyond a preceding heading).
+- [x] Heatmap dark mode (#theming): **real gap found and fixed** — `purpleShade()`'s light-end (`L=0.95`, near-white) was a fixed absolute value that didn't adapt to the dark theme's `--card`/`--muted` (`L≈0.2-0.25`, `.dark` block in `index.css`), so in dark mode the "low value" wilayas would render a jarring bright near-white patch against dark surfaces. `purpleShade` now takes an `isDark` param and picks between two L/C bound sets (light: 0.95→0.35, dark: 0.28→0.78) so the "low blends into the surface, high pops" relationship holds in both themes instead of just light. `WilayaHeatmap`/`HeatmapLegend` read `next-themes`' `useTheme().resolvedTheme` (same hook already used by `ThemeToggle.tsx`) and pass `isDark` through.
+- [x] Memoization audit (#perf): confirmed every `ColumnDef[]` across all 5 pages is already `useMemo`'d (grepped all `ColumnDef` usages, zero missing); heatmap's `byLibName`/`{min,max}` already memoized on `[data]`/`[data,colorMode]` since Sprint 2. No changes needed — already correct.
+- [x] Responsive (#responsive): `DataTable`'s `overflow-x-auto` wrapper (fixed in Part-1 S6) already covers all wide tables. **Real gap found and fixed**: `ui/tabs.tsx`'s `TabsList` was `inline-flex h-10` (fixed height, no wrap) — 4 tab triggers with longer French labels ("Sociétés de livraison") could overflow/clip at narrower desktop widths. Changed to `h-auto min-h-10 flex-wrap` with a `gap-1` so the triggers wrap onto a second row instead of clipping.
+- [x] Honest copy (#i18n): confirmed no strings anywhere imply Timeout/Active-Hours tabs exist (only a code comment, not user-facing copy); period labels already correctly reflect the §E-3 calendar mapping since Sprint 1 (no changes needed).
 
 **Validation**
-- [ ] No inline strings introduced. / [ ] `tsc` clean; existing Vitest green. / [ ] No behavior change; pre-existing out-of-scope issues untouched. / [ ] Committed on green.
+- [x] No inline strings introduced. / [x] `tsc` clean (both configs); existing Vitest green (356/356). / [x] No behavior change to any wired query/mutation flow — every fix this sprint is presentational/accessibility/theming; pre-existing out-of-scope issues (e.g. `LoginPage.tsx`'s role-redirect, long-flagged) left untouched. / [x] Committed on green.
 
 **Risks**
 - Scope creep — flag, don't fix, adjacent pre-existing issues.

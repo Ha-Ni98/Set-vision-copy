@@ -4,16 +4,20 @@
 
 export type HeatmapColorMode = "distributors" | "activations" | "cancellations" | "avgTime";
 
-// Light→dark purple gradient (spec) in the same oklch hue/chroma family.
-const LIGHT_L = 0.95;
-const LIGHT_C = 0.02;
-const DARK_L = 0.35;
-const DARK_C = 0.16;
 const PURPLE_HUE = 300;
 
-export function purpleShade(t: number): string {
+// Low end blends toward the theme's own surface lightness, high end is the vivid purple that
+// pops against it — same "low blends in, high pops" relationship in both themes, just
+// mirrored, since light theme surfaces are near-white (--card: 1 0 0) and dark theme surfaces
+// are near-black (--card: 0.2 0.05 280, index.css). Without this the light theme's near-white
+// "low" endpoint (L 0.95) would read as a jarring bright patch on a dark background.
+const LIGHT_THEME = { lowL: 0.95, lowC: 0.02, highL: 0.35, highC: 0.16 };
+const DARK_THEME = { lowL: 0.28, lowC: 0.04, highL: 0.78, highC: 0.18 };
+
+export function purpleShade(t: number, isDark = false): string {
   const clamped = Math.max(0, Math.min(1, t));
-  const l = LIGHT_L + (DARK_L - LIGHT_L) * clamped;
-  const c = LIGHT_C + (DARK_C - LIGHT_C) * clamped;
+  const { lowL, lowC, highL, highC } = isDark ? DARK_THEME : LIGHT_THEME;
+  const l = lowL + (highL - lowL) * clamped;
+  const c = lowC + (highC - lowC) * clamped;
   return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${PURPLE_HUE})`;
 }
