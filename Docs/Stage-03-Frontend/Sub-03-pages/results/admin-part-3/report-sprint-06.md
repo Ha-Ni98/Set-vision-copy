@@ -2,7 +2,7 @@
 sprint: 6
 title: Polish — responsive, a11y, memoization, dark-mode heatmap
 status: ✅ Done
-commit: TBD
+commit: 93be8b3
 ---
 
 # Sprint 6 Report — Polish
