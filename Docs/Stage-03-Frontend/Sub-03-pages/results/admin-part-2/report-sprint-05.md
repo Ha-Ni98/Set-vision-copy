@@ -2,7 +2,7 @@
 sprint: 5
 title: Polish — responsive, a11y, memoization, honest labels
 status: ✅ Done
-commit: TBD
+commit: 16d9ceb
 ---
 
 # Sprint 5 Report — Polish
