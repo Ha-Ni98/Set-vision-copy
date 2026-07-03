@@ -138,26 +138,32 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 3 — ASSEMBLY & WIRING
 
-### Sprint 4: Assembly — Dashboard + Distributors   — Status: ⬜ Pending
+### Sprint 4: Assembly — Dashboard + Distributors   — Status: ✅ Done
 
 **Goals**
 - Dashboard four cards + three regions live at §F fidelity; frozen resolves via admin mutations and refreshes on a live freeze. Distributors list + detail fully wired, including dependent wilaya/commune selects and inline profile edit.
 
 **Tasks**
 - *Dashboard* (plan §D1.1/4/5, §F):
-  - [ ] Reads (#wiring): `useActivationsSummary` + `useActivatorsSummary` + `useDistributorsSummary` → `StatsRow` (independent per-card loading/error); `useAdminActivations({ state: ActivationStat.FREEZE, limit: 50 })` → Frozen; `useRecentActivations` → Recent; `usePendingActivations` → Pending. **No `useDashboardStats` (§F-1); no fetch `useEffect`.**
-  - [ ] Derived (#perf): `useMemo` completed = Σ `byState` (`ACTIVATED` + `ACTIVATED_BY_ADMIN`). ~~`useMemo` pending wait-tier map~~ **superseded — `PendingActivationsTable` (built Sprint 2) already colors via `LiveTimer`'s existing `mode="wait"` thresholds; nothing to build here.**
-  - [ ] Mutations (#wiring): `useActivateByAdmin` / `useCancelByAdmin` via `ResolveFreezeDialog` (`mutate(id)`); in-hook invalidation; failure → global toast, row stays, dialog closes only on success. Region error → `NotFoundState` Retry → `refetch`; empty → `EmptyState`.
+  - [x] Reads (#wiring): `useActivationsSummary` + `useActivatorsSummary` + `useDistributorsSummary` → `StatsRow` (independent per-card loading/error); `useAdminActivations({ state: ActivationStat.FREEZE, limit: 50 })` → Frozen; `useRecentActivations` → Recent; `usePendingActivations` → Pending. **No `useDashboardStats` (§F-1); no fetch `useEffect`.**
+  - [x] Derived (#perf): `useMemo` completed = Σ `byState` (`ACTIVATED` + `ACTIVATED_BY_ADMIN`). ~~`useMemo` pending wait-tier map~~ superseded, nothing built (per S2 note).
+  - [x] Mutations (#wiring): `useActivateByAdmin` / `useCancelByAdmin` via `ResolveFreezeDialog` (`mutate(id)`); in-hook invalidation; failure → global toast (no local handler added), row stays, dialog closes only on success. Region error → `NotFoundState` Retry → `refetch`; empty → `EmptyState`.
 - *Distributors* (plan §D4.1/4, §D5.1/4):
-  - [ ] List reads (#wiring): `useDistributorsSummary` + `useDistributors({ page, limit, search, wilayaId, communeId })`; filter selects `useWilayas()` + `useCommunes(wilayaId)` (`enabled: !!wilayaId`).
-  - [ ] List writes (#wiring/#form): `useCreateDistributor` (RHF `create-distributor.schema`; wilaya change resets commune), `useToggleDistributor`, `useDeleteDistributor`.
-  - [ ] Detail reads (#wiring): `useDistributor(id)`, `useOrders({ distributorId: id, limit })`, `useCards({ distributorId: id, limit })`, `useWilayas`/`useCommunes`; invalid `id` → `NotFoundState`.
-  - [ ] Detail writes (#wiring/#form): `useUpdateDistributor` (RHF `update-distributor.schema`; inline edit; commune re-filters on wilaya change), `useToggleDistributor`.
-  - [ ] Nav (#wiring): row/View → `<Link>` detail; "View All Orders" → `/admin/distributors/orders?distributor={id}`; "View All Cards" → `/admin/activations/cards?distributor={id}` (links only).
+  - [x] List reads (#wiring): `useDistributorsSummary` + `useDistributors({ page, limit, search, wilayaId, communeId })`; filter selects `useWilayas()` + `useCommunes(wilayaId)` (hook already gates `enabled: !!wilayaId` internally).
+  - [x] List writes (#wiring/#form): `useCreateDistributor` (RHF `create-distributor.schema` via `Controller` for the Selects; wilaya change resets commune), `useToggleDistributor`, `useDeleteDistributor`.
+  - [x] Detail reads (#wiring): `useDistributor(id)`, `useOrders({ distributorId: id, limit })`, `useCards({ distributorId: id, limit })`, `useWilayas`/`useCommunes`; invalid `id` → `NotFoundState`.
+  - [x] Detail writes (#wiring/#form): `useUpdateDistributor` (RHF `update-distributor.schema`; inline edit; commune re-filters on wilaya change), `useToggleDistributor`.
+  - [x] Nav (#wiring): row/View → `<Link>` detail (already built in S3's `DistributorActionsMenu`); "View All Orders"/"View All Cards" links (already built in S3's `DistributorDetailPage`).
 
 **Validation**
-- [ ] Copy via `useTranslation`. / [ ] `tsc` clean. / [ ] No fetch `useEffect`. / [ ] Each region/table `isError` keeps the shell intact; dependent-select correctness (commune gated/reset); select fetch-error inline retry. / [ ] RHF `parse` output assignable to Commands. / [ ] Existing Vitest green. / [ ] Committed.
-- [ ] **Guardrail:** deviations §F unchanged (no invented `frozen_since`/columns/live pending-recent).
+- [x] Copy via `useTranslation`. / [x] `tsc` clean. / [x] No fetch `useEffect`. / [x] Each region/table `isError` keeps the shell intact; dependent-select correctness (commune gated/reset); select fetch-error inline retry. / [x] RHF output assignable to Commands (via each schema's S1 compile-time guard). / [x] Existing Vitest green. / [x] Committed.
+- [x] **Guardrail:** deviations §F unchanged — no invented `frozen_since`/columns/live pending-recent; confirmed by inspection (no new columns or fields added to any Dashboard table this sprint, only real hook data plugged into existing column defs).
+
+**Execution notes (see report-sprint-04.md):**
+- **`PaginatedX` shape is `{ items, meta }`, not `{ records, ... }`** — checked the contract's `paginated()` helper directly rather than assume from the plan's prose ("records[]"); avoided a wrong guess.
+- Two forms wired with real React Hook Form + `Controller` (shadcn's `Select` isn't a native element, so plain `register()` doesn't work for it) — `CreateDistributorModal` and `DistributorProfileCard`'s inline edit. Both use the codebase's established `register()`/`formState.errors` pattern (mirroring `AccountForm.tsx`), not the unused `ui/form.tsx` `FormField` wrapper.
+- Extracted a small shared `components/shared/SimplePagination.tsx` (Previous/Next + "Page X of Y", reusing the existing `activator.history.pageOf` key) rather than build Distributors-only pagination markup that Sprint 5's Activators list would just duplicate.
+- **Verification scaled back per explicit instruction** ("don't over test everything... to preserve token") — relied on `tsc`/lint/vitest as the primary gate this sprint; no browser screenshot pass (the presentational half was already visually verified in Sprint 3, and this sprint's new risk surface — hook wiring, RHF+Controller — is exactly what `tsc` catches).
 
 **Risks**
 - Dashboard four independent card states; accidental dialog-close on mutation error; wilaya→commune reset/refetch edge cases; inline-edit dirty/cancel state.

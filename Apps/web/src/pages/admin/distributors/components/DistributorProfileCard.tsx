@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Pencil, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +15,16 @@ import {
 import { EnabledBadge } from "@/components/shared/StatusBadge";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { DistributorDetailDTO, WilayaDTO, CommuneDTO } from "@my-app/contract";
+import {
+  updateDistributorSchema,
+  type UpdateDistributorFormValues,
+} from "./update-distributor.schema";
 
 interface Props {
   distributor: DistributorDetailDTO;
   onToggle: () => void;
-  /** Called on save — RHF + Zod + useUpdateDistributor wire this in Sprint 4. */
-  onSave: () => void;
+  onSave: (values: UpdateDistributorFormValues) => void;
+  isPending?: boolean;
   wilayas?: WilayaDTO[];
   wilayasLoading: boolean;
   wilayasError: boolean;
@@ -31,11 +37,12 @@ interface Props {
 
 // Assumes valid data — the page owns the shared profile+stats loading/error/not-found gate
 // (mirrors ProfileCard's note). Inline edit per the spec (not a modal): a local isEditing
-// toggle swaps the read-only display for the field markup.
+// toggle swaps the read-only display for the RHF-wired field markup.
 export function DistributorProfileCard({
   distributor,
   onToggle,
   onSave,
+  isPending,
   wilayas,
   wilayasLoading,
   wilayasError,
@@ -48,6 +55,38 @@ export function DistributorProfileCard({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const communeDisabled = !editWilayaId || communesLoading || communesError;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<UpdateDistributorFormValues>({
+    resolver: zodResolver(updateDistributorSchema(t)),
+    defaultValues: {
+      fullName: distributor.fullName,
+      storeName: distributor.storeName,
+      phone: distributor.phone,
+      wilayaId: distributor.wilayaId,
+      communeId: distributor.communeId,
+    },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      reset({
+        fullName: distributor.fullName,
+        storeName: distributor.storeName,
+        phone: distributor.phone,
+        wilayaId: distributor.wilayaId,
+        communeId: distributor.communeId,
+      });
+      onEditWilayaChange(distributor.wilayaId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
 
   if (!isEditing) {
     return (
@@ -93,90 +132,114 @@ export function DistributorProfileCard({
     );
   }
 
+  const submit = handleSubmit((values) => {
+    onSave(values);
+    setIsEditing(false);
+  });
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <form
+      onSubmit={submit}
+      className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="edit-distributor-fullname">
             {t("admin.distributors.create.fullName")}
           </Label>
-          <Input id="edit-distributor-fullname" defaultValue={distributor.fullName} />
+          <Input id="edit-distributor-fullname" {...register("fullName")} />
+          {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="edit-distributor-storename">
             {t("admin.distributors.create.storeName")}
           </Label>
-          <Input id="edit-distributor-storename" defaultValue={distributor.storeName} />
+          <Input id="edit-distributor-storename" {...register("storeName")} />
+          {errors.storeName && (
+            <p className="text-sm text-destructive">{errors.storeName.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="edit-distributor-phone">{t("admin.distributors.create.phone")}</Label>
-          <Input id="edit-distributor-phone" type="tel" defaultValue={distributor.phone} />
+          <Input id="edit-distributor-phone" type="tel" {...register("phone")} />
+          {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
         <div />
         <div className="space-y-2">
           <Label>{t("admin.distributors.create.wilaya")}</Label>
-          <Select
-            value={editWilayaId}
-            onValueChange={onEditWilayaChange}
-            disabled={wilayasLoading || wilayasError}
-          >
-            <SelectTrigger>
-              {wilayasLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-              ) : (
-                <SelectValue placeholder={t("admin.distributors.form.wilayaPlaceholder")} />
-              )}
-            </SelectTrigger>
-            <SelectContent>
-              {(wilayas ?? []).map((w) => (
-                <SelectItem key={w.id} value={w.id}>
-                  {w.frName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="wilayaId"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={(v) => {
+                  field.onChange(v);
+                  onEditWilayaChange(v);
+                  setValue("communeId", "");
+                }}
+                disabled={wilayasLoading || wilayasError}
+              >
+                <SelectTrigger>
+                  {wilayasLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <SelectValue placeholder={t("admin.distributors.form.wilayaPlaceholder")} />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {(wilayas ?? []).map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.frName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
         <div className="space-y-2">
           <Label>{t("admin.distributors.create.commune")}</Label>
-          <Select disabled={communeDisabled}>
-            <SelectTrigger>
-              {communesLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-              ) : (
-                <SelectValue
-                  placeholder={
-                    !editWilayaId
-                      ? t("admin.distributors.communeNeedsWilaya")
-                      : communesError
-                        ? t("admin.distributors.selectLoadError")
-                        : t("admin.distributors.form.communePlaceholder")
-                  }
-                />
-              )}
-            </SelectTrigger>
-            <SelectContent>
-              {(communes ?? []).map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.frName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="communeId"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange} disabled={communeDisabled}>
+                <SelectTrigger>
+                  {communesLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <SelectValue
+                      placeholder={
+                        !editWilayaId
+                          ? t("admin.distributors.communeNeedsWilaya")
+                          : communesError
+                            ? t("admin.distributors.selectLoadError")
+                            : t("admin.distributors.form.communePlaceholder")
+                      }
+                    />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {(communes ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.frName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button variant="outline" onClick={() => setIsEditing(false)}>
+        <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
           {t("common.actions.cancel")}
         </Button>
-        <Button
-          onClick={() => {
-            onSave();
-            setIsEditing(false);
-          }}
-        >
+        <Button type="submit" disabled={isPending}>
           {t("common.actions.save")}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
