@@ -63,22 +63,22 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 2 — PRIMITIVES & STATES
 
-### Sprint 2: Primitives & States — all five pages (+ heatmap vendoring)   — Status: ⬜ Pending
+### Sprint 2: Primitives & States — all five pages (+ heatmap vendoring)   — Status: ✅ Done
 
 **Goals**
 - Every "dumb" component for all five pages renders from props with a `Skeleton` loader and localized empty/error fallback — no hooks, no data, no validation. Chart wrappers, the vendored heatmap geometry, and the Settings tab shells all exist and render statically. Existing suite + `tsc` green.
 
 **Tasks** *(all #ui; test-ready, no hook calls)*
-- [ ] **Activations** (`pages/admin/activations/components/`): `ActivationsStatsRow` (+ `ByStateDonut` shell), `ActivationsFilters`, `ActivationsTable` (`DataTable` cols + `StatusBadge` + `LiveTimer` durations), `ResolveFreezePanel` (static), `SetActivatorPriceModal` (static), `ActivationActionsMenu`.
-- [ ] **Activation Detail** (same dir): `ClientBlock`, `DistributorBlock` (text, no link — §E-2), `ActivatorBlock` (link slot), `SubmittedInformationList`, `ActivationTimeline` (WRONG/ADDITIONAL/FREEZE row variants), `CardHistoryTimeline`, `FinancialBlock`.
-- [ ] **Logs** (`pages/admin/logs/components/`): `LogsFilters`, `LogsTable`, **`LogActionBadge`** (icon+tone per the 13 `LogActionType`s, shared, §B9), relative-time cell.
-- [ ] **Statistics** (`pages/admin/statistics/components/`): thin `recharts` wrappers `ActivationsOverTimeChart`/`AvgTimeTrendChart`/`RevenueOverTimeChart` (Line), `ActivationsByStateDonut` (Pie), `TopActivatorsBar`/`TopDistributorsBar` (horizontal Bar) — each with an empty-state branch; `StatisticsFilterBar`.
-- [ ] **Heatmap vendoring** (#ui, the risk-bearing primitive): `WilayaHeatmap.tsx` — copy the 58 `<g><polygon|path/></g>` **geometry + viewBox** from `react-algeria-map/src/components/Map/Map.jsx` into a typed TSX component; **drop** the global `document.documentElement` CSS-var `useEffect`; props typed for `data`/`colorMode`/`onWilayaSelect` (static flat fill for now). `wilaya-name-map.ts` (lib-name ↔ `wilayaName` normalization table, all 58). `HeatmapLegend`, `HeatmapColorModeSelect`, `WilayaDrilldownPanel` (static), hover-tooltip shell.
-- [ ] **Settings** (`pages/admin/settings/components/`): `SettingsPage` tab host with **4** `ui/tabs`; static `AdminAccountsTab`/`CommissionMatrixTab` (+ `CommissionCell`)/`SubscriptionPlansTab`/`DeliveryCompaniesTab`; static `AddAdminModal`/`EditAdminModal`/`AddPlanModal`/`CompanyModal`; reuse `GeneratedPasswordPanel`.
-- [ ] Wire each region's three states: `isLoading`→Skeleton/`ChartSkeleton`/neutral-outline map; empty→`EmptyState`; `isError`→`NotFoundState`+Retry slot.
+- [x] **Activations** (`pages/admin/activations/components/`): `ActivationsStatsRow` (+ `ByStateDonut` shell), `ActivationsFilters`, `ActivationsTable` (`DataTable` cols + `StatusBadge` + `LiveTimer` durations), `ResolveFreezePanel` (static, reused shared `ResolveFreezeDialog` extended with optional `reason`), `SetActivatorPriceModal` (static), `ActivationActionsMenu`.
+- [x] **Activation Detail** (same dir): `ClientBlock`, `DistributorBlock` (text, no link — §E-2), `ActivatorBlock` (link slot), `SubmittedInformationList`, `ActivationTimeline` (WRONG/ADDITIONAL/FREEZE row variants), `CardHistoryTimeline`, `FinancialBlock`.
+- [x] **Logs** (`pages/admin/logs/components/`): `LogsFilters`, `LogsTable`, **`LogActionBadge`** (icon+tone per the 13 `LogActionType`s, shared, §B9), relative-time cell (`formatRelativeTime` added to `lib/utils.ts`).
+- [x] **Statistics** (`pages/admin/statistics/components/`): thin `recharts` wrappers `ActivationsOverTimeChart`/`AvgTimeTrendChart`/`RevenueOverTimeChart` (Line), `ActivationsByStateDonut` (Pie), `TopActivatorsBar`/`TopDistributorsBar` (horizontal Bar) — each with an empty-state branch; `StatisticsFilterBar`.
+- [x] **Heatmap vendoring** (#ui, the risk-bearing primitive): `WilayaHeatmap.tsx` — copied the 58 `<g><polygon|path/></g>` **geometry + viewBox** from `react-algeria-map`'s legacy `Map.jsx` into `wilaya-geometry.ts` via a Node extraction script; **dropped** the global CSS-var `useEffect`; props typed for `data`/`colorMode`/`onWilayaSelect`. `wilaya-name-map.ts` (NFD-normalization + diacritic/apostrophe folding, all 58). `HeatmapLegend`, `HeatmapColorModeSelect`, `WilayaDrilldownPanel` (static), hover-tooltip shell. `heatmap-color-scale.ts` split out to satisfy `react-refresh/only-export-components`.
+- [x] **Settings** (`pages/admin/settings/components/`): `SettingsPage` tab host with **4** `ui/tabs` (new `@radix-ui/react-tabs` dependency, user-approved); static `AdminAccountsTab`/`CommissionMatrixTab` (+ `CommissionCell`)/`SubscriptionPlansTab`/`DeliveryCompaniesTab`; static `AddAdminModal`/`EditAdminModal`/`AddPlanModal`/`CompanyModal`; reuse `GeneratedPasswordPanel`.
+- [x] Wire each region's three states: `isLoading`→Skeleton/`ChartSkeleton`/neutral-outline map; empty→`EmptyState`; `isError`→`NotFoundState`+Retry slot.
 
 **Validation**
-- [ ] Every primitive renders from props; loading/empty/error branches present + localized. / [ ] Heatmap renders all 58 wilayas from static data; name-map covers all 58. / [ ] No inline strings; no `useEffect` fetching. / [ ] `tsc` clean; existing Vitest green; no `/src` tests. / [ ] Committed on green (scoped add — **not** the `react-algeria-map` source).
+- [x] Every primitive renders from props; loading/empty/error branches present + localized. / [x] Heatmap renders all 58 wilayas from static data; name-map covers all 58. / [x] No inline strings; no `useEffect` fetching. / [x] `tsc` clean (both configs); existing Vitest green (356/356); no `/src` tests. / [x] Committed on green (scoped add — **not** the `react-algeria-map` source, and not the unrelated pre-existing files collaterally touched by a repo-wide `eslint --fix`, which were reverted before committing).
 
 **Risks**
 - Heatmap SVG is large — keep geometry in its own module; verify the viewBox renders undistorted in our container.

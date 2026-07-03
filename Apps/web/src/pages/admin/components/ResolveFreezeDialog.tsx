@@ -15,11 +15,15 @@ interface Props {
   action: "activate" | "cancel";
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  /** Shown above the confirm copy when the caller has the freeze reason on hand (e.g. the
+   * Activations page's Resolve action) — omitted, Dashboard's compact widget is unchanged. */
+  reason?: string | null;
 }
 
 // Purely presentational — the row that opened it and the actual mutate() call are owned by
-// the caller (FrozenActivationsTable); this only renders the confirm copy per action variant.
-export function ResolveFreezeDialog({ open, action, onOpenChange, onConfirm }: Props) {
+// the caller (FrozenActivationsTable/ActivationsTable); this only renders the confirm copy
+// per action variant.
+export function ResolveFreezeDialog({ open, action, onOpenChange, onConfirm, reason }: Props) {
   const { t } = useTranslation();
   const isCancel = action === "cancel";
 
@@ -33,6 +37,11 @@ export function ResolveFreezeDialog({ open, action, onOpenChange, onConfirm }: P
               : t("admin.dashboard.frozen.activateConfirm.title")}
           </AlertDialogTitle>
           <AlertDialogDescription>
+            {reason && (
+              <span className="mb-1 block text-foreground">
+                {t("admin.activations.resolveFreeze.reason")}: {reason}
+              </span>
+            )}
             {isCancel
               ? t("admin.dashboard.frozen.cancelConfirm.body")
               : t("admin.dashboard.frozen.activateConfirm.body")}

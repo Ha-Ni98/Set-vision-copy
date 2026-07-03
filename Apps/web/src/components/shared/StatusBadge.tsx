@@ -1,4 +1,11 @@
-import { ActivationStat, CardStat, OrderStat, SetStat, LotStat } from "@my-app/contract";
+import {
+  ActivationStat,
+  CardStat,
+  OrderStat,
+  SetStat,
+  LotStat,
+  LogActionType,
+} from "@my-app/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export type BadgeTone = "success" | "warning" | "destructive" | "neutral";
@@ -104,6 +111,29 @@ const LOT_TONE: Record<LotStat, BadgeTone> = {
 export function LotStatusBadge({ status }: { status: LotStat }) {
   const { t } = useTranslation();
   return <StatusPill tone={LOT_TONE[status]} label={t(`enums.lotStat.${status}`)} />;
+}
+
+const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
+  [LogActionType.CHANGE_USER_PASSWORD]: "neutral",
+  [LogActionType.CHANGE_USER_STAT]: "warning",
+  [LogActionType.CHANGE_USER_INFORMATION]: "neutral",
+  [LogActionType.SET_PAYMENT]: "success",
+  [LogActionType.DELETE_PAYMENT]: "destructive",
+  [LogActionType.ADD_DISTRIBUTOR]: "success",
+  [LogActionType.CHANGE_DISTRIBUTOR_INFORMATION]: "neutral",
+  [LogActionType.CHANGE_DISTRIBUTOR_STAT]: "warning",
+  [LogActionType.CHANGE_ACTIVATION_COMMISSION]: "warning",
+  [LogActionType.REMOVE_LOT]: "destructive",
+  [LogActionType.REMOVE_SET]: "destructive",
+  [LogActionType.REMOVE_CARD]: "destructive",
+  [LogActionType.REVOKE_CARD]: "destructive",
+};
+
+export function LogActionBadge({ actionType }: { actionType: LogActionType }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill tone={LOG_ACTION_TONE[actionType]} label={t(`enums.logActionType.${actionType}`)} />
+  );
 }
 
 // isEnabled is a boolean, not an enum — Activators/Distributors tables and details both need
