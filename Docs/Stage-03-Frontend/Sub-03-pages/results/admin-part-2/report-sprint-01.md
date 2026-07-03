@@ -2,7 +2,7 @@
 sprint: 1
 title: Foundation — Schemas, i18n, Routes & Shared Badges
 status: ✅ Done
-commit: TBD
+commit: 9a2712f
 ---
 
 # Sprint 1 Report — Foundation
