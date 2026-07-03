@@ -2,7 +2,7 @@
 sprint: 2
 title: Primitives & States — all five pages (+ heatmap vendoring)
 status: ✅ Done
-commit: TBD
+commit: e70f1b9
 ---
 
 # Sprint 2 Report — Primitives & States
