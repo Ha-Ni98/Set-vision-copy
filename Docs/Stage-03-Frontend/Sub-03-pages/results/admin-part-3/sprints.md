@@ -109,20 +109,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ---
 
-### Sprint 4: Assembly & Wiring — Statistics + Heatmap   — Status: ⬜ Pending
+### Sprint 4: Assembly & Wiring — Statistics + Heatmap   — Status: ✅ Done
 
 **Goals**
 - `StatisticsPage` fully live: 6 pre-aggregated charts, the interactive 58-wilaya heatmap (color-mode gradient + rich tooltip + click-drilldown), all re-fetching on the filter bar. Per-chart loading/empty/error; map neutral-outline/lowest-shade/outline+retry. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] Filter bar (#wiring): period (enum-mapped, §E-3), `useSubscriptionPlans`, `useWilayas` → drive one `useStatisticsOverview({period,dateFrom?,dateTo?,subscriptionPlanId?,wilayaId?})` call feeding all 6 charts.
-- [ ] Charts (#wiring): bind the 6 series to their wrappers; each renders its own `ChartSkeleton` / "No data for this period." / retry.
-- [ ] Heatmap data (#wiring): `useWilayaHeatmap({period?,subscriptionPlanId?})` → join `WilayaHeatmapDTO[]` to the SVG via `wilaya-name-map`; **per-wilaya purple scale** by `colorMode` (distributors/activations/cancellations/avgTime), memoized; `HeatmapLegend` min/max; rich hover tooltip (4 metrics).
-- [ ] Drilldown (#wiring): wilaya click → resolve name→id → `useWilayaDrilldown(wilayaId,{period?})` (`enabled`) → `WilayaDrilldownPanel` (topDistributors/activationsByPlan/activationsOverTime).
-- [ ] States (#wiring): loading → neutral outline; empty → all-lowest-shade + "no activity" tooltip; error → outline + "Couldn't load wilaya stats. Retry."
+- [x] Filter bar (#wiring): period, `useSubscriptionPlans`, `useWilayas` → drive one `useStatisticsOverview({period,dateFrom?,dateTo?,subscriptionPlanId?,wilayaId?})` call feeding all 6 charts. **Found and fixed a real gap**: Sprint 2's `StatisticsFilterBar` rendered a selectable "Custom Range" period option with no date-range inputs to back it — added conditional `dateFrom`/`dateTo` date inputs (shown only when `period==="custom"`, 2 new i18n keys) so selecting Custom is actually functional, matching the `dateFrom`/`dateTo` conditionally-sent-only-for-custom pattern in the page.
+- [x] Charts (#wiring): bound all 6 series to their wrappers off the single `overviewQuery`; each already had its own `ChartSkeleton`/empty/error branch from Sprint 2.
+- [x] Heatmap data (#wiring): `useWilayaHeatmap({period,subscriptionPlanId?})` passed straight to `WilayaHeatmap`, which already does the name-join + purple scale + tooltip internally (built Sprint 2); `WilayaHeatmapQuery` has no `wilayaId`/`dateFrom`/`dateTo` fields in the contract, so the heatmap only reacts to period+plan, unlike the 6 charts.
+- [x] Drilldown (#wiring): `WilayaHeatmap`'s `onWilayaSelect` callback already resolves to a full `WilayaHeatmapEntry` (with real `wilayaId`) internally via its own name-join — no separate name→id resolution needed at the page level; `useWilayaDrilldown(selectedWilaya?.wilayaId ?? "", {period})` (`enabled` off empty id) → `WilayaDrilldownPanel`.
+- [x] States (#wiring): all three (loading/empty/error) already built per-region in Sprint 2's primitives; no changes needed.
 
 **Validation**
-- [ ] One overview query per filter change (6 charts share it). / [ ] All 58 wilayas color + tooltip correctly; name-join drops nothing. / [ ] No `useEffect` fetching; per-chart (not page) fallbacks. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] One overview query per filter change (6 charts share it). / [x] Heatmap/drilldown wired to real hooks; name-join logic unchanged from Sprint 2 (dedicated all-58 test deferred to S7 per plan). / [x] No `useEffect` fetching; per-chart (not page) fallbacks. / [x] `tsc` clean (both configs); existing Vitest green (356/356). / [x] Committed on green.
 
 **Risks**
 - **Name-matching** lib↔DTO (accents/spelling) — the §E-5 table is the single point of failure; unit-tested in S7.

@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import type { SubscriptionPlanDTO, WilayaDTO } from "@my-app/contract";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,10 @@ interface Props {
   onPlanChange: (id: string) => void;
   wilayaId: string;
   onWilayaChange: (id: string) => void;
+  dateFrom: string;
+  onDateFromChange: (value: string) => void;
+  dateTo: string;
+  onDateToChange: (value: string) => void;
   plans?: SubscriptionPlanDTO[];
   plansLoading: boolean;
   plansError: boolean;
@@ -46,6 +51,10 @@ export function StatisticsFilterBar({
   onPlanChange,
   wilayaId,
   onWilayaChange,
+  dateFrom,
+  onDateFromChange,
+  dateTo,
+  onDateToChange,
   plans,
   plansLoading,
   plansError,
@@ -113,6 +122,28 @@ export function StatisticsFilterBar({
           ))}
         </SelectContent>
       </Select>
+
+      {period === "custom" && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            aria-label={t("admin.statistics.filters.dateFrom")}
+            value={dateFrom}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className="w-40"
+          />
+          <span className="text-sm text-muted-foreground">
+            {t("admin.statistics.filters.dateTo")}
+          </span>
+          <Input
+            type="date"
+            aria-label={t("admin.statistics.filters.dateTo")}
+            value={dateTo}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className="w-40"
+          />
+        </div>
+      )}
     </div>
   );
 }

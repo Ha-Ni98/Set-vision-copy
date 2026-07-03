@@ -563,6 +563,8 @@
   "admin.statistics.subtitle": { "en": "Trends and performance across the platform.", "fr": "Tendances et performances sur toute la plateforme.", "ar": "" },
   "admin.statistics.filters.planPlaceholder": { "en": "All Plans", "fr": "Toutes les formules", "ar": "" },
   "admin.statistics.filters.wilayaPlaceholder": { "en": "All Wilayas", "fr": "Toutes les wilayas", "ar": "" },
+  "admin.statistics.filters.dateFrom": { "en": "From", "fr": "Du", "ar": "" },
+  "admin.statistics.filters.dateTo": { "en": "To", "fr": "Au", "ar": "" },
   "admin.statistics.charts.activationsOverTime.title": { "en": "Activations Over Time", "fr": "Activations dans le temps", "ar": "" },
   "admin.statistics.charts.activationsByState.title": { "en": "Activations by State", "fr": "Activations par état", "ar": "" },
   "admin.statistics.charts.topActivators.title": { "en": "Top Activators", "fr": "Meilleurs activateurs", "ar": "" },
