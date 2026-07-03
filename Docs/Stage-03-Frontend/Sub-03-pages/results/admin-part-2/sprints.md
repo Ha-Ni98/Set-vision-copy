@@ -129,20 +129,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 4 — POLISH
 
-### Sprint 5: Polish — responsive, a11y, memoization, honest labels   — Status: ⬜ Pending
+### Sprint 5: Polish — responsive, a11y, memoization, honest labels   — Status: ✅ Done
 
 **Goals**
 - Desktop-first responsive pass, a11y labels on icon-only controls, memoization exactly where plan §B8 calls for it, semantic color tokens only, and deviation copy (F-1/F-2) worded honestly. No behavior change. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] a11y (#a11y): `aria-label` on every icon-only button — Orders/Set/Lot/Card action menus, wizard Next/Back, per-page-size select, filter clears, flag chips.
-- [ ] Memoization audit (#perf): confirm `ColumnDef[]`, `countOf` reductions, and the wizard's live totals are memoized; add `useMemo`/`useCallback` **only** where the plan calls for it (rules §5 — clarity over premature memo).
-- [ ] Responsive (#responsive): verify wide tables horizontal-scroll (the `DataTable` desktop wrapper `overflow-x-auto` fix from Part-1 S6 covers this) and the stacked mobile rows read sanely; wizard/drawer usable at desktop-first widths.
-- [ ] Honest deviation copy (#i18n): F-1 stat labelled as total `IN_LOT` (not "awaiting delivery on an in-delivery order"); F-2 labelled as `AT_DISTRIBUTOR` cards (not "+ is_active") — no misleading strings.
-- [ ] Theming (#theming): grep for hardcoded colors (expect zero); semantic tokens (`surface`, `warning`, `destructive`, …) only.
+- [x] a11y (#a11y): `aria-label` on every icon-only button — Orders/Set/Lot/Card action menus (already present since each was built with `aria-label={t("common.actions.action")}` from Sprint 2), date-range filter inputs (already labeled since Sprint 3). **Confirmed inapplicable to this part:** wizard Next/Back render visible text ("Next"/"Back"), not icons, so no `aria-label` is needed; no per-page-size select exists on any of the 3 pages (only `SimplePagination`'s Prev/Next, unlike Activators' page-size select from Part-1) — nothing to label; flag chips (`CardFlagChips`) are non-interactive `<span>`s, not controls.
+- [x] Memoization audit (#perf): confirmed already correct everywhere — all 4 tables' `ColumnDef[]` (`useMemo<ColumnDef<X>[]>`), both pages' `countOf`-based stat arrays, `CreateOrderModal`'s `enabledDistributors`/`cardsTotal`, and `StepSelectLots`' `cardsTotal` are all wrapped in `useMemo`. No `useMemo`/`useCallback` added — rules §5 (clarity over premature memo).
+- [x] Responsive (#responsive): confirmed — all 4 tables reuse `DataTable` (Part-1's `overflow-x-auto` desktop wrapper, unmodified) and each supplies a `renderMobileRow` stacked card (name/key + secondary line + status badge, matching Part-1's `DistributorsTable` shape — mobile rows intentionally carry no actions menu either, same as Part-1: admin is desktop-first, "mobile best-effort" per rules §6C). Wizard/drawer/modals all use the shared `Dialog`/`Sheet` default/explicit `max-w-lg`.
+- [x] Honest deviation copy (#i18n): **found and fixed** — F-1's stat title still read "Cards in Lots (Awaiting Delivery)", which smuggles back the exact "awaiting delivery" precision the deviation explicitly drops; changed to plain "Cards in Lots" (`admin.setsLots.stats.cardsAwaitingDelivery.title`). F-2's "At-Distributor Cards" title was already honest, no change.
+- [x] Theming (#theming): grepped every Part-2 file for hardcoded hex/rgb/raw Tailwind palette classes — zero hits; semantic tokens only.
 
 **Validation**
-- [ ] No inline strings introduced. / [ ] `tsc` clean; existing Vitest green. / [ ] No behavior change; pre-existing out-of-scope issues left untouched (scope discipline). / [ ] Committed on green.
+- [x] No inline strings introduced. / [x] `tsc` clean; existing Vitest green. / [x] No behavior change (one honest-copy string fix only); pre-existing out-of-scope issues left untouched (scope discipline). / [x] Committed on green.
 
 **Risks**
 - Scope creep — resist "fixing" adjacent pre-existing issues (e.g. the flagged `LoginPage` redirect); flag, don't touch.

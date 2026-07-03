@@ -432,7 +432,7 @@
   "admin.setsLots.stats.totalSets.title": { "en": "Total Sets", "fr": "Total des sets", "ar": "" },
   "admin.setsLots.stats.totalLots.title": { "en": "Total Lots", "fr": "Total des lots", "ar": "" },
   "admin.setsLots.stats.cardsInSets.title": { "en": "Cards in Sets", "fr": "Cartes dans des sets", "ar": "" },
-  "admin.setsLots.stats.cardsAwaitingDelivery.title": { "en": "Cards in Lots (Awaiting Delivery)", "fr": "Cartes en lots (en attente de livraison)", "ar": "" },
+  "admin.setsLots.stats.cardsAwaitingDelivery.title": { "en": "Cards in Lots", "fr": "Cartes en lots", "ar": "" },
   "admin.setsLots.sets.title": { "en": "Sets", "fr": "Sets", "ar": "" },
   "admin.setsLots.sets.search.placeholder": { "en": "Search by set number", "fr": "Rechercher par numéro de set", "ar": "" },
   "admin.setsLots.sets.filters.planPlaceholder": { "en": "All Plans", "fr": "Toutes les formules", "ar": "" },
