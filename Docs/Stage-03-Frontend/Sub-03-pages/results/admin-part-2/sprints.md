@@ -105,21 +105,21 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ---
 
-### Sprint 4: Assembly & Wiring — Sets & Lots + Cards   — Status: ⬜ Pending
+### Sprint 4: Assembly & Wiring — Sets & Lots + Cards   — Status: ✅ Done
 
 **Goals**
 - `SetsLotsPage` and `CardsPage` fully live: `useInventorySummary`-backed stat rows (via a `countOf` helper), both Sets/Lots tables + create modals + gated actions; Cards table + filters + URL pre-filters + detail modal + gated confirm actions. Layout survives loading/error. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] `SetsLotsPage` stats (#wiring): `useInventorySummary()` + a memoized `countOf(arr, stat)` (missing stat ⇒ 0) → Total Sets/Lots (+breakdown), Cards in Sets/in Lots; **F-1** card renders total `IN_LOT` with honest label.
-- [ ] Sets/Lots tables (#wiring): `useSets`/`useLots` with `useDebouncedValue` search + plan/state filters + pagination; `useSubscriptionPlans({active:true})` for the filter selects.
-- [ ] Create modals (#wiring #forms): `CreateSetModal` (create-set schema) → `useCreateSet`; `CreateLotModal` (create-lot schema, `useAvailableCardsForLot(subscriptionPlanId)` gated on plan, controlled `cardIds` + Select/Deselect-All + live count) → `useCreateLot`.
-- [ ] Set/Lot actions (#wiring): gated by state → `useTransitionSet`/`useDeleteSet` (cascade-warning `AlertDialog`), `useDeleteLot` (`PENDING` only, "cards return to PRINTED"); "View Cards" → `<Link ?set=setNumber>` / `<Link ?lot=lotNumber>`.
-- [ ] `CardsPage` (#wiring): `useInventorySummary()` → Total Cards (Σ`cards`), Cards-by-State, **F-2** Active = `AT_DISTRIBUTOR` count (honest label), Flagged = `cardFlags.disabled + .revoked`; `useCards({...})` with debounced key search + **single-select** state/set/lot/distributor/plan/flag + pagination; seed `?set/?lot/?distributor/?key` once → clearable filter chips.
-- [ ] Cards filters + detail + actions (#wiring): `useSubscriptionPlans` + `useDistributors` for the selects; `CardDetailModal` ← `useCard(id)` timeline + `<Link to="/admin/activations?key={key}">`; `CardActionsMenu` gated by `cardStat` + flags → `useDeleteCard`/`useDisableCard`/`useEnableCard`/`useRevokeCard` confirm dialogs.
+- [x] `SetsLotsPage` stats (#wiring): `useInventorySummary()` + a memoized `countOf(arr, stat)` (missing stat ⇒ 0, extracted to shared `lib/utils.ts` since both pages need it) → Total Sets/Lots (summed, no per-stat breakdown subtext — no i18n keys were built for that in S1, see report), Cards in Sets/in Lots; **F-1** card renders total `IN_LOT` with honest label.
+- [x] Sets/Lots tables (#wiring): `useSets`/`useLots` with `useDebouncedValue` search + plan/state filters + pagination; `useSubscriptionPlans({active:true})` for the filter selects.
+- [x] Create modals (#wiring #forms): `CreateSetModal` (create-set schema) → `useCreateSet`; `CreateLotModal` (create-lot schema, `useAvailableCardsForLot(subscriptionPlanId)` gated on plan, controlled `cardIds` + Select/Deselect-All + live count) → `useCreateLot`. **Both modals call their own `useSubscriptionPlans`/`useAvailableCardsForLot` directly** (same self-contained-hooks architecture as Sprint 3's `CreateOrderModal`), so the page passes only `open`/`onOpenChange`/`onSubmit`/`isPending`.
+- [x] Set/Lot actions (#wiring): gated by state → `useTransitionSet`/`useDeleteSet` (cascade-warning `AlertDialog`), `useDeleteLot` (`PENDING` only, "cards return to PRINTED"); "View Cards" → `<Link ?set=setNumber>` / `<Link ?lot=lotNumber>`.
+- [x] `CardsPage` (#wiring): `useInventorySummary()` → Total Cards (Σ`cards`), **F-2** Active = `AT_DISTRIBUTOR` count (honest label), Flagged = `cardFlags.disabled + .revoked` — 3 stat cards, not 4 ("Cards by State" is a breakdown array, not a scalar a `StatCard` can render; decided in S2, confirmed here); `useCards({...})` with debounced key search + **single-select** state/set/lot/distributor/plan/flag + pagination; seed `?set/?lot/?distributor/?key` once → clearable filter chips.
+- [x] Cards filters + detail + actions (#wiring): `useSubscriptionPlans` + `useDistributors` for the selects; `CardDetailModal` ← `useCard(id)` timeline + `<Link to="/admin/activations?key={key}">`; `CardActionsMenu` gated by `cardStat` + flags → `useDeleteCard`/`useDisableCard`/`useEnableCard`/`useRevokeCard` confirm dialogs.
 
 **Validation**
-- [ ] `countOf` treats missing stat as 0; F-1/F-2 use honest labels (deviations only). / [ ] Single-select state/flag (F-4); no `useEffect` fetching. / [ ] Action gating correct per permission table. / [ ] Layout survives loading/error. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] `countOf` treats missing stat as 0; F-1/F-2 use honest labels (deviations only). / [x] Single-select state/flag (F-4); no `useEffect` fetching. / [x] Action gating correct per permission table. / [x] Layout survives loading/error. / [x] `tsc` clean; existing Vitest green. / [x] Committed on green.
 
 **Risks**
 - `useInventorySummary` feeds **two** pages — keep the two stat mappings straight.

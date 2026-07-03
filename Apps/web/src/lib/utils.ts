@@ -25,3 +25,12 @@ export function formatDateTime(iso: string, language: Language = "en"): string {
     timeStyle: "short",
   }).format(new Date(iso));
 }
+
+// Stats with zero items are omitted from InventorySummaryDTO's arrays (contract comment) —
+// consumers must treat a missing stat as 0, not undefined (plan.md §B3).
+export function countOf<T extends string>(
+  arr: { stat: T; count: number }[] | undefined,
+  stat: T,
+): number {
+  return arr?.find((s) => s.stat === stat)?.count ?? 0;
+}

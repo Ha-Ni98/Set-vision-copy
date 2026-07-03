@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, CreditCard } from "lucide-react";
-import type { AvailableCardDTO, SubscriptionPlanDTO } from "@my-app/contract";
+import type { CreateLotCommand } from "@my-app/contract";
 import {
   Dialog,
   DialogContent,
@@ -21,93 +23,95 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { useAvailableCardsForLot } from "@/hooks/useCards";
+import { createLotSchema, type CreateLotFormValues } from "./create-lot.schema";
+
+const DEFAULT_VALUES: CreateLotFormValues = { subscriptionPlanId: "", cardIds: [] };
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called on submit — RHF + Zod (create-lot.schema.ts) + useCreateLot wire this in Sprint 4. */
-  onSubmit: () => void;
+  onSubmit: (command: CreateLotCommand) => void;
   isPending?: boolean;
-  plans?: SubscriptionPlanDTO[];
-  plansLoading: boolean;
-  plansError: boolean;
-  /** Parent-owned — the page's useAvailableCardsForLot(planId) call needs it. */
-  selectedPlanId: string;
-  onPlanChange: (id: string) => void;
-  candidateCards?: AvailableCardDTO[];
-  candidatesLoading: boolean;
-  candidatesError: boolean;
 }
 
-// Field-markup shell (plan.md's Sprint 2 vs. Sprint 4 split) except for the candidate
-// checkbox list — Select/Deselect-All + live count are real, local UI behavior (not data
-// wiring), so they're built here, same reasoning as CreateDistributorModal's Sprint-3
-// wilaya→commune dependency.
-export function CreateLotModal({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-  plans,
-  plansLoading,
-  plansError,
-  selectedPlanId,
-  onPlanChange,
-  candidateCards,
-  candidatesLoading,
-  candidatesError,
-}: Props) {
+// Calls its own useSubscriptionPlans + useAvailableCardsForLot(watched plan) — no
+// page-level data props (mirrors CreateSetModal/CreateOrderModal's Sprint 3/4 architecture).
+export function CreateLotModal({ open, onOpenChange, onSubmit, isPending }: Props) {
   const { t } = useTranslation();
-  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const plansQuery = useSubscriptionPlans({ active: true });
+  const {
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<CreateLotFormValues>({
+    resolver: zodResolver(createLotSchema(t)),
+    defaultValues: DEFAULT_VALUES,
+  });
+  const subscriptionPlanId = watch("subscriptionPlanId");
+  const cardIds = watch("cardIds");
+  const candidatesQuery = useAvailableCardsForLot(subscriptionPlanId || undefined);
+  const cards = candidatesQuery.data ?? [];
 
-  const toggleCard = (id: string) =>
-    setSelectedCardIds((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
-    );
+  useEffect(() => {
+    if (!open) reset(DEFAULT_VALUES);
+  }, [open, reset]);
 
-  const cards = candidateCards ?? [];
+  const toggleCard = (id: string) => {
+    const next = cardIds.includes(id) ? cardIds.filter((c) => c !== id) : [...cardIds, id];
+    setValue("cardIds", next, { shouldValidate: true });
+  };
+
+  const submit = handleSubmit((values) => onSubmit(values));
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) setSelectedCardIds([]);
-        onOpenChange(next);
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("admin.setsLots.lots.create.title")}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <form onSubmit={submit} className="flex flex-col gap-4">
           <div className="space-y-2">
             <Label>{t("admin.setsLots.lots.create.plan")}</Label>
-            <Select
-              value={selectedPlanId}
-              onValueChange={(v) => {
-                onPlanChange(v);
-                setSelectedCardIds([]);
-              }}
-              disabled={plansLoading || plansError}
-            >
-              <SelectTrigger>
-                {plansLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                ) : (
-                  <SelectValue placeholder={t("admin.setsLots.lots.filters.planPlaceholder")} />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {(plans ?? []).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="subscriptionPlanId"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    setValue("cardIds", []);
+                  }}
+                  disabled={plansQuery.isLoading || plansQuery.isError}
+                >
+                  <SelectTrigger>
+                    {plansQuery.isLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <SelectValue placeholder={t("admin.setsLots.lots.create.planPlaceholder")} />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(plansQuery.data ?? []).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.subscriptionPlanId && (
+              <p className="text-sm text-destructive">{errors.subscriptionPlanId.message}</p>
+            )}
           </div>
 
-          {candidatesLoading && (
+          {candidatesQuery.isLoading && (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 4 }, (_, i) => (
                 <Skeleton key={i} className="h-10 w-full rounded-lg" />
@@ -115,7 +119,7 @@ export function CreateLotModal({
             </div>
           )}
 
-          {!candidatesLoading && !!selectedPlanId && cards.length === 0 && (
+          {!candidatesQuery.isLoading && !!subscriptionPlanId && cards.length === 0 && (
             <EmptyState
               icon={<CreditCard className="h-6 w-6" />}
               title={t("admin.setsLots.lots.create.noCandidates")}
@@ -123,14 +127,20 @@ export function CreateLotModal({
             />
           )}
 
-          {!candidatesLoading && cards.length > 0 && (
+          {!candidatesQuery.isLoading && cards.length > 0 && (
             <>
               <div className="flex items-center justify-between">
                 <Button
                   type="button"
                   variant="link"
                   className="h-auto p-0 text-sm"
-                  onClick={() => setSelectedCardIds(cards.map((c) => c.id))}
+                  onClick={() =>
+                    setValue(
+                      "cardIds",
+                      cards.map((c) => c.id),
+                      { shouldValidate: true },
+                    )
+                  }
                 >
                   {t("common.actions.selectAll")}
                 </Button>
@@ -138,7 +148,7 @@ export function CreateLotModal({
                   type="button"
                   variant="link"
                   className="h-auto p-0 text-sm"
-                  onClick={() => setSelectedCardIds([])}
+                  onClick={() => setValue("cardIds", [], { shouldValidate: true })}
                 >
                   {t("common.actions.deselectAll")}
                 </Button>
@@ -150,7 +160,7 @@ export function CreateLotModal({
                     className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-2 text-sm hover:bg-accent"
                   >
                     <Checkbox
-                      checked={selectedCardIds.includes(card.id)}
+                      checked={cardIds.includes(card.id)}
                       onCheckedChange={() => toggleCard(card.id)}
                     />
                     <span className="font-mono">{card.key}</span>
@@ -159,21 +169,23 @@ export function CreateLotModal({
               </div>
               <p className="text-sm text-muted-foreground">
                 {t("admin.setsLots.lots.create.selectedCount", {
-                  count: selectedCardIds.length,
+                  count: cardIds.length,
                   total: cards.length,
                 })}
               </p>
             </>
           )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.actions.cancel")}
-          </Button>
-          <Button onClick={onSubmit} disabled={isPending || selectedCardIds.length === 0}>
-            {t("common.actions.add")}
-          </Button>
-        </DialogFooter>
+          {errors.cardIds && <p className="text-sm text-destructive">{errors.cardIds.message}</p>}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t("common.actions.cancel")}
+            </Button>
+            <Button type="submit" disabled={isPending || cardIds.length === 0}>
+              {t("common.actions.add")}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
