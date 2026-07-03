@@ -88,20 +88,20 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 3 — ASSEMBLY & WIRING
 
-### Sprint 3: Assembly & Wiring — Activations + Detail + Logs   — Status: ⬜ Pending
+### Sprint 3: Assembly & Wiring — Activations + Detail + Logs   — Status: ✅ Done
 
 **Goals**
 - The three read-centric pages fully live: Activations (stats + donut + filterable/paginated table + resolve-freeze + set-price), Activation Detail (sectioned read-only + set-price), Logs (filterable/paginated audit trail). Layout survives every region's loading/error. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] `ActivationsPage` (#wiring): `useActivationsSummary()` (4 cards + `ByStateDonut`); `useAdminActivations({...})` with `useDebouncedValue` key search + filters (`useSubscriptionPlans`/`useActivators`/`useDistributors`/`useWilayas`/`useCommunes`) + `SimplePagination`; seed `?activator/?distributor/?key/?state` once.
-- [ ] Activations actions (#wiring): `ActivationActionsMenu` gated — Resolve only if `state===FREEZE` (→ `ResolveFreezePanel` → `useActivateByAdmin`/`useCancelByAdmin` confirmed); Set Activator Price only if completed **and** `activationPrice==null` (`set-activator-price` schema → `useSetActivationPrice.mutate({id,command})`).
-- [ ] `ActivationDetailPage` (#wiring): `useActivationDetail(id)` (`enabled`); render all present sections; **activator `<Link>`** (id present), distributor/card as text (§E-2); invalid-id → `NotFoundState`+back; reuse `SetActivatorPriceModal`.
-- [ ] `LogsPage` (#wiring): `useLogs({...})` debounced description search + `userId` (`useAdmins`) + `actionType` (enum) + date range + `SimplePagination`; `LogActionBadge` per row; relative time.
-- [ ] `useMemo` column defs; rely on in-hook invalidation + global toast.
+- [x] `ActivationsPage` (#wiring): `useActivationsSummary()` (4 cards + `ByStateDonut`); `useAdminActivations({...})` with `useDebouncedValue` key search + filters (`useSubscriptionPlans`/`useActivators`/`useDistributors`/`useWilayas`/`useCommunes`) + `SimplePagination`; seed `?activator/?distributor/?state` once from `useSearchParams`.
+- [x] Activations actions (#wiring): `ActivationActionsMenu` gated — Resolve only if `state===FREEZE` (→ `ResolveFreezeDialog` → `useActivateByAdmin`/`useCancelByAdmin` confirmed, already correctly gated since Sprint 2); Set Activator Price only if completed **and** `activationPrice==null` (`set-activator-price` schema → `useSetActivationPrice.mutate({id,command})`). `SetActivatorPriceModal` upgraded from its Sprint-2 static shell to real RHF+Zod (mirrors `RecordPaymentModal`'s pattern).
+- [x] `ActivationDetailPage` (#wiring): `useActivationDetail(id)` (`enabled`); render all present sections; **activator `<Link>`** (id present), distributor/card as text (§E-2); invalid-id/error → `NotFoundState`+back; reuse `SetActivatorPriceModal`.
+- [x] `LogsPage` (#wiring): `useLogs({...})` debounced description search + `userId` (`useAdmins`) + `actionType` (enum) + date range + `SimplePagination`; `LogActionBadge` per row; relative time.
+- [x] `useMemo` column defs (already in place from Sprint 2's table components); rely on in-hook invalidation + global toast (`query-client.ts`'s `MutationCache.onError`).
 
 **Validation**
-- [ ] No `useEffect` fetching; failed writes → global toast, panel/modal preserved. / [ ] Action gating correct (Resolve/Set-Price). / [ ] Invalid activation id handled locally. / [ ] Layout survives loading/error. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] No `useEffect` fetching; failed writes → global toast, panel/modal preserved. / [x] Action gating correct (Resolve/Set-Price). / [x] Invalid activation id handled locally. / [x] Layout survives loading/error. / [x] `tsc` clean (both configs); existing Vitest green (356/356). / [x] Committed on green.
 
 **Risks**
 - Set-Price gating (completed **and** unpriced) — two-condition check.

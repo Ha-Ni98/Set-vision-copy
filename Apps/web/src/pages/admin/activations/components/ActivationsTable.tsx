@@ -170,9 +170,8 @@ export function ActivationsTable({
         onOpenChange={(open) => !open && setPriceRow(null)}
         isPending={isMutating}
         currentAmount={priceRow?.activationPrice}
-        onSubmit={() => {
-          // Sprint 3 reads the real validated amount from the modal's RHF state.
-          if (priceRow) onSetPrice(priceRow, priceRow.activationPrice ?? 0);
+        onSubmit={(values) => {
+          if (priceRow) onSetPrice(priceRow, values.amount);
           setPriceRow(null);
         }}
       />
