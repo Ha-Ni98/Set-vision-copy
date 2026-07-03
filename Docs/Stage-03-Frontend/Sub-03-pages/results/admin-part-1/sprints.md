@@ -170,20 +170,25 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ---
 
-### Sprint 5: Assembly — Activators (list + detail)   — Status: ⬜ Pending
+### Sprint 5: Assembly — Activators (list + detail)   — Status: ✅ Done
 
 **Goals**
 - Activators list + detail fully wired: reads, paginated/searchable table, all mutations, RHF forms, one-time password reveal, soft-delete payments.
 
 **Tasks**
-- [ ] List reads (#wiring): `useActivatorsSummary` + `useActivators({ page, limit, search })`; pagination via `ui/pagination`, debounced search, `per_page` (10/20/50/100) → `limit`.
-- [ ] List writes (#wiring/#form): `useCreateActivator` (RHF + `zodResolver(create-activator.schema)`; success → swap to `GeneratedPasswordPanel`), `useToggleActivator`, `useDeleteActivator` (`AlertDialog`), `useRecordPayment` (RHF `record-payment.schema`, inject row `activatorId`).
-- [ ] Detail reads (#wiring): `useActivator(id)`, `useActivatorPerformance(id, { days: 30 })`, `usePayments({ activatorId: id, page, limit })`; invalid `id` → `NotFoundState`.
-- [ ] Detail writes (#wiring/#form): `useUpdateActivator` (RHF `update-activator.schema`), `useToggleActivator`, `useResetActivatorPassword` (reveal once via `GeneratedPasswordPanel`), `useRecordPayment`, `useDeletePayment` (`AlertDialog`; Paid/creditsOwed recompute via in-hook invalidation).
-- [ ] Nav (#wiring): row/View → `<Link>` `/admin/activators/:id`; "View All Activations by This Activator" → `<Link>` `/admin/activations?activator={id}` (link only).
+- [x] List reads (#wiring): `useActivatorsSummary` + `useActivators({ page, limit, search })`; pagination via new shared `SimplePagination` (built S4), debounced search (new `useDebouncedValue` hook — see execution notes), `per_page` (10/20/50/100) → `limit`.
+- [x] List writes (#wiring/#form): `useCreateActivator` (RHF + `zodResolver(create-activator.schema)`; success → swap to `GeneratedPasswordPanel`), `useToggleActivator`, `useDeleteActivator` (`AlertDialog`), `useRecordPayment` (RHF `record-payment.schema`, inject row `activatorId`).
+- [x] Detail reads (#wiring): `useActivator(id)`, `useActivatorPerformance(id, { days: 30 })`, `usePayments({ activatorId: id, page, limit })`; invalid `id` → `NotFoundState`.
+- [x] Detail writes (#wiring/#form): `useUpdateActivator` (RHF `update-activator.schema`), `useToggleActivator`, `useResetActivatorPassword` (reveal once via `GeneratedPasswordPanel`), `useRecordPayment`, `useDeletePayment` (`AlertDialog`; Paid/creditsOwed recompute via in-hook invalidation).
+- [x] Nav (#wiring): row/View → `<Link>` `/admin/activators/:id` (already built in S3's `ActivatorActionsMenu`); "View All Activations by This Activator" → `<Link>` `/admin/activations?activator={id}` (already built in S3's `ActivatorDetailPage`).
 
 **Validation**
-- [ ] Copy via `useTranslation`. / [ ] `tsc` clean. / [ ] RHF `parse` output assignable to Commands. / [ ] No fetch `useEffect`. / [ ] Modals preserve values on error, close only on success. / [ ] Existing Vitest green. / [ ] Committed.
+- [x] Copy via `useTranslation`. / [x] `tsc` clean. / [x] RHF output assignable to Commands (S1 compile-time guards). / [x] No fetch `useEffect`. / [x] Modals preserve values on error, close only on success (no `onError` added — global toast + no reset on failure). / [x] Existing Vitest green. / [x] Committed.
+
+**Execution notes (see report-sprint-05.md):**
+- **Retrofitted debounced search into Sprint 4's Distributors page too** — it was missing there (an oversight caught while implementing it properly here); added one shared `hooks/useDebouncedValue.ts` used by both list pages, rather than duplicate the logic or leave Distributors' search firing a request per keystroke.
+- **`CreateActivatorModal`/`RecordPaymentModal` needed a 3-generic `useForm<Input, Context, Output>`, not just `useForm<FormValues>`**: both schemas use `z.coerce.number()` (`initialCredits`, `amount`), so the schema's *input* type (what `register()` deals with, pre-coercion) differs from its *output* type (what `handleSubmit`'s callback receives, post-coercion) — using only the output type made `zodResolver`'s type incompatible with `useForm`. Added a `*FormInput` export (`z.input<...>`) alongside each schema's existing `*FormValues` (`z.infer<...>`) export to fix it; this is the standard RHF+Zod+coerce pattern, not a workaround.
+- Verification scaled back to `tsc`/lint/vitest only, same reasoning as Sprint 4.
 
 **Risks**
 - Shared modal state across list/detail; one-time secret lifecycle (never refetch/persist); `date` default = today.

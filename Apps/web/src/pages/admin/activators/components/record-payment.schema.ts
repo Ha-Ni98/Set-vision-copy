@@ -15,6 +15,9 @@ export function recordPaymentSchema(t: ReturnType<typeof useTranslation>["t"]) {
 }
 
 export type RecordPaymentFormValues = z.infer<ReturnType<typeof recordPaymentSchema>>;
+// Pre-coercion shape (amount accepts the raw string a number input produces) — see
+// create-activator.schema.ts's CreateActivatorFormInput for why this exists.
+export type RecordPaymentFormInput = z.input<ReturnType<typeof recordPaymentSchema>>;
 
 // Compile-time guard — fails to compile if the form's output plus the injected
 // `activatorId` drifts from the contract Command.

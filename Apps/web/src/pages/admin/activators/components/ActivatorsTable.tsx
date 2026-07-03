@@ -24,6 +24,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import { ActivatorActionsMenu } from "./ActivatorActionsMenu";
 import { RecordPaymentModal } from "./RecordPaymentModal";
+import type { RecordPaymentFormValues } from "./record-payment.schema";
 
 interface Props {
   data?: ActivatorDTO[];
@@ -34,7 +35,8 @@ interface Props {
   onClearSearch: () => void;
   onToggle: (activator: ActivatorDTO) => void;
   onDelete: (activator: ActivatorDTO) => void;
-  onRecordPayment: () => void;
+  onRecordPayment: (activatorId: string, values: RecordPaymentFormValues) => void;
+  isRecordingPayment?: boolean;
   onAddFirst?: () => void;
 }
 
@@ -50,6 +52,7 @@ export function ActivatorsTable({
   onToggle,
   onDelete,
   onRecordPayment,
+  isRecordingPayment,
   onAddFirst,
 }: Props) {
   const { t } = useTranslation();
@@ -216,10 +219,11 @@ export function ActivatorsTable({
       <RecordPaymentModal
         open={paymentRow !== null}
         onOpenChange={(open) => !open && setPaymentRow(null)}
-        onSubmit={() => {
-          onRecordPayment();
+        onSubmit={(values) => {
+          if (paymentRow) onRecordPayment(paymentRow.id, values);
           setPaymentRow(null);
         }}
+        isPending={isRecordingPayment}
       />
     </>
   );

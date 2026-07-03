@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { NotFoundState } from "@/components/shared/NotFoundState";
@@ -17,7 +17,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { ActivatorDetailDTO } from "@my-app/contract";
+import {
+  useActivator,
+  useActivatorPerformance,
+  useUpdateActivator,
+  useToggleActivator,
+  useResetActivatorPassword,
+} from "@/hooks/useActivators";
+import { usePayments, useRecordPayment, useDeletePayment } from "@/hooks/usePayments";
 import { ProfileCard } from "./components/ProfileCard";
 import { StatsRevenueGrid } from "./components/StatsRevenueGrid";
 import { PerformanceChart } from "./components/PerformanceChart";
@@ -26,31 +33,6 @@ import { EditActivatorModal } from "./components/EditActivatorModal";
 import { RecordPaymentModal } from "./components/RecordPaymentModal";
 import { GeneratedPasswordPanel } from "./components/GeneratedPasswordPanel";
 
-// Placeholder shape only, for this sprint's static "what does success look like" render —
-// Sprint 5 replaces this with useActivator(id)'s real data.
-const PLACEHOLDER_ACTIVATOR: ActivatorDetailDTO = {
-  id: "placeholder",
-  userId: "placeholder",
-  fullName: "Sample Activator",
-  username: "sample_activator",
-  phone: "0555123456",
-  isEnabled: true,
-  totalEarning: 45000,
-  credits: 12000,
-  nbOfActivation: 128,
-  nbOfSuccessfulActivation: 120,
-  avgActivationTimeSeconds: 240,
-  lastLoginAt: null,
-  createdAt: new Date().toISOString(),
-  totalPaid: 33000,
-  creditsOwed: 12000,
-  successRate: 0.9375,
-};
-
-// Static composition — no data hooks yet (wired in Sprint 5, plan.md §D3). Three
-// independently-gated regions per the plan: profile+stats share one loading/error/not-found
-// state (same useActivator(id) query), chart and payments each have their own. This demo
-// exercises profile+stats=success, chart=empty, payments=error in one static render.
 function ProfileStatsSkeleton() {
   return (
     <div className="flex flex-col gap-6">
@@ -69,15 +51,23 @@ function ProfileStatsSkeleton() {
 
 export default function ActivatorDetailPage() {
   const { t } = useTranslation();
+  const { id = "" } = useParams<{ id: string }>();
   const [editOpen, setEditOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
-  const profileStatsState = "success" as "success" | "loading" | "error" | "notFound";
+  const activatorQuery = useActivator(id);
+  const performanceQuery = useActivatorPerformance(id, { days: 30 });
+  const paymentsQuery = usePayments({ activatorId: id, page: 1, limit: 10 });
+  const updateActivator = useUpdateActivator();
+  const toggleActivator = useToggleActivator();
+  const resetPassword = useResetActivatorPassword();
+  const recordPayment = useRecordPayment();
+  const deletePayment = useDeletePayment();
 
-  if (profileStatsState === "notFound") {
+  if (!activatorQuery.isLoading && activatorQuery.isError) {
     return (
       <NotFoundState
         title={t("admin.activators.detail.notFound.title")}
@@ -94,47 +84,58 @@ export default function ActivatorDetailPage() {
     );
   }
 
+  const activator = activatorQuery.data;
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("admin.activators.detail.profile.title")} />
 
-      {profileStatsState === "loading" && <ProfileStatsSkeleton />}
+      {activatorQuery.isLoading && <ProfileStatsSkeleton />}
 
-      {profileStatsState === "error" && (
-        <NotFoundState
-          title={t("admin.dashboard.sectionError")}
-          body={t("admin.dashboard.sectionErrorBody")}
-          action={<Button onClick={() => {}}>{t("common.actions.tryAgain")}</Button>}
-        />
-      )}
-
-      {profileStatsState === "success" && (
+      {!activatorQuery.isLoading && activator && (
         <>
           <ProfileCard
-            activator={PLACEHOLDER_ACTIVATOR}
+            activator={activator}
             onEdit={() => setEditOpen(true)}
             onToggle={() => setToggleConfirmOpen(true)}
             onResetPassword={() => setResetConfirmOpen(true)}
           />
-          <StatsRevenueGrid activator={PLACEHOLDER_ACTIVATOR} />
+          <StatsRevenueGrid activator={activator} />
         </>
       )}
 
       {generatedPassword && <GeneratedPasswordPanel password={generatedPassword} />}
 
       <section className="flex flex-col gap-3">
-        <PerformanceChart isLoading={false} isError={false} data={[]} onRetry={() => {}} />
+        <PerformanceChart
+          data={performanceQuery.data?.series}
+          isLoading={performanceQuery.isLoading}
+          isError={performanceQuery.isError}
+          onRetry={performanceQuery.refetch}
+        />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">
-          {t("admin.activators.detail.payments.title")}
-        </h2>
-        <PaymentsHistoryTable isLoading={false} isError onRetry={() => {}} onDelete={() => {}} />
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("admin.activators.detail.payments.title")}
+          </h2>
+          <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)}>
+            {t("common.actions.recordPayment")}
+          </Button>
+        </div>
+        <PaymentsHistoryTable
+          data={paymentsQuery.data?.items}
+          isLoading={paymentsQuery.isLoading}
+          isError={paymentsQuery.isError}
+          onRetry={paymentsQuery.refetch}
+          onDelete={(paymentId) => deletePayment.mutate(paymentId)}
+          onAddFirst={() => setPaymentOpen(true)}
+        />
       </section>
 
       <Button asChild variant="outline" className="self-start">
-        <Link to="/admin/activations">
+        <Link to={`/admin/activations?activator=${id}`}>
           {t("admin.activators.detail.viewAllActivations")}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Link>
@@ -143,24 +144,48 @@ export default function ActivatorDetailPage() {
       <EditActivatorModal
         open={editOpen}
         onOpenChange={setEditOpen}
-        activator={PLACEHOLDER_ACTIVATOR}
-        onSubmit={() => setEditOpen(false)}
+        activator={activator}
+        onSubmit={(values) =>
+          updateActivator.mutate({ id, command: values }, { onSuccess: () => setEditOpen(false) })
+        }
+        isPending={updateActivator.isPending}
       />
       <RecordPaymentModal
         open={paymentOpen}
         onOpenChange={setPaymentOpen}
-        onSubmit={() => setPaymentOpen(false)}
+        onSubmit={(values) =>
+          recordPayment.mutate(
+            {
+              activatorId: id,
+              amount: values.amount,
+              date: values.date ? new Date(values.date).toISOString() : undefined,
+            },
+            { onSuccess: () => setPaymentOpen(false) },
+          )
+        }
+        isPending={recordPayment.isPending}
       />
 
       <AlertDialog open={toggleConfirmOpen} onOpenChange={setToggleConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("admin.activators.toggleConfirm.disableTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t(
+                activator?.isEnabled
+                  ? "admin.activators.toggleConfirm.disableTitle"
+                  : "admin.activators.toggleConfirm.enableTitle",
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription />
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setToggleConfirmOpen(false)}>
+            <AlertDialogAction
+              onClick={() => {
+                toggleActivator.mutate(id);
+                setToggleConfirmOpen(false);
+              }}
+            >
               {t("common.actions.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -181,7 +206,9 @@ export default function ActivatorDetailPage() {
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                setGeneratedPassword("Temp1234!");
+                resetPassword.mutate(id, {
+                  onSuccess: (data) => setGeneratedPassword(data.generatedPassword),
+                });
                 setResetConfirmOpen(false);
               }}
             >

@@ -26,6 +26,10 @@ export function createActivatorSchema(t: ReturnType<typeof useTranslation>["t"])
 }
 
 export type CreateActivatorFormValues = z.infer<ReturnType<typeof createActivatorSchema>>;
+// Pre-coercion shape (initialCredits accepts the raw string a number input produces) — this
+// is what useForm's field-values generic needs; zodResolver still hands handleSubmit the
+// coerced CreateActivatorFormValues above.
+export type CreateActivatorFormInput = z.input<ReturnType<typeof createActivatorSchema>>;
 
 // Compile-time guard — fails to compile if this schema's output drifts from the contract
 // Command (e.g. a renamed/removed contract field).

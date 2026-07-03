@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { SimplePagination } from "@/components/shared/SimplePagination";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDistributorsSummary } from "@/hooks/useStatistics";
 import {
   useDistributors,
@@ -28,11 +29,13 @@ export default function DistributorsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createWilayaId, setCreateWilayaId] = useState("");
 
+  const debouncedSearch = useDebouncedValue(search);
+
   const summary = useDistributorsSummary();
   const distributorsQuery = useDistributors({
     page,
     limit: LIMIT,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     wilayaId: wilayaId || undefined,
     communeId: communeId || undefined,
   });
