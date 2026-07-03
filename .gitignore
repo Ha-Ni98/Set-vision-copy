@@ -40,7 +40,8 @@ dist-ssr
 *.local
 
 # Ignore helper files
-react-algeria-map/*
+
+Docs/Stage-00-Conception/react-algeria-map
 
 
 
