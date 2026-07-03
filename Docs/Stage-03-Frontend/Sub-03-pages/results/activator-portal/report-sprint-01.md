@@ -2,7 +2,7 @@
 sprint: 1
 title: Foundation — Schemas, sound hook, i18n & role-based login redirect
 status: ✅ Done
-commit: TBD
+commit: f186269
 ---
 
 # Sprint 1 Report — Foundation
