@@ -2,7 +2,7 @@
 sprint: 4
 title: Assembly & Wiring — Statistics + Heatmap
 status: ✅ Done
-commit: TBD
+commit: a892a77
 ---
 
 # Sprint 4 Report — Assembly & Wiring (Statistics + Heatmap)
