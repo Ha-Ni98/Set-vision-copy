@@ -216,7 +216,7 @@ Read-only. **Desktop:** table — Activator Name · Subscription (label) · Key 
 ### Section A — My Active Requests (work queue, 0–3)
 
 - **Slot indicator:** 3 blocks; 3/3 → "Max active requests reached. Complete, cancel, or freeze one to take another."; 0/3 → "No active requests. Pick one from the pending pool below."
-- **Live timer (top-right):** counts up from `taken_at`, **color-coded by the commission speed tiers** (green = top tier, amber = next, red = beyond the last tier) so the activator sees their earning tier as it slips. Inactivity auto-release (`REMOVED_FROM_ACTIVATOR`) is enforced by the backend per the Settings timeout.
+- **Live timer (top-right):** counts up from `taken_at`, **color-coded by the commission speed tiers** (green = top tier, amber = next, red = beyond the last tier) so the activator sees their earning tier as it slips. Inactivity of 20 min will cause auto-release (`REMOVED_FROM_ACTIVATOR`) is enforced by the backend per the Settings timeout.
 - **Status badge (top-left):** `PROCESSING` → "In Progress" (purple) · `WRONG_INFORMATION` → "Awaiting Correction" (red) · `ADDITIONAL_INFORMATION` → "Awaiting OTP" (amber, pulsing) · `FREEZE` → "Frozen — Admin Review" (orange).
 - **Card body (all resolved):** subscription label + key; distributor store/wilaya/commune (collapsible); client name + tap-to-call phone (📋); account fields for the plan, each plain-text + 📋 copy (Snapchat: username, email, phone, password; OTP appears with 📋 once the client supplies it). Passwords are shown as ordinary copyable text — no purge/cache rules.
 
