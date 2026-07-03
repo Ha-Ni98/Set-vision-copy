@@ -1,4 +1,4 @@
-import { ActivationStat, CardStat, OrderStat } from "@my-app/contract";
+import { ActivationStat, CardStat, OrderStat, SetStat, LotStat } from "@my-app/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export type BadgeTone = "success" | "warning" | "destructive" | "neutral";
@@ -81,6 +81,29 @@ const ORDER_TONE: Record<OrderStat, BadgeTone> = {
 export function OrderStatusBadge({ status }: { status: OrderStat }) {
   const { t } = useTranslation();
   return <StatusPill tone={ORDER_TONE[status]} label={t(`enums.orderStat.${status}`)} />;
+}
+
+const SET_TONE: Record<SetStat, BadgeTone> = {
+  [SetStat.NOT_PRINTED]: "neutral",
+  [SetStat.PENDING_PRINTING]: "warning",
+  [SetStat.PRINTED]: "success",
+};
+
+export function SetStatusBadge({ status }: { status: SetStat }) {
+  const { t } = useTranslation();
+  return <StatusPill tone={SET_TONE[status]} label={t(`enums.setStat.${status}`)} />;
+}
+
+const LOT_TONE: Record<LotStat, BadgeTone> = {
+  [LotStat.PENDING]: "warning",
+  [LotStat.IN_DELIVERY]: "warning",
+  [LotStat.DELIVERED]: "success",
+  [LotStat.RETURNED]: "destructive",
+};
+
+export function LotStatusBadge({ status }: { status: LotStat }) {
+  const { t } = useTranslation();
+  return <StatusPill tone={LOT_TONE[status]} label={t(`enums.lotStat.${status}`)} />;
 }
 
 // isEnabled is a boolean, not an enum — Activators/Distributors tables and details both need

@@ -26,6 +26,9 @@ const AdminDistributorsPage = lazy(() => import("@/pages/admin/distributors/Dist
 const AdminDistributorDetailPage = lazy(
   () => import("@/pages/admin/distributors/DistributorDetailPage"),
 );
+const AdminOrdersPage = lazy(() => import("@/pages/admin/distributors/OrdersPage"));
+const AdminSetsLotsPage = lazy(() => import("@/pages/admin/activations/SetsLotsPage"));
+const AdminCardsPage = lazy(() => import("@/pages/admin/activations/CardsPage"));
 
 const withSuspense = (Component: LazyExoticComponent<() => JSX.Element>) => (
   <Suspense fallback={<PageLoader />}>
@@ -134,8 +137,26 @@ const router = createBrowserRouter([
             errorElement: <RouteErrorBoundary />,
           },
           {
+            // Static sibling declared ahead of the dynamic ":id" below — React Router ranks
+            // static segments above params, so "orders" resolves here, not the :id route
+            // (plan.md §C routing precedence note).
+            path: "/admin/distributors/orders",
+            element: withSuspense(AdminOrdersPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
             path: "/admin/distributors/:id",
             element: withSuspense(AdminDistributorDetailPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/activations/sets-lots",
+            element: withSuspense(AdminSetsLotsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/activations/cards",
+            element: withSuspense(AdminCardsPage),
             errorElement: <RouteErrorBoundary />,
           },
         ],

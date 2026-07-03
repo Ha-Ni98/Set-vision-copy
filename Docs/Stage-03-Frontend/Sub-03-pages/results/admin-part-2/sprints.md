@@ -34,7 +34,7 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 1 — FOUNDATION
 
-### Sprint 1: Foundation — Schemas, i18n, Routes & Shared Badges   — Status: ⬜ Pending
+### Sprint 1: Foundation — Schemas, i18n, Routes & Shared Badges   — Status: ✅ Done
 
 **Goals**
 - Every form's co-located Zod schema exists and its output is assignable to the matching contract Command.
@@ -42,15 +42,15 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 - The 3 admin routes mount as `React.lazy()` stubs under the existing `AdminGuard`; `SetStatusBadge`/`LotStatusBadge` exist as shared primitives; `tsc` + existing suite pass with zero page UI built.
 
 **Tasks**
-- [ ] Co-located schemas (#schema): `pages/admin/distributors/components/create-order.schema.ts` (→ `CreateOrderCommand`); `.../components/mark-delivered.schema.ts` (→ `TransitionOrderCommand` `{ to: DELIVERED, deliveredCount }`); `pages/admin/activations/components/create-set.schema.ts` (→ `CreateSetCommand`); `.../create-lot.schema.ts` (→ `CreateLotCommand`). Constraints per plan §B4/§D1: `receivedName` 3–100; `receivedPhone` `^(?:\+213|0)(5|6|7)\d{8}$`; `lotIds`/`cardIds` `z.array(z.uuid()).nonempty()`; `orderPrice` `>0 .multipleOf(0.01)`; `deliverPrice` `≥0 .multipleOf(0.01)`; `numberOfKeys` int `≥1` default 100; `deliveredCount` int `0…` (max = order cardsCount, enforced at call site); all ids `z.uuid()`. Coerced-number fields export a `z.input` **and** `z.infer` type (Part-1 RHF split). Add a compile-time `AssertAssignable<FormOutput extends Command ? true : false>` to each.
-- [ ] i18n keys (#i18n): `admin.orders.*`, `admin.setsLots.*`, `admin.cards.*`; enum labels `enums.setStat.*`, `enums.lotStat.*`, `enums.deliveryType.*`, `enums.cardFlag.*`; and reusable `common.actions.*` verbs (`sendToPrint`, `markPrinted`, `markInDelivery`, `markDelivered`, `markReturned`, `disable`, `enable`, `revoke`, `viewCards`, `selectAll`, `deselectAll`, `next`, `back`, `confirm`). Flat key → `{ en, fr, ar:"" }`. (`enums.orderStat.*`/`enums.cardStat.*` already exist from Part 1 — reuse.)
-- [ ] Route scaffolding (#routing): register `/admin/distributors/orders`, `/admin/activations/sets-lots`, `/admin/activations/cards` with `React.lazy()` page stubs (return `<></>`), inside `<Suspense fallback={<PageLoader/>}>`, under the **existing** `AdminGuard`/`AdminLayout`. Confirm `/admin/distributors/orders` resolves ahead of `/admin/distributors/:id` (static-over-dynamic ranking, plan §C).
-- [ ] Shared badges (#ui): add `SetStatusBadge` + `LotStatusBadge` to `components/shared/StatusBadge.tsx` via the existing `StatusPill` engine, tones per plan §B9. Nav links already point at the 3 routes — no `nav-links.ts` edit.
+- [x] Co-located schemas (#schema): `pages/admin/distributors/components/create-order.schema.ts` (→ `CreateOrderCommand`); `.../components/mark-delivered.schema.ts` (→ `TransitionOrderCommand` `{ to: DELIVERED, deliveredCount }`); `pages/admin/activations/components/create-set.schema.ts` (→ `CreateSetCommand`); `.../create-lot.schema.ts` (→ `CreateLotCommand`). Constraints per plan §B4/§D1: `receivedName` 3–100; `receivedPhone` `^(?:\+213|0)(5|6|7)\d{8}$`; `lotIds`/`cardIds` `z.array(z.uuid()).nonempty()`; `orderPrice` `>0 .multipleOf(0.01)`; `deliverPrice` `≥0 .multipleOf(0.01)`; `numberOfKeys` int `≥1` default 100; `deliveredCount` int `0…` (max = order cardsCount, enforced at call site); all ids `z.uuid()`. Coerced-number fields export a `z.input` **and** `z.infer` type (Part-1 RHF split). Add a compile-time `AssertAssignable<FormOutput extends Command ? true : false>` to each.
+- [x] i18n keys (#i18n): `admin.orders.*`, `admin.setsLots.*`, `admin.cards.*`; enum labels `enums.setStat.*`, `enums.lotStat.*`, `enums.deliveryType.*`, `enums.cardFlag.*`; and reusable `common.actions.*` verbs (`sendToPrint`, `markPrinted`, `markInDelivery`, `markDelivered`, `markReturned`, `disable`, `enable`, `revoke`, `viewCards`, `selectAll`, `deselectAll`, `next`, `back`, `confirm`). Flat key → `{ en, fr, ar:"" }`. (`enums.orderStat.*`/`enums.cardStat.*` already exist from Part 1 — reuse.)
+- [x] Route scaffolding (#routing): register `/admin/distributors/orders`, `/admin/activations/sets-lots`, `/admin/activations/cards` with `React.lazy()` page stubs (return `<></>`), inside `<Suspense fallback={<PageLoader/>}>`, under the **existing** `AdminGuard`/`AdminLayout`. Confirm `/admin/distributors/orders` resolves ahead of `/admin/distributors/:id` (static-over-dynamic ranking, plan §C).
+- [x] Shared badges (#ui): add `SetStatusBadge` + `LotStatusBadge` to `components/shared/StatusBadge.tsx` via the existing `StatusPill` engine, tones per plan §B9. Nav links already point at the 3 routes — no `nav-links.ts` edit.
 
 **Validation**
-- [ ] No inline strings — keys resolve via `useTranslation`. / [ ] `tsc --noEmit` clean (both configs).
-- [ ] Each schema output assignable to its contract Command (assertion compiles).
-- [ ] Lazy routes resolve to stubs, `/orders` doesn't collide with `:id`; existing Vitest green; no `/src` tests. / [ ] Committed on green.
+- [x] No inline strings — keys resolve via `useTranslation`. / [x] `tsc --noEmit` clean (both configs).
+- [x] Each schema output assignable to its contract Command (assertion compiles).
+- [x] Lazy routes resolve to stubs, `/orders` doesn't collide with `:id`; existing Vitest green; no `/src` tests. / [x] Committed on green.
 
 **Risks**
 - `z.coerce.number()` input/output typing (mitigated by the Part-1 `useForm<Input, unknown, Output>` pattern).
