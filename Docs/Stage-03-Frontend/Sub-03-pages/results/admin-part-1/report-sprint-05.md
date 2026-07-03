@@ -2,7 +2,7 @@
 sprint: 5
 title: Assembly — Activators (list + detail)
 status: ✅ Done
-commit: (pending — filled in next commit)
+commit: 1d613ba
 ---
 
 # Sprint 5 Report — Activators Assembly
