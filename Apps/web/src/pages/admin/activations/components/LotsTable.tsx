@@ -130,7 +130,7 @@ export function LotsTable({
                 onCreateFirst && (
                   <Button onClick={onCreateFirst} className="mt-2">
                     <Plus className="mr-2 h-4 w-4" />
-                    {t("admin.setsLots.lots.create.title")}
+                    {t("common.actions.add")}
                   </Button>
                 )
               )

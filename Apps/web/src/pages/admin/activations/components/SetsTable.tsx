@@ -139,7 +139,7 @@ export function SetsTable({
                 onCreateFirst && (
                   <Button onClick={onCreateFirst} className="mt-2">
                     <Plus className="mr-2 h-4 w-4" />
-                    {t("admin.setsLots.sets.create.title")}
+                    {t("common.actions.add")}
                   </Button>
                 )
               )

@@ -151,7 +151,7 @@ export function OrdersTable({
                 onCreateFirst && (
                   <Button onClick={onCreateFirst} className="mt-2">
                     <Plus className="mr-2 h-4 w-4" />
-                    {t("admin.orders.create.title")}
+                    {t("common.actions.add")}
                   </Button>
                 )
               )

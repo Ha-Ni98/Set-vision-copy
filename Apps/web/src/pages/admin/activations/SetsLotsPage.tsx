@@ -184,7 +184,15 @@ export default function SetsLotsPage() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-foreground">{t("admin.setsLots.lots.title")}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("admin.setsLots.lots.title")}
+          </h2>
+          <Button onClick={() => setCreateLotOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("admin.setsLots.lots.create.title")}
+          </Button>
+        </div>
         <LotsFilters
           search={lotsSearch}
           onSearchChange={(v) => {

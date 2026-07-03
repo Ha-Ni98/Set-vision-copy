@@ -19,6 +19,17 @@ if (typeof window !== "undefined") {
   Element.prototype.scrollIntoView ??= () => {};
 }
 
+// JSDOM has no ResizeObserver either — Radix's Checkbox (`@radix-ui/react-use-size`) calls
+// it unconditionally on mount. Needed by any test that renders a shadcn Checkbox, not just
+// this admin sub-stage (first hit here, in the create-lot candidate list).
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 afterEach(() => {
   // RTL's auto-cleanup hooks into a global afterEach when the test runner exposes one;
   // this project runs with `globals: false` (vitest.config.ts), so nothing unmounts

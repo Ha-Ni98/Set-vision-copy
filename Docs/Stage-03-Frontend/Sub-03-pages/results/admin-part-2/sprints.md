@@ -151,19 +151,19 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 5 — TESTS
 
-### Sprint 6: Unit Tests — Orders, Sets & Lots, Cards   — Status: ⬜ Pending
+### Sprint 6: Unit Tests — Orders, Sets & Lots, Cards   — Status: ✅ Done
 
 **Goals**
 - One `.test.tsx` per page under `/tests/unit/pages/{orders,sets-lots,cards}/`, hooks + `useTranslation` mocked (no MSW), asserting states, action-gating, forms, the wizard, and URL pre-filters. All green; both tsconfigs clean.
 
 **Tasks**
-- [ ] `orders/OrdersPage.test.tsx` (#testing): 4 stat skeletons on load; empty vs no-match + Clear; `NotFoundState`+retry ⇒ `refetch`; **action gating** (Delete only on `PENDING_DELIVERY`; DELIVERED/RETURNED only on `IN_DELIVERY`); `MarkDeliveredModal` defaults `deliveredCount` to `cardsCount`, confirm ⇒ `useTransitionOrder.mutate({id, command})`; wizard step gating (invalid Step-1 blocks Next; empty required fields don't submit; Step-2 empty-lots `<Link>`); valid full wizard ⇒ `useCreateOrder.mutate(command)`.
-- [ ] `sets-lots/SetsLotsPage.test.tsx` (#testing): stats render (incl. `countOf` treating a missing stat as 0); both tables' empty/no-match; set gating (Mark Printed only `PENDING_PRINTING`; cascade Delete confirm ⇒ `useDeleteSet.mutate(id)`); lot Delete only `PENDING`; create-set Zod ⇒ `mutate`; create-lot Select-All toggles `cardIds`, empty selection blocks submit, valid ⇒ `useCreateLot.mutate({subscriptionPlanId,cardIds})`; "View Cards" `<Link>` targets carry `?set=`/`?lot=`.
-- [ ] `cards/CardsPage.test.tsx` (#testing): stats (Flagged = disabled+revoked; missing stat ⇒ 0); empty vs no-match; **pre-filter seeding** (`?set=X` ⇒ `setNumber:X` in query + a clearable chip); gating (Revoke only `ACTIVATION_FAILED`+not-disabled; Enable only when disabled) + confirm ⇒ correct `mutate(id)`; flag chips render for `isDisabled`/`isRevoked`; detail modal lists only timeline rows whose timestamp exists.
-- [ ] Reuse Part-1 shared test infra (#testing): `tests/fixtures/wrappers/{mockTranslation,renderWithRouter,setup}` (RTL `cleanup()` + Radix `Select` polyfills already in `setup.ts`); use `getByRole('option', { name })` for Radix `SelectItem`; scope ambiguous mocked-key text with `within(dialog)`/`getAllBy…[0]`.
+- [x] `orders/OrdersPage.test.tsx` (#testing): 4 stat skeletons on load; empty vs no-match + Clear; `NotFoundState`+retry ⇒ `refetch`; **action gating** (Delete only on `PENDING_DELIVERY`; DELIVERED/RETURNED only on `IN_DELIVERY`); `MarkDeliveredModal` defaults `deliveredCount` to `cardsCount`, confirm ⇒ `useTransitionOrder.mutate({id, command})`; wizard step gating (invalid Step-1 blocks Next; Step-2 empty-lots `<Link>`); valid full wizard ⇒ `useCreateOrder.mutate(command)`. 8 tests.
+- [x] `sets-lots/SetsLotsPage.test.tsx` (#testing): stats render (incl. `countOf` treating a missing stat as 0); both tables' empty/no-match; set gating (Mark Printed only `PENDING_PRINTING`; cascade Delete confirm ⇒ `useDeleteSet.mutate(id)`); lot Delete only `PENDING`; create-set Zod ⇒ `mutate`; create-lot Select-All toggles `cardIds`, empty selection blocks submit, valid ⇒ `useCreateLot.mutate({subscriptionPlanId,cardIds})`; "View Cards" `<Link>` targets carry `?set=`/`?lot=`. 7 tests.
+- [x] `cards/CardsPage.test.tsx` (#testing): stats (Flagged = disabled+revoked; missing stat ⇒ 0); empty vs no-match; **pre-filter seeding** (`?set=X` ⇒ `setNumber:X` in query + a clearable chip); gating (Revoke only `ACTIVATION_FAILED`+not-disabled; Enable only when disabled) + confirm ⇒ correct `mutate(id)`; flag chips render for `isDisabled`/`isRevoked`; detail modal lists only timeline rows whose timestamp exists. 7 tests.
+- [x] Reuse Part-1 shared test infra (#testing): `tests/fixtures/wrappers/{mockTranslation,renderWithRouter,setup}` (RTL `cleanup()` + Radix `Select` polyfills already in `setup.ts`; **added a `ResizeObserver` polyfill**, the first test in this codebase to render a shadcn `Checkbox`); used `getByRole('option', { name })` for Radix `SelectItem`, `getByRole('menu')`/`getByRole('menuitem')`-equivalent text queries for the first-ever `DropdownMenu`-based ActionsMenu tests; scoped ambiguous mocked-key text with `within(dialog)`/`within(menu)`/`getAllBy…[0]`.
 
 **Validation**
-- [ ] `vitest run` green across success/loading/error branches. / [ ] No test files under `/src`; files are `.test.tsx`. / [ ] Both `tsconfig.json` + `tsconfig.test.json` clean. / [ ] Committed on green.
+- [x] `vitest run` green across success/loading/error branches. / [x] No test files under `/src`; files are `.test.tsx`. / [x] Both `tsconfig.json` + `tsconfig.test.json` clean. / [x] Committed on green.
 
 **Risks**
 - Ambiguous mocked-translation-key matches (mitigate with scoping, per Part-1).
