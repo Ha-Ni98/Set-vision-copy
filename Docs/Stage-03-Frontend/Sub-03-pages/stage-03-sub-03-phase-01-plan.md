@@ -1,6 +1,6 @@
 # Stage 03 · Sub-03 · Phase 01 — Page Assembly Planning
 
-Plan one page (repeat per page/feature): connect its UI to the Integration Engine with granular states, forms, and unit tests. **No code — plan only.**
+Plan one page or set of pages (repeat per page/feature): connect its UI to the Integration Engine with granular states, forms, and unit tests. **No code — plan only.**
 
 ---
 
@@ -12,10 +12,10 @@ Translate a page's requirements into a React plan: components, the `use[Name]` h
 
 ## Context & Inputs
 
-- **Page requirements:** a markdown file (e.g. `/docs/requirements/pages/[page].md`).
+- **Page requirements:** a markdown file (e.g. docs/requirements/pages/[pages-set-name].md ).
 - **Codebase:** refactored UI (Sub-01) + the Integration Engine hooks/services (Sub-02).
-- **Rules:** `front-end-rules.md`, `front-end-test-rules.md`, `front-end-best-practices.md`.
-- **Contract:** `@my-app/contract` (for Zod/DTO alignment).
+- **Rules:** front-end-rules.md , front-end-test-rules.md ,  front-end-best-practices.md .
+- **Contract:** `Apps/contract` (for Zod/DTO alignment).
 
 ---
 
@@ -31,7 +31,7 @@ Extract every component, interaction, form, and data dependency. Map each to an 
 - **Unit-test strategy:** which `.spec.tsx` files, which hooks to `vi.mock()`, which interactions to assert (Zod errors, skeleton, clicks). Tests go in `/tests/unit/pages/[page]/`.
 
 ### Step 3 — Page Action Plan
-Create `/docs/stage-03-frontend/sub-03-pages/[page]/plan.md`:
+Create `/Docs/stage-03-frontend/sub-03-pages/results/[pages-set-name]/plan.md`:
 1. **Hook & Data Mapping** — exact hooks consumed.
 2. **UI Components** — *Shared* (reuse from `components/shared`) vs *New* (`src/pages/[page]/components/`).
 3. **Granular States** — Skeletons + local error components.
@@ -43,7 +43,7 @@ Create `/docs/stage-03-frontend/sub-03-pages/[page]/plan.md`:
 ---
 
 ## Expected Outputs
-`/docs/stage-03-frontend/sub-03-pages/[page]/plan.md` and a list of any missing hooks or contract DTOs to resolve first.
+`Docs/stage-03-frontend/sub-03-pages/[pages-set-name]/plan.md` and a list of any missing hooks or contract DTOs to resolve first.
 
 ## Principles
 Zero code. Reuse first (`components/shared`, `components/ui`). Loading/error are localized, never full-page. Test the UI's reaction to state (mocked hooks), not the network.

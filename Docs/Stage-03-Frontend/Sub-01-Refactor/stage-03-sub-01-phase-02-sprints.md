@@ -12,9 +12,9 @@ Turn `plan.md` into an ordered playbook: clean the foundation, then the UI, then
 
 ## Context & Inputs
 
-- **Plan & map:** `/docs/stage-03-frontend/sub-01-refactor/plan.md`, `codebase-map.md`.
+- **Plan & map:** `/docs/stage-03-frontend/sub-01-refactor/results/plan.md`, `codebase-map.md`.
 - **Rules:** `front-end-rules.md`, `front-end-best-practices.md`.
-- **Contract:** `@my-app/contract`.
+- **Contract:** `Apps/contract`.
 
 ---
 
@@ -52,7 +52,7 @@ Turn `plan.md` into an ordered playbook: clean the foundation, then the UI, then
 
 ## Expected Output
 
-`/docs/stage-03-frontend/sub-01-refactor/sprints.md`.
+`/docs/stage-03-frontend/sub-01-refactor/results/sprints.md`.
 
 ## Principles
 No new features. Keep it runnable after every sprint. Strict dependency order — you can't standardize components still in the wrong folders.

@@ -11,7 +11,7 @@ Build the data pipeline from the core out: Axios + Query Client first, then Auth
 ---
 
 ## Context & Inputs
-- **Plan:** `/docs/stage-03-frontend/sub-02-integration/plan.md`.
+- **Plan:** `/docs/stage-03-frontend/sub-02-integration/results/plan.md`.
 - **Rules:** `front-end-rules.md`, `front-end-test-rules.md`.
 - **Contract:** `@my-app/contract`.
 
@@ -20,7 +20,7 @@ Build the data pipeline from the core out: Axios + Query Client first, then Auth
 ## Ordering (mandatory)
 1. **Sprint 1 — Core Pipeline:** `src/lib/axios.ts` (cookie + 401 interceptors), `src/lib/api-path.ts`, `src/lib/query-client.ts` (cache-level error toasts), and the global test setup (MSW server, Vitest config, query wrapper) in `/tests/fixtures/`.
 2. **Sprint 2 — Auth Domain:** Auth services + hooks (token logic that later authenticated routes depend on), plus Auth fixtures, MSW handlers, and integration tests.
-3. **Sprint 3+ — Feature Domains:** one domain each (Users, Products, Orders…), implementing Services, hooks, MSW handlers, envelope-shaped fixtures in `/tests/fixtures/data/`, and integration tests.
+3. **Sprint 3+ — Feature Domains:** one or up to three domain each (Users, Products, Orders…), implementing Services, hooks, MSW handlers, envelope-shaped fixtures in `/tests/fixtures/data/`, and integration tests.
 
 ---
 
@@ -55,7 +55,7 @@ Build the data pipeline from the core out: Axios + Query Client first, then Auth
 ---
 
 ## Expected Output
-`/docs/stage-03-frontend/sub-02-integration/sprints.md`.
+`/docs/stage-03-frontend/sub-02-integration/results/sprints.md`.
 
 ## Principles
-No code; no UI tasks (only `lib`, `services`, `hooks`, `tests`); validate type-compliance with `@my-app/contract`; define what NOT to test (no TanStack internals).
+No code; no UI tasks (only `lib`, `services`, `hooks`, `tests`); validate type-compliance with `Apps/contract`; define what NOT to test (no TanStack internals).

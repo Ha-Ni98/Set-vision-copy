@@ -11,7 +11,7 @@ Execute `sprints.md` to produce a 100% type-safe integration engine, ready to pl
 ---
 
 ## Context & Inputs
-- **Sprints & plan:** `/docs/stage-03-frontend/sub-02-integration/sprints.md`, `plan.md`.
+- **Sprints & plan:** `/docs/stage-03-frontend/sub-02-integration/results/sprints.md`, `plan.md`.
 - **Rules:** `front-end-rules.md`, `front-end-test-rules.md`.
 - **Contract:** `@my-app/contract`. **Codebase:** `/src/lib`, `/src/services`, `/src/hooks`, `/tests`.
 
@@ -23,7 +23,7 @@ One sprint per fresh session. Load only: the rules files, `plan.md`, `sprints.md
 ## The Loop (per sprint)
 
 ### Step 1 — Select & Review
-First sprint not ✅. Review the sprint's routes/DTOs in `@my-app/contract`; confirm Query Keys, required MSW handlers, and fixtures.
+First sprint not ✅. Review the sprint's routes/DTOs in `Apps/contract`; confirm Query Keys, required MSW handlers, and fixtures.
 
 ### Step 2 — Implement & Test
 - **Axios:** base = `import.meta.env.VITE_API_URL`; cookie auth; 401 redirect with loop prevention.
@@ -35,11 +35,14 @@ First sprint not ✅. Review the sprint's routes/DTOs in `@my-app/contract`; con
 ### Step 3 — Validate
 `tsc --noEmit` clean · `vitest run` green (200 + 4xx/5xx) · MSW intercepts · fixtures parse against contract schemas · no test files in `/src`.
 
+### Step 5 — Update Docs and Generate Report
+Write `/docs/stage-03-frontend/sub-02-integration/results/report-sprint-[NN].md`.
+Mark ✅ in `sprints.md`; 
+
 ### Step 4 — Commit on Green
+`git add .`
 `git commit -m "fe: integration sprint [N] — [domain]"`.
 
-### Step 5 — Update Docs
-Mark ✅ in `sprints.md`; cross off the domain in `plan.md`.
 
 ### Step 6 — Pause
 Wait for `next`.

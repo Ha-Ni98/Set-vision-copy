@@ -14,6 +14,7 @@ Companion to `front-end-rules.md` (architecture) and `front-end-test-rules.md` (
   - **PublicLayout header:** Logo, Search, Auth links/menu, Cart, EN/FR toggle, Theme toggle.
   - **PublicLayout footer:** Shipping, Returns, Privacy, Terms, store locator, support, social.
   - **AdminLayout header:** Logo, Auth menu, EN/FR toggle, Theme toggle — **no Cart, no store locator.**
+  - *(The `translations.json` data model reserves a third `ar` value per key — see `front-end-rules.md` §6B — but the visible toggle and all UI in this stage stay EN/FR only. No RTL layout work yet.)*
 - **Accessibility:** WCAG 2.1 AA via Radix primitives.
 
 ## Versions (the whole monorepo shares one Zod major)
