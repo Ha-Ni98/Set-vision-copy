@@ -2,7 +2,7 @@
 sprint: 3
 title: Assembly & Wiring — Steps 1 & 2 (verify-dispatch + form)
 status: ✅ Done
-commit: TBD
+commit: 3cd4310
 ---
 
 # Sprint 3 Report — Assembly & Wiring (Steps 1 & 2)
