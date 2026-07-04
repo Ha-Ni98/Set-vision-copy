@@ -19,6 +19,13 @@ if (typeof window !== "undefined") {
   Element.prototype.scrollIntoView ??= () => {};
 }
 
+// Nor `elementFromPoint` — the client portal's OTP digit boxes (`input-otp`) poll it
+// internally to track the fake caret position. Needed by any test that types into an
+// InputOTP, not just the client-portal page tests (first hit here).
+if (typeof document !== "undefined") {
+  document.elementFromPoint ??= () => null;
+}
+
 // JSDOM has no ResizeObserver either — Radix's Checkbox (`@radix-ui/react-use-size`) calls
 // it unconditionally on mount. Needed by any test that renders a shadcn Checkbox, not just
 // this admin sub-stage (first hit here, in the create-lot candidate list).
@@ -28,6 +35,17 @@ if (typeof globalThis.ResizeObserver === "undefined") {
     unobserve() {}
     disconnect() {}
   };
+}
+
+// Nor IntersectionObserver — the client portal's StatsRow count-up animation (rendered
+// unconditionally at the bottom of LandingPage) creates one on mount. Needed by any test
+// that renders LandingPage, not just the client-portal page tests (first hit here).
+if (typeof globalThis.IntersectionObserver === "undefined") {
+  globalThis.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver;
 }
 
 afterEach(() => {

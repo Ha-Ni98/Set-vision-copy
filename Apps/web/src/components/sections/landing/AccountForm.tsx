@@ -170,7 +170,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             aria-invalid={!!errors.fullName}
             aria-describedby={errors.fullName ? "fullName-error" : undefined}
             {...register("fullName")}
-            required
           />
         </Field>
         <Field label={t("public.landing.form.phone")} id="phone" error={errors.phone?.message}>
@@ -180,7 +179,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             aria-invalid={!!errors.phone}
             aria-describedby={errors.phone ? "phone-error" : undefined}
             {...register("phone")}
-            required
           />
         </Field>
       </fieldset>
@@ -206,7 +204,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                 : undefined
             }
             {...register("username")}
-            required
           />
         </Field>
         <Field
@@ -225,7 +222,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
               errors.email || isFlagged(AccountInformation.EMAIL) ? "email-error" : undefined
             }
             {...register("email")}
-            required
           />
         </Field>
         <Field
@@ -263,7 +259,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                   : undefined
               }
               {...register("password")}
-              required
             />
             <button
               type="button"
@@ -290,7 +285,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                 aria-invalid={!!errors.confirmPassword}
                 aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
                 {...register("confirmPassword")}
-                required
               />
               <button
                 type="button"

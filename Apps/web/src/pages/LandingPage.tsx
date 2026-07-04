@@ -14,9 +14,10 @@ import { getPlanForm } from "@/components/sections/landing/plan-forms";
 import { useVerifyKey } from "@/hooks/useVerifyKey";
 import { useActivationStatus } from "@/hooks/useActivationStatus";
 import { useActivation } from "@/components/providers/ActivationProvider";
-import { AlertCircle, KeyRound, Loader2 } from "lucide-react";
+import { AlertCircle, KeyRound, Loader2, MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
+import { SOCIAL_LINKS } from "@/config/social-links";
 
 // Matches the Step 1 input's own placeholder shape (spec: "XXXX-XXXX-XXXX-XXXX") — the
 // contract has no fixed key-generation format to validate against, so this is only a soft
@@ -217,6 +218,7 @@ export default function LandingPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value.toUpperCase())}
                 placeholder={t("public.landing.verify.placeholder")}
+                disabled={verifyKey.isPending}
                 className={cn(
                   "h-14 text-center text-lg tracking-widest font-mono",
                   inputErrorMessage && "border-destructive focus-visible:ring-destructive",
@@ -231,6 +233,16 @@ export default function LandingPage() {
                 >
                   <AlertCircle className="h-4 w-4 shrink-0" /> {inputErrorMessage}
                 </p>
+              )}
+              {(isInvalid || serverErrorKey === "public.landing.serverError") && (
+                <a
+                  href={SOCIAL_LINKS.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  <MessageCircle className="h-4 w-4" /> {t("common.actions.contactWhatsapp")}
+                </a>
               )}
               <Button
                 type="submit"

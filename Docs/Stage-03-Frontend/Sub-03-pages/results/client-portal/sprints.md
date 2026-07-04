@@ -161,24 +161,35 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 5 — TESTS
 
-### Sprint 6: Unit Tests — verify dispatch · form variants · OTP · realtime   — Status: ⬜ Pending
+### Sprint 6: Unit Tests — verify dispatch · form variants · OTP · realtime   — Status: ✅ Done
 
 **Goals**
 - `/tests/unit/pages/client-portal/**` covers the flow with hooks + `useTranslation` mocked (no MSW). All green; both tsconfigs clean.
 
 **Tasks**
-- [ ] `ClientPortal.verify.test.tsx` (#testing): empty/bad-format inline errors; each of the 9 `ClientActivationStatus` values routes to the correct view; verify network/5xx branches + WhatsApp; success seeds context + subscribes.
-- [ ] `ClientPortal.form.test.tsx` (#testing): Ready Zod errors; valid ⇒ `useSubmitActivation.mutate(command)` with correct `accountFields` + no `confirmPassword`; Submitted read-only + Update Information re-opens; Needs-correction highlights `flaggedFields` + Update & Re-submit ⇒ `useUpdateActivation`; password mismatch; Clear-Fields confirm.
-- [ ] `ClientPortal.step3.test.tsx` (#testing): OTP submit ⇒ `useSubmitAdditionalInfo` with OTP `accountField`; wrong-OTP counter; resend cooldown disables/re-enables; Activated shows username + reminder; Failed shows WhatsApp; Under-review read-only.
-- [ ] `ClientPortal.realtime.test.tsx` (#testing): a mocked status change re-dispatches the view; window-focus triggers a refetch; "Check Another Key" ⇒ `unsubscribeActivation` + reset; stats section hides/placeholders on absent stats (documents §E-1).
-- [ ] Reuse Part-1 shared infra (`mockTranslation`/`renderWithRouter`/`setup.ts`); mock `lib/realtime.ts` + `useActivationStatus`; assert view transitions, not socket internals.
+- [x] `ClientPortal.verify.test.tsx` (#testing): empty/bad-format inline errors (client-side, no mutate call); loading disables the field + shows the spinner; network vs. 5xx branches (5xx also asserts the WhatsApp link — a real Sprint-3 gap found and fixed this sprint, see below); all **9** `ClientActivationStatus` values routing to their own view via a single `it.each`, plus a dedicated INVALID case confirming it stays on Step 1 (red border/message, field still editable) rather than a full-screen replacement.
+- [x] `ClientPortal.form.test.tsx` (#testing): Ready empty-submit Zod errors (scoped per-field via each field's own `id="x-error"`, since several fields collapse to the identical mocked-`t()` string, e.g. two `common.validation.required`s at once); a valid submit's exact `accountFields` payload with no `confirmPassword` key at all; password-mismatch; Clear-Fields confirm (cancel vs. confirm); Submitted read-only + masked password + Update Information re-opening it blank; Processing's genuinely-zero actions (no Update Information at all); Needs-correction's prefill + flagged-field indicator + Update & Re-submit's exact `useUpdateActivation` payload.
+- [x] `ClientPortal.step3.test.tsx` (#testing): OTP submit's exact `useSubmitAdditionalInfo` payload; a network failure preserving the entered code without counting as an attempt; 5 wrong attempts reaching full lockout (input/resend/submit all disabled); the 60s resend cooldown disabling→enabling (via fake timers, see below); Under-review's read-only amber notice + WhatsApp; Activated's account badge + security reminder; Failed's WhatsApp link.
+- [x] `ClientPortal.realtime.test.tsx` (#testing): a mocked `useActivationStatus` result change re-dispatches the view with **zero clicks** (the exact context-update pipeline a real socket invalidation or the polling fallback drives); "Check Another Key" calls `unsubscribeActivation` with the *current* activationId before resetting (and is a safe no-op when nothing was ever verified); the stats section always renders without an error block (documents §E-1 — there's nothing to "hide," `StatsRow` is permanently static). **"Window-focus triggers a refetch" moved to a hook-level integration test** (see below) rather than being asserted through this fully-hook-mocked page file — the actual `refetchOnWindowFocus: true` override lives inside `useActivationStatus.ts` itself, invisible to a page test that replaces the whole hook.
+- [x] Reused Part-1 shared infra (`mockTranslation`/`setup.ts`); a new shared `support/{mockHooks,renderLandingPage,testHelpers}.ts` (this sprint's own equivalent of a page-test harness, since all four files exercise the same `LandingPage` tree from different angles) centralizes the `vi.mock()` calls and a `renderLandingPage()`/`rerenderLandingPage()` pair; asserted view transitions and mutate payloads throughout, never socket/query internals directly.
+
+**Three real bugs found and fixed while writing these tests** (not test-only artifacts):
+1. **Step 1's 5xx/Invalid views were missing their spec-mandated WhatsApp link.** Plan §B5: "WhatsApp support `<Link>` ... appears on Invalid / Under-review / Failed / hard-5xx views" — Under-review/Failed already had one (Sprint 2), but Step 1 itself (Invalid and the 5xx branch) never did, a plain Sprint 3 oversight. Fixed.
+2. **The Step 1 key input was never disabled while verifying** — spec: "Loading: button spinner, field disabled"; only the button had `disabled={verifyKey.isPending}`, the input didn't. Fixed.
+3. **The native `required` HTML attribute on every `AccountForm` input silently blocked Zod's own validation from ever showing for a genuinely empty submit.** Browsers (and JSDOM) intercept and block form submission via native constraint validation *before* React's `onSubmit` handler ever runs when a `required` field is empty — meaning a user submitting a totally blank Ready form in production would see the **browser's own unstyled, wrong-language tooltip**, never this app's carefully worded/localized Zod message. `LoginPage` (this app's own established RHF+Zod convention) never uses `required` for exactly this reason; `AccountForm`'s use of it was a leftover MVP artifact. Removed all 6 occurrences.
+
+**A hook-level test added instead of a page-level one**: `useActivationStatus`'s `refetchOnWindowFocus: true` override (Sprint 4) had no coverage anywhere. Added a case to `tests/integration/hooks/keys.test.tsx` (real `QueryClient`, MSW) that dispatches a `visibilitychange` event on `window` — TanStack Query v5's `FocusManager` listens for that event specifically (not a `focus` event, and not on `document`) — and asserts a second network call. This is the correct layer for it: a fully-mocked page test can't observe an internal `useQuery` option at all.
+
+**Two JSDOM gaps newly hit, added to the shared `setup.ts`** (matching its own established pattern for prior gaps like `ResizeObserver`): `IntersectionObserver` (`StatsRow`'s count-up animation, which every one of these page tests renders unconditionally since it sits at the bottom of `LandingPage`) and `document.elementFromPoint` (the `input-otp` library polls it internally for caret tracking).
+
+**Fake timers + the full page tree don't mix here**: an attempt to test the OTP resend cooldown by rendering the *whole* `LandingPage` under `vi.useFakeTimers()` reliably hung the test run (React's scheduler and/or `StatsRow`'s `requestAnimationFrame`-driven counter fighting the faked clock). Resolved by mounting `OtpStep` directly for that one assertion — the cooldown is entirely `OtpStep`'s own concern, so testing it in isolation is also better-scoped, not just a workaround.
 
 **Validation**
-- [ ] `vitest run` green (success/loading/error). / [ ] No `/src` tests; files `.test.tsx`. / [ ] Both tsconfigs clean. / [ ] Committed on green.
+- [x] `vitest run` green — 63/63 files, 475/475 tests (previously 439 baseline through Sprint 5, +34 new across the 4 new client-portal page-test files, +1 new hook-level focus-refetch test). / [x] No `/src` tests; all new files `.test.tsx` under `/tests/unit/pages/client-portal/`. / [x] Both tsconfigs clean. / [x] `eslint`/`prettier` scoped to all 12 touched/new files — 0 errors after one scoped `--fix`. / [x] Committed on green.
 
 **Risks**
-- Realtime under JSDOM — mock the socket + status query; assert dispatched views, never socket wiring.
-- Ambiguous mocked-key text matches — scope with `within()` (Part-1 discipline).
+- Realtime under JSDOM — resolved by *not* trying to simulate a real Socket.IO connection at all: the page-level realtime test drives the exact same context-update path a real invalidation would (updating the mocked `useActivationStatus`'s return value and re-rendering), and the one genuinely socket/query-internal behavior (window-focus refetch) was moved to the hook-integration layer where it can be verified against real `@tanstack/react-query` + MSW instead of asserted indirectly.
+- Ambiguous mocked-key text matches — resolved via per-field `id="x-error"` scoping (form-error test) and `within()`/`.closest()` scoping elsewhere, matching Part-1's own established discipline.
 
 ---
 

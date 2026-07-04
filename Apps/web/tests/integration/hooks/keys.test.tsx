@@ -94,6 +94,28 @@ describe("useActivationStatus (enabled-gated)", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockClientActivationStatus);
   });
+
+  // client-portal plan.md §D5 — "re-verify/refetch on window focus" (Sprint 4). The global
+  // default is refetchOnWindowFocus: false (query-client.ts); this hook overrides it, so the
+  // override itself is what's under test here, not react-query's own focus-detection.
+  it("refetches on window focus (this hook's own refetchOnWindowFocus: true override)", async () => {
+    let statusCalls = 0;
+    server.use(
+      http.get(keysUrls.status, () => {
+        statusCalls += 1;
+        return ok(mockClientActivationStatus);
+      }),
+    );
+    renderHook(() => useActivationStatus("id-focus", true), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(statusCalls).toBe(1));
+
+    // TanStack Query v5's FocusManager listens for `visibilitychange` on `window`
+    // specifically (not `document`, and not a `focus` event) — see @tanstack/query-core's
+    // focusManager.ts.
+    window.dispatchEvent(new Event("visibilitychange"));
+
+    await waitFor(() => expect(statusCalls).toBe(2));
+  });
 });
 
 describe("status-key invalidation (plan.md §3.2 — new for these two hooks)", () => {
