@@ -1,10 +1,16 @@
 import { ChevronDown } from "lucide-react";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 
-const LABEL: Record<"en" | "fr", string> = { en: "EN", fr: "FR" };
+// "ar" is a real (if not yet selectable) member of Language — see lib/i18n.ts — so this
+// still needs an entry for Record<Language, string> to index safely; the toggle itself only
+// ever offers EN/FR (client-portal plan.md §B6, decision #1: no AR option yet).
+const LABEL: Record<"en" | "fr" | "ar", string> = { en: "EN", fr: "FR", ar: "AR" };
 
 export function LanguageToggle() {
   const { language, setLanguage } = useLanguage();

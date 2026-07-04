@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { http, delay, HttpResponse } from "msw";
-import { AUTH_ROUTES, ErrorCode, UserRole, type AuthTokensDTO } from "@my-app/contract";
+import { AUTH_ROUTES, KEY_ROUTES, ErrorCode, UserRole, type AuthTokensDTO } from "@my-app/contract";
 import { server } from "../../fixtures/msw/server";
 import { apiUrl } from "../../fixtures/msw/api-url";
 import { ok, fail } from "../../fixtures/msw/envelope";
-import { apiPath } from "@/lib/api-path";
+import { apiPath, withParams } from "@/lib/api-path";
 import { api, setRedirect, refreshTokens } from "@/lib/axios";
 import * as tokenStore from "@/lib/token-store";
 
@@ -12,6 +12,9 @@ const PROTECTED_URL = apiUrl("/__protected__");
 const REFRESH_URL = apiUrl(AUTH_ROUTES.BASE, AUTH_ROUTES.REFRESH);
 const LOGIN_URL = apiUrl(AUTH_ROUTES.BASE, AUTH_ROUTES.LOGIN);
 const LOGIN_PATH = apiPath(AUTH_ROUTES.BASE, AUTH_ROUTES.LOGIN);
+const KEY_STATUS_SEGMENT = withParams(KEY_ROUTES.STATUS, { activationId: "abc-123" });
+const KEY_STATUS_URL = apiUrl(KEY_ROUTES.BASE, KEY_STATUS_SEGMENT);
+const KEY_STATUS_PATH = apiPath(KEY_ROUTES.BASE, KEY_STATUS_SEGMENT);
 
 const freshTokens: AuthTokensDTO = {
   accessToken: "fresh-access",
@@ -154,6 +157,27 @@ describe("axios response interceptor — 401 refresh-retry state machine", () =>
     await expect(api.post(LOGIN_PATH, { username: "x", password: "y" })).rejects.toMatchObject({
       response: { status: 401 },
     });
+
+    expect(refreshCalls).toBe(0);
+    expect(redirectSpy).not.toHaveBeenCalled();
+  });
+
+  it("never refreshes or redirects on a 401 from a public client-portal /keys/* endpoint (client-portal E-4)", async () => {
+    const redirectSpy = vi.fn();
+    setRedirect(redirectSpy);
+    let refreshCalls = 0;
+
+    server.use(
+      http.post(REFRESH_URL, () => {
+        refreshCalls += 1;
+        return ok(freshTokens);
+      }),
+      // A parameterized route (`/:activationId/status`) — proves the prefix check works
+      // against the *resolved* URL, not just the unparameterized TOKEN_ENDPOINTS routes.
+      http.get(KEY_STATUS_URL, () => fail(ErrorCode.AUTH_UNAUTHORIZED, "expired", 401)),
+    );
+
+    await expect(api.get(KEY_STATUS_PATH)).rejects.toMatchObject({ response: { status: 401 } });
 
     expect(refreshCalls).toBe(0);
     expect(redirectSpy).not.toHaveBeenCalled();

@@ -13,7 +13,7 @@ export function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-const LOCALE_TAG: Record<Language, string> = { en: "en-US", fr: "fr-FR" };
+const LOCALE_TAG: Record<Language, string> = { en: "en-US", fr: "fr-FR", ar: "ar-DZ" };
 
 export function formatDZD(amount: number, language: Language = "en"): string {
   return `${new Intl.NumberFormat(LOCALE_TAG[language]).format(amount)} DZD`;

@@ -1,6 +1,15 @@
 import translations from "@/config/translations.json";
 
-export type Language = "en" | "fr";
+// "ar" is a real member of this union (not just a future TODO) so the client-portal's RTL
+// plumbing (`dir = language === "ar" ? "rtl" : "ltr"`) type-checks today — but nothing yet
+// sets `language` to "ar" (LanguageToggle only exposes EN/FR, `ar` copy stays `""`), so `dir`
+// still resolves "ltr" in practice. Activating Arabic later is a copy-fill + toggle-expose
+// step, not a type change (client-portal plan.md §B6, decision #1).
+export type Language = "en" | "fr" | "ar";
+
+export function dirForLanguage(language: Language): "ltr" | "rtl" {
+  return language === "ar" ? "rtl" : "ltr";
+}
 
 type TranslationEntry = { en: string; fr: string; ar: string };
 const values = translations as Record<string, TranslationEntry>;
