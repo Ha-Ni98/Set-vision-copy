@@ -2,7 +2,7 @@
 sprint: 2
 title: Primitives & States — Context, registry & all region components
 status: ✅ Done
-commit: TBD
+commit: 0bbcbff
 ---
 
 # Sprint 2 Report — Primitives & States
