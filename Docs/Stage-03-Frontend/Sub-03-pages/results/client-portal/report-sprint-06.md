@@ -2,7 +2,7 @@
 sprint: 6
 title: Unit Tests — verify dispatch · form variants · OTP · realtime
 status: ✅ Done
-commit: TBD
+commit: f3b5f9f
 ---
 
 # Sprint 6 Report — Unit Tests (final sprint)
