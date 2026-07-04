@@ -8,6 +8,7 @@ import {
   DollarSign,
   ArrowRight,
   AlertTriangle,
+  Wallet,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import { ACTIVE_SLOTS_CAP } from "@/config/constants";
 
 export default function DashboardPage() {
   const { t, language } = useTranslation();
-  const { data, isLoading, isError } = useMyStats();
+  const { data, isLoading, isError, refetch } = useMyStats();
   const max = data ? Math.max(...data.weekly.map((d) => d.count), 0) : 0;
   const avgGreen = (data?.avgActivationTimeSeconds ?? 0) < 300;
   const isNewActivator = data && data.totalActivations === 0;
@@ -40,10 +41,12 @@ export default function DashboardPage() {
           icon={<AlertTriangle className="h-8 w-8" />}
           title={t("common.errors.crashTitle")}
           body={t("common.errors.crashBody")}
+          action={<Button onClick={() => refetch()}>{t("common.actions.tryAgain")}</Button>}
         />
       ) : isLoading || !data ? (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
@@ -55,7 +58,7 @@ export default function DashboardPage() {
         </>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={<DollarSign className="h-5 w-5" />}
               label={t("activator.dashboard.totalEarnings")}
@@ -66,6 +69,11 @@ export default function DashboardPage() {
                   {t("activator.dashboard.earningsTrend", { percent: data.earningsTrendPercent })}
                 </span>
               }
+            />
+            <StatCard
+              icon={<Wallet className="h-5 w-5" />}
+              label={t("activator.dashboard.balanceOwed")}
+              value={formatDZD(data.creditsBalance, language)}
             />
             <StatCard
               icon={<CheckCircle2 className="h-5 w-5" />}

@@ -86,23 +86,23 @@ Required global order: **Foundation → Primitives & States → Assembly & Wirin
 
 ## PHASE 3 — ASSEMBLY & WIRING
 
-### Sprint 3: Assembly & Wiring — Login + Dashboard + History   — Status: ⬜ Pending
+### Sprint 3: Assembly & Wiring — Login + Dashboard + History   — Status: ✅ Done
 
 **Goals**
 - Login authenticates + redirects by role; Dashboard renders live stats; History Sections A & B fully live with filters/sort/search/pagination. Layout survives loading/error. `tsc` + existing suite green.
 
 **Tasks**
-- [ ] Login (#wiring #forms): `useLogin` (`login.schema.ts`) → role-based redirect (E-4); 401 generic / 429 lockout / empty / network inline errors; disabled+spinner in-flight.
-- [ ] Dashboard (#wiring): `useMyStats()` → `ActivatorDashboardDTO` → 4 cards + trend/today/tier + slot indicator + sparkline (`weekly[]`); live via socket-invalidation of `qk.activators.myStats()`; empty/new-activator state; section retry.
-- [ ] History Section A (#wiring): `useRecentActivations()` → 3 columns (E-1); live via invalidation + on-focus.
-- [ ] History Section B (#wiring): `useMyHistory({ status, sortBy, dateFrom, dateTo, search, page, limit })` with `useDebouncedValue` search; Status chips / Sort / date-range / pagination (desktop prev-next + "Page N of M", mobile Load-More); empty vs no-match+Clear; earning rendered as-is (not recomputed).
-- [ ] `useMemo` history `ColumnDef[]`.
+- [x] Login (#wiring #forms): `useLogin` (`login.schema.ts`) → role-based redirect (E-4); 401 generic / 429 lockout / empty / network inline errors; disabled+spinner in-flight. **Already fully wired since Sprint 1** — verified live (bad-password ⇒ inline error, no navigation; valid ⇒ redirect to `/dashboard`), no changes needed this sprint.
+- [x] Dashboard (#wiring): `useMyStats()` → `ActivatorDashboardDTO` → cards + trend/today/tier + slot indicator + sparkline (`weekly[]`); live via socket-invalidation of `qk.activators.myStats()` (already wired in `lib/realtime.ts`); empty/new-activator state (Sprint 2); section retry. **Gap found and fixed**: the DTO's `creditsBalance` field (plan D2's "Balance Owed" 4th stat card) was never rendered at all — only 3 of the spec's 4 cards existed. Added the missing `StatCard` (Wallet icon, `formatDZD`), regridded `md:grid-cols-3` → `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` (skeleton grid too), added the retry action to the error state (`NotFoundState` had no `action` prop at all before — every other page's error state already had one).
+- [x] History Section A (#wiring): `useRecentActivations()` → 3 columns (E-1); live via invalidation + on-focus. **Gap found and fixed**: socket-invalidation already existed, but "on-focus" (plan D3's explicit wording) didn't — the query client's global default is `refetchOnWindowFocus: false`. Added `refetchOnWindowFocus: true` directly on this one hook (the only query in the codebase that needs it, since it has no per-viewer filter to go stale against).
+- [x] History Section B (#wiring): `useMyHistory({ status, sortBy, dateFrom, dateTo, search, page, limit })` with `useDebouncedValue` search; Status chips / Sort / date-range / pagination (desktop prev-next + "Page N of M", mobile Load-More); empty vs no-match+Clear; earning rendered as-is (not recomputed). **Gap found and fixed**: `q` was going straight into the query's `useMemo` on every keystroke (a request per character) — Sprint 2 had wired the search box but never applied `useDebouncedValue`, despite the plan naming it explicitly. Fixed by debouncing the value before it reaches the query (live-verified: typing 3 fast characters now fires exactly 1 request, not 3); `hasFilters`/Clear still read the raw (non-debounced) input, matching the existing Admin-page convention (`ActivationsPage.tsx`) for that distinction.
+- [x] `useMemo` history `ColumnDef[]` — already done in Sprint 2 (unchanged).
 
 **Validation**
-- [ ] Login: empty ⇒ no mutate; 401/429/network branches; valid ⇒ `useLogin.mutate` + role redirect. / [ ] Dashboard values/tier/sparkline from mocked DTO; retry ⇒ refetch. / [ ] History filters/sort/search mutate query; empty/no-match. / [ ] No `useEffect` fetching. / [ ] `tsc` clean; existing Vitest green. / [ ] Committed on green.
+- [x] Login: empty ⇒ no mutate; 401/429/network branches; valid ⇒ `useLogin.mutate` + role redirect — live-verified (bad password → inline error, url unchanged; valid → `/dashboard`). / [x] Dashboard values/tier/sparkline from mocked DTO; retry ⇒ refetch — live-verified, all 4 cards render (Balance Owed included) + retry button present. / [x] History filters/sort/search mutate query; empty/no-match — live-verified, debounce confirmed via request-count. / [x] No `useEffect` fetching (the one `useEffect` touched, `useDebouncedValue`, is a value-debounce, not a fetch — pre-existing codebase-wide pattern). / [x] `tsc` clean (both configs); existing Vitest green (54/54, 392/392, unchanged). / [x] Committed on green.
 
 **Risks**
-- Status-chip → `GetActivatorHistoryQuery.status` mapping (All = no param; Frozen/Admin-resolved may fold multiple states — map per contract enum).
+- Status-chip → `GetActivatorHistoryQuery.status` mapping (All = no param; Frozen/Admin-resolved may fold multiple states — map per contract enum). **Resolved by inspection, not by asking**: the contract's `status` param takes exactly one `ActivationStat` value with no array/OR support, so a spec-literal "Frozen-or-admin-resolved" folded chip can't be expressed as a single server-side filter without either dropping fidelity (silently missing some of the folded states) or client-side re-filtering across pages (breaks the server's own pagination/total). The pre-existing implementation (inherited from the MVP, untouched by Sprint 2 or this sprint) instead exposes the 10 raw `ActivationStat` values 1:1 via a dropdown — less "friendly" than 5 grouped chips, but exactly and transparently what the contract can support. Documented here as a carried-forward deviation rather than raised as a blocking question, since the underlying constraint (single-value filter param) isn't a judgment call — no chip-grouping choice would change what the backend can actually filter by.
 
 ---
 

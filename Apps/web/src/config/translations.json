@@ -151,6 +151,7 @@
   "activator.dashboard.subtitle": { "en": "Your activator performance at a glance.", "fr": "Vos performances d'activateur en un coup d'œil.", "ar": "" },
   "activator.dashboard.totalEarnings": { "en": "Total Earnings", "fr": "Gains totaux", "ar": "" },
   "activator.dashboard.earningsTrend": { "en": "{percent}% this week", "fr": "{percent}% cette semaine", "ar": "" },
+  "activator.dashboard.balanceOwed": { "en": "Balance Owed", "fr": "Solde dû", "ar": "" },
   "activator.dashboard.totalActivations": { "en": "Total Activations", "fr": "Total des activations", "ar": "" },
   "activator.dashboard.activationsToday": { "en": "+{count} today", "fr": "+{count} aujourd'hui", "ar": "" },
   "activator.dashboard.avgTime": { "en": "Avg. Activation Time", "fr": "Temps d'activation moyen", "ar": "" },

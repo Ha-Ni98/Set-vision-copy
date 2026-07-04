@@ -38,6 +38,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { useMyHistory } from "@/hooks/useMyHistory";
 import { useRecentActivations } from "@/hooks/useRecentActivations";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const STATUS_OPTIONS = Object.values(ActivationStat);
 const PER_PAGE = 10;
@@ -54,6 +55,7 @@ export default function HistoryPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const debouncedQ = useDebouncedValue(q);
 
   // Server-driven — page/limit/status/search/date-range go to the backend; sorting stays
   // client-side over whatever page comes back (§8.Q3) — GetActivatorHistoryQuery's `sortBy`
@@ -64,11 +66,11 @@ export default function HistoryPage() {
       page,
       limit: PER_PAGE,
       status: status === "ALL" ? undefined : status,
-      search: q.trim() || undefined,
+      search: debouncedQ.trim() || undefined,
       dateFrom: toIsoDate(dateFrom),
       dateTo: toIsoDate(dateTo),
     }),
-    [page, status, q, dateFrom, dateTo],
+    [page, status, debouncedQ, dateFrom, dateTo],
   );
 
   const {
