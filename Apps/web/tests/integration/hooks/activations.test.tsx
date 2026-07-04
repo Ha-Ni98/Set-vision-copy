@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { http } from "msw";
 import { AccountInformation } from "@my-app/contract";
 import { server } from "../../fixtures/msw/server";
-import { activationsUrls } from "../../fixtures/msw/activations.handlers";
+import { activationsUrls, activationsErrorHandlers } from "../../fixtures/msw/activations.handlers";
 import { ok } from "../../fixtures/msw/envelope";
 import { createQueryWrapper } from "../../fixtures/wrappers/createQueryWrapper";
 
@@ -14,6 +14,9 @@ import { createQueryWrapper } from "../../fixtures/wrappers/createQueryWrapper";
 vi.mock("@/hooks/useTranslation", () => ({
   useTranslation: () => ({ t: (key: string) => key, language: "en" }),
 }));
+
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
+import { toast } from "sonner";
 
 import {
   mockPendingActivation,
@@ -100,6 +103,17 @@ describe("activator-flow mutation invalidations (plan.md §3.2)", () => {
 
     await waitFor(() => expect(pendingCalls).toBe(2));
     await waitFor(() => expect(activeCalls).toBe(2));
+  });
+
+  it("useTakeActivation shows the take-race message (not the raw backend error) on a 409", async () => {
+    server.use(activationsErrorHandlers.takeConflict());
+    const { result } = renderHook(() => useTakeActivation(), { wrapper: createQueryWrapper() });
+
+    result.current.mutate("a2000000-0000-4000-8000-000000000001");
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(toast.error).toHaveBeenCalledWith("activator.requests.takeRaceToast");
+    expect(toast.error).not.toHaveBeenCalledWith("Already taken");
   });
 
   it("useFlagWrongInfo and useRequestAdditionalInfo both invalidate active only", async () => {

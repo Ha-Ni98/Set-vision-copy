@@ -24,6 +24,11 @@ const NEW_ROW_HIGHLIGHT_MS = 3000;
 // Slightly longer than index.css's fade-out-up duration (0.35s) so the CSS animation always
 // finishes before the card actually unmounts.
 const CARD_EXIT_MS = 400;
+// A stable (never-reallocated) fallback — `activeData ?? []` would otherwise hand
+// useExitingActiveList's effect a brand-new array reference on every render whenever
+// activeData is undefined (e.g. isError), and since that effect calls setState, a fresh
+// dependency every render becomes an infinite render loop.
+const EMPTY_ACTIVE: ActiveRequestDTO[] = [];
 
 // A card leaving `active` (Activate/Cancel succeeded) still renders — with the exit class —
 // for CARD_EXIT_MS after the query no longer contains it, so `.animate-fade-out` gets a chance
@@ -78,7 +83,7 @@ export default function RequestsPage() {
   const takeActivation = useTakeActivation();
   const { playChime } = useNotificationSound();
 
-  const active = activeData ?? [];
+  const active = activeData ?? EMPTY_ACTIVE;
   const pool = pendingData ?? [];
   const slotsUsed = active.length;
   const { displayed: displayedActive, isExiting } = useExitingActiveList(active);
