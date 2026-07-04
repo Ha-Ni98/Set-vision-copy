@@ -2,7 +2,7 @@
 sprint: 4
 title: Assembly & Wiring — Active Requests (primary page)
 status: ✅ Done
-commit: TBD
+commit: 0c1a599
 ---
 
 # Sprint 4 Report — Assembly & Wiring (Active Requests)
