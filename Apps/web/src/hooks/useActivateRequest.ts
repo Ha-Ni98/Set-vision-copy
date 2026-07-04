@@ -10,7 +10,7 @@ export function useActivateRequest() {
   return useMutation({
     mutationFn: activationsService.activate,
     onSuccess: () => {
-      toast.success(t("activator.requests.card.doneToast"));
+      toast.success(t("activator.requests.card.activateToast"));
       queryClient.invalidateQueries({ queryKey: qk.activations.active() });
       queryClient.invalidateQueries({ queryKey: qk.activators.myStats() });
       queryClient.invalidateQueries({ queryKey: qk.activations.myHistoryAll() });

@@ -2,16 +2,9 @@ import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 import type { ApiResponse } from "@my-app/contract";
-import { translate, type Language } from "@/lib/i18n";
+import { translate, getLanguage } from "@/lib/i18n";
 
-// Non-component code — reads the persisted language directly rather than via context,
-// per the non-reactive `translate()` escape hatch rules §6B allows outside components.
-const getLanguage = (): Language => {
-  const saved = typeof window !== "undefined" ? localStorage.getItem("sv_lang") : null;
-  return saved === "fr" ? "fr" : "en";
-};
-
-const message = (err: unknown): string => {
+export const message = (err: unknown): string => {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as ApiResponse<unknown> | undefined;
     if (data && !data.success) return data.error.message;
@@ -54,8 +47,11 @@ export const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: (err) => {
-      if (isSilent(err)) return;
+    // `meta: { silentErrorToast: true }` lets a mutation replace this generic backend-message
+    // toast with its own — e.g. the take-race 409, which needs a specific "taken by another
+    // activator" wording rather than the raw "Activation is no longer pending" the API sends.
+    onError: (err, _vars, _ctx, mutation) => {
+      if (isSilent(err) || mutation.options?.meta?.silentErrorToast) return;
       toast.error(message(err));
     },
   }),

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useActiveRequests } from "@/hooks/useActiveRequests";
+import { usePendingActivations } from "@/hooks/usePendingActivations";
 import { ACTIVATOR_NAV_LINKS } from "@/config/nav-links";
 
 export function ActivatorSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -9,8 +9,11 @@ export function ActivatorSidebarNav({ onNavigate }: { onNavigate?: () => void })
   const loc = useLocation();
   // Rendered in two places (desktop aside + mobile Sheet) — TanStack Query dedupes
   // identical queryKeys, so this doesn't cause a second network call.
-  const { data: activeRequests } = useActiveRequests();
-  const requestsBadge = activeRequests && activeRequests.length > 0 ? activeRequests.length : null;
+  // Spec (SV-PAGE-002-005 line 61): "badge = current pending-pool count", not the
+  // activator's own active-request count.
+  const { data: pendingActivations } = usePendingActivations();
+  const requestsBadge =
+    pendingActivations && pendingActivations.length > 0 ? pendingActivations.length : null;
 
   return (
     <nav className="flex flex-col gap-1 p-3">
@@ -27,7 +30,7 @@ export function ActivatorSidebarNav({ onNavigate }: { onNavigate?: () => void })
               "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               active
                 ? "bg-primary-light text-primary border-l-4 border-primary -ml-1 pl-2"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
             <span className="flex items-center gap-3">

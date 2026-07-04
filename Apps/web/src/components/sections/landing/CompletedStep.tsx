@@ -9,7 +9,9 @@ export function CompletedStep({ username }: { username?: string }) {
         <Check className="h-14 w-14 text-success-foreground" strokeWidth={3} />
       </div>
       <div>
-        <h3 className="text-3xl font-bold text-foreground">{t("public.landing.completed.title")}</h3>
+        <h3 className="text-3xl font-bold text-foreground">
+          {t("public.landing.completed.title")}
+        </h3>
         <p className="mt-3 text-muted-foreground">{t("public.landing.completed.body")}</p>
       </div>
       {username && (
@@ -17,7 +19,7 @@ export function CompletedStep({ username }: { username?: string }) {
           {t("public.landing.completed.account", { username })}
         </div>
       )}
-      <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-left text-sm text-foreground">
+      <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-start text-sm text-foreground">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
         <span>{t("public.landing.completed.securityNotice")}</span>
       </div>

@@ -32,6 +32,40 @@ export const mockKeyNeedsOtp: KeyVerificationDTO = KeyVerificationResponseSchema
   accountUsername: "amine123",
 });
 
+// Same submitted-values shape AccountForm.tsx's SUBMITTED_FIELD_LABELS looks up against.
+const SUBMITTED_FIELDS = [
+  { fieldLabel: "Full Name", value: "Amine Client" },
+  { fieldLabel: "Phone Number", value: "0555000000" },
+  { fieldLabel: "Snapchat Username", value: "amine123" },
+  { fieldLabel: "Snapchat Email", value: "amine@example.com" },
+];
+
+export const mockKeySubmitted: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
+  status: ClientActivationStatus.SUBMITTED,
+  activationId: "9c1e0000-0000-4000-8000-000000000004",
+  submittedFields: SUBMITTED_FIELDS,
+});
+
+export const mockKeyProcessing: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
+  status: ClientActivationStatus.PROCESSING,
+  activationId: "9c1e0000-0000-4000-8000-000000000005",
+  submittedFields: SUBMITTED_FIELDS,
+});
+
+export const mockKeyUnderReview: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
+  status: ClientActivationStatus.UNDER_REVIEW,
+  activationId: "9c1e0000-0000-4000-8000-000000000006",
+});
+
+export const mockKeyActivated: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
+  status: ClientActivationStatus.ACTIVATED,
+  accountUsername: "amine123",
+});
+
+export const mockKeyFailed: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
+  status: ClientActivationStatus.FAILED,
+});
+
 export const mockClientActivationStatus: ClientActivationStatusDTO =
   ClientActivationStatusResponseSchema.parse({
     activationId: "9c1e0000-0000-4000-8000-000000000003",

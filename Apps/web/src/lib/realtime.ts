@@ -1,9 +1,11 @@
 import { io, type Socket } from "socket.io-client";
+import { toast } from "sonner";
 import { UserRole, type ServerToClientEvents } from "@my-app/contract";
 import * as tokenStore from "./token-store";
 import { refreshTokens } from "./axios";
 import { queryClient } from "./query-client";
 import { qk } from "./query-keys";
+import { translate, getLanguage } from "./i18n";
 
 // Namespace names and the client→server interface are NOT in @my-app/contract yet —
 // ClientToServerEvents there is `Record<string, never>` ("none in Stage 1"), while the
@@ -100,6 +102,23 @@ function attachAuthErrorHandling(socket: AppSocket): void {
 // no manual cache mutation). REST stays the single source of truth.
 
 function attachActivatorNamespaceListeners(socket: AppSocket): void {
+  // Shell reconnect UX (spec SV-PAGE-002-005 §Authenticated shell): a real drop shows the
+  // "Connection lost. Reconnecting…" toast; a manual disconnect (logout → disconnectRoleSocket)
+  // must not, since that's an intentional, expected teardown, not a failure. A stable toast id
+  // means a flaky connection replaces the same toast instead of stacking duplicates.
+  socket.on("disconnect", (reason) => {
+    if (reason === "io client disconnect") return;
+    toast.warning(translate("activator.shell.connectionLost", getLanguage()), {
+      id: "activator-realtime-reconnecting",
+    });
+  });
+  // Re-fetch on (re)connect — covers events missed while offline (spec: "re-fetch active +
+  // pending on reconnect"); harmless no-op extra fetch on the very first login connect too.
+  socket.on("connect", () => {
+    queryClient.invalidateQueries({ queryKey: qk.activations.active() });
+    queryClient.invalidateQueries({ queryKey: qk.activations.pending() });
+  });
+
   socket.on("activation:created", () => {
     queryClient.invalidateQueries({ queryKey: qk.activations.pending() });
   });
@@ -127,6 +146,23 @@ function attachAdminNamespaceListeners(socket: AppSocket): void {
 }
 
 function attachClientNamespaceListeners(socket: AppSocket): void {
+  // Shell reconnect UX (client-portal plan.md §D5): unlike the role sockets, this one is
+  // never intentionally disconnected (there's no sign-out equivalent for a public page), so
+  // every drop is a real one worth surfacing. A stable toast id means a flaky connection
+  // replaces the same toast instead of stacking duplicates.
+  socket.on("disconnect", () => {
+    toast.warning(translate("public.landing.shell.connectionLost", getLanguage()), {
+      id: "client-realtime-reconnecting",
+    });
+  });
+  // Re-sync on (re)connect — covers events missed while offline/backgrounded; harmless
+  // no-op extra fetch on the very first connect too. Payload data is never trusted directly
+  // (sockets are a freshness signal, never a data source) — only the id is used to invalidate.
+  socket.on("connect", () => {
+    if (currentSubscription) {
+      queryClient.invalidateQueries({ queryKey: qk.keys.status(currentSubscription) });
+    }
+  });
   socket.on("activation:status-changed", (payload) => {
     queryClient.invalidateQueries({ queryKey: qk.keys.status(payload.activationId) });
   });

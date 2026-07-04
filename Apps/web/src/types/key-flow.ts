@@ -6,10 +6,3 @@ import type { KeyVerificationDTO } from "@my-app/contract";
 export interface KeyLookupResult extends KeyVerificationDTO {
   key: string;
 }
-
-export type KeyFlowView =
-  | { name: "IDLE" }
-  | { name: "FORM"; key: KeyLookupResult }
-  | { name: "OTP"; key: KeyLookupResult }
-  | { name: "COMPLETED"; key: KeyLookupResult }
-  | { name: "MESSAGE"; tone: "success" | "error"; titleKey: string; bodyKey: string };

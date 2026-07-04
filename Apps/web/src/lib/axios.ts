@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
   AUTH_ROUTES,
+  KEY_ROUTES,
   type ApiResponse,
   type AuthTokensDTO,
   type RefreshTokenCommand,
@@ -40,6 +41,15 @@ const TOKEN_ENDPOINTS = new Set(
     apiPath(AUTH_ROUTES.BASE, segment),
   ),
 );
+
+// The client-activation portal (SV-PAGE-001) is entirely public — no token is ever attached
+// to a `/keys/*` request, so a 401 there is a business-logic response (an expired/invalid
+// activation reference), never an expired-session signal. `UPDATE`/`ADDITIONAL`/`STATUS` are
+// parameterized (`/:activationId/...`), so this is a prefix check, not the TOKEN_ENDPOINTS
+// exact-match Set — every `/keys/*` request already shares that one base regardless of which
+// segment or resolved id follows (client-portal plan.md §B3/E-4).
+const PUBLIC_PATH_PREFIX = apiPath(KEY_ROUTES.BASE);
+const isPublicEndpoint = (url: string): boolean => url.startsWith(PUBLIC_PATH_PREFIX);
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
@@ -88,8 +98,10 @@ api.interceptors.response.use(
     const config = error.config as RetriableConfig | undefined;
     const requestUrl = config?.url ?? "";
 
-    // 2. 401 on a token endpoint: never refresh, never redirect.
-    if (TOKEN_ENDPOINTS.has(requestUrl)) {
+    // 2. 401 on a token endpoint or a public client-portal endpoint: never refresh, never
+    // redirect — same handling, two different reasons (token-endpoint recursion safety vs.
+    // this request never carrying a token to begin with).
+    if (TOKEN_ENDPOINTS.has(requestUrl) || isPublicEndpoint(requestUrl)) {
       return Promise.reject(error);
     }
 

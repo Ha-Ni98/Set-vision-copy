@@ -123,3 +123,24 @@
   to { opacity: 0; transform: translateY(-12px); }
 }
 .animate-fade-out { animation: fade-out-up 0.35s ease-out forwards; }
+
+/* New-request row highlight (activator-portal Sprint 4/5) — a one-shot fade, not a repeating
+   pulse, so it reads as "something arrived" without the looping motion prefers-reduced-motion
+   guards against. */
+@keyframes row-glow {
+  0% { background-color: transparent; }
+  12% { background-color: oklch(var(--primary-light)); }
+  100% { background-color: transparent; }
+}
+.animate-row-glow { animation: row-glow 3s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* No translate/opacity motion — the card just holds in place until its own unmount timer. */
+  .animate-fade-out { animation: none; }
+  /* Color-only (no transform), so this stays as a plain static tint rather than dropping the
+     highlight entirely — the JS-driven timeout still clears the class after its own delay. */
+  .animate-row-glow { animation: none; background-color: oklch(var(--primary-light)); }
+  /* Client-portal Activated check (client-portal plan.md §S5): no scale-bounce — the circle
+     just appears at its final size/opacity instead of animating in. */
+  .animate-pop-in { animation: none; }
+}
