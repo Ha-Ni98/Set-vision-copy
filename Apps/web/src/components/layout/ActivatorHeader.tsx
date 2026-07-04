@@ -6,23 +6,41 @@ import { LanguageToggle } from "@/components/shared/LanguageToggle";
 import { ActivatorSidebarNav } from "@/components/layout/ActivatorSidebar";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Bell, Menu, LogOut, ChevronsUpDown } from "lucide-react";
+import { Bell, Menu, LogOut, ChevronsUpDown, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 export function ActivatorHeader() {
   const { t } = useTranslation();
   const { displayName, logout } = useAuth();
+  const { muted, toggleMute } = useNotificationSound();
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleLogout = () => { logout(); nav("/login"); };
+  const handleLogout = () => {
+    logout();
+    nav("/login");
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/90 px-4 backdrop-blur-md">
@@ -60,6 +78,14 @@ export function ActivatorHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMute}
+          aria-label={t(muted ? "activator.shell.soundOff" : "activator.shell.soundOn")}
+        >
+          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </Button>
         <LanguageToggle />
         <ThemeToggle />
 
@@ -67,7 +93,11 @@ export function ActivatorHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="ml-1 gap-2 px-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {displayName?.split(" ").map((s) => s[0]).join("").slice(0, 2)}
+                {displayName
+                  ?.split(" ")
+                  .map((s) => s[0])
+                  .join("")
+                  .slice(0, 2)}
               </div>
               <span className="hidden text-sm font-medium sm:inline">{displayName}</span>
               <ChevronsUpDown className="hidden h-3 w-3 text-muted-foreground sm:inline" />
@@ -78,18 +108,25 @@ export function ActivatorHeader() {
             <DropdownMenuSeparator />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="text-destructive focus:text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" /> {t("activator.shell.signOut")}
                 </DropdownMenuItem>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("activator.shell.signOutTitle")}</AlertDialogTitle>
-                  <AlertDialogDescription>{t("activator.shell.signOutBody")}</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    {t("activator.shell.signOutBody")}
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleLogout}>{t("activator.shell.signOut")}</AlertDialogAction>
+                  <AlertDialogAction onClick={handleLogout}>
+                    {t("activator.shell.signOut")}
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

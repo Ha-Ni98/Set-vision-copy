@@ -18,24 +18,52 @@ import { ACTIVE_SLOTS_CAP } from "@/config/constants";
 
 export default function RequestsPage() {
   const { t } = useTranslation();
-  const { data: activeData, isLoading: isLoadingActive, isError: isErrorActive } = useActiveRequests();
-  const { data: pendingData, isLoading: isLoadingPending, isError: isErrorPending } = usePendingActivations();
+  const {
+    data: activeData,
+    isLoading: isLoadingActive,
+    isError: isErrorActive,
+    refetch: refetchActive,
+  } = useActiveRequests();
+  const {
+    data: pendingData,
+    isLoading: isLoadingPending,
+    isError: isErrorPending,
+    refetch: refetchPending,
+  } = usePendingActivations();
   const takeActivation = useTakeActivation();
 
   const active = activeData ?? [];
   const pool = pendingData ?? [];
   const slotsUsed = active.length;
 
-  const columns: ColumnDef<PendingActivationDTO, any>[] = [
-    { id: "subscription", header: t("activator.requests.table.subscription"), cell: ({ row }) => <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span> },
-    { id: "key", header: t("activator.requests.table.key"), cell: ({ row }) => <span className="font-mono text-xs">{row.original.keyMasked}</span> },
-    { id: "waiting", header: t("activator.requests.table.waiting"), cell: ({ row }) => <LiveTimer since={row.original.requestedAt} mode="wait" /> },
+  const columns: ColumnDef<PendingActivationDTO>[] = [
+    {
+      id: "subscription",
+      header: t("activator.requests.table.subscription"),
+      cell: ({ row }) => (
+        <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span>
+      ),
+    },
+    {
+      id: "key",
+      header: t("activator.requests.table.key"),
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.keyMasked}</span>,
+    },
+    {
+      id: "waiting",
+      header: t("activator.requests.table.waiting"),
+      cell: ({ row }) => <LiveTimer since={row.original.requestedAt} mode="wait" />,
+    },
     {
       id: "action",
       header: t("common.actions.action"),
       cell: ({ row }) => (
         <div className="text-right">
-          <Button size="sm" onClick={() => takeActivation.mutate(row.original.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending}>
+          <Button
+            size="sm"
+            onClick={() => takeActivation.mutate(row.original.id)}
+            disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending}
+          >
             <Zap className="mr-1 h-3.5 w-3.5" /> {t("common.actions.activate")}
           </Button>
         </div>
@@ -45,30 +73,55 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("activator.requests.title")} subtitle={t("activator.requests.subtitle")} />
+      <PageHeader
+        title={t("activator.requests.title")}
+        subtitle={t("activator.requests.subtitle")}
+      />
 
       <section>
         <div className="mb-4 flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
           <div>
-            <div className="text-sm text-muted-foreground">{t("activator.requests.activeSlots")}</div>
-            <div className="text-xl font-extrabold text-foreground">{t("activator.requests.slotsUsed", { used: slotsUsed, cap: ACTIVE_SLOTS_CAP })}</div>
+            <div className="text-sm text-muted-foreground">
+              {t("activator.requests.activeSlots")}
+            </div>
+            <div className="text-xl font-extrabold text-foreground">
+              {t("activator.requests.slotsUsed", { used: slotsUsed, cap: ACTIVE_SLOTS_CAP })}
+            </div>
           </div>
           <div className="flex gap-2">
             {Array.from({ length: ACTIVE_SLOTS_CAP }, (_, i) => (
-              <div key={i} className={`h-3 w-3 rounded-full ${i < slotsUsed ? "bg-primary" : "bg-muted"}`} />
+              <div
+                key={i}
+                className={`h-3 w-3 rounded-full ${i < slotsUsed ? "bg-primary" : "bg-muted"}`}
+              />
             ))}
           </div>
         </div>
 
+        {slotsUsed >= ACTIVE_SLOTS_CAP && (
+          <div className="mb-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning-foreground">
+            {t("activator.requests.slotsFullNotice")}
+          </div>
+        )}
+
         {isErrorActive ? (
-          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+          <NotFoundState
+            icon={<AlertTriangle className="h-8 w-8" />}
+            title={t("common.errors.crashTitle")}
+            body={t("common.errors.crashBody")}
+            action={<Button onClick={() => refetchActive()}>{t("common.actions.tryAgain")}</Button>}
+          />
         ) : isLoadingActive ? (
           <div className="grid gap-4 lg:grid-cols-2">
             <RequestCardSkeleton />
             <RequestCardSkeleton />
           </div>
         ) : active.length === 0 ? (
-          <EmptyState icon={<Zap className="h-8 w-8" />} title={t("activator.requests.emptyActive.title")} body={t("activator.requests.emptyActive.body")} />
+          <EmptyState
+            icon={<Zap className="h-8 w-8" />}
+            title={t("activator.requests.emptyActive.title")}
+            body={t("activator.requests.emptyActive.body")}
+          />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {active.map((req) => (
@@ -80,14 +133,25 @@ export default function RequestsPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">{t("activator.requests.pendingTitle")}</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("activator.requests.pendingTitle")}
+          </h2>
           {pool.length > 0 && (
-            <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-semibold text-primary">{t("activator.requests.waitingCount", { count: pool.length })}</span>
+            <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-semibold text-primary">
+              {t("activator.requests.waitingCount", { count: pool.length })}
+            </span>
           )}
         </div>
 
         {isErrorPending ? (
-          <NotFoundState icon={<AlertTriangle className="h-8 w-8" />} title={t("common.errors.crashTitle")} body={t("common.errors.crashBody")} />
+          <NotFoundState
+            icon={<AlertTriangle className="h-8 w-8" />}
+            title={t("common.errors.crashTitle")}
+            body={t("common.errors.crashBody")}
+            action={
+              <Button onClick={() => refetchPending()}>{t("common.actions.tryAgain")}</Button>
+            }
+          />
         ) : isLoadingPending ? (
           <TableSkeleton rows={4} columns={4} />
         ) : (
@@ -101,8 +165,16 @@ export default function RequestsPage() {
                   <div className="font-semibold text-foreground">{p.subscriptionLabel}</div>
                   <LiveTimer since={p.requestedAt} mode="wait" />
                 </div>
-                <div className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><KeyRound className="h-3 w-3" /> {p.keyMasked}</div>
-                <Button onClick={() => takeActivation.mutate(p.id)} disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending} className="w-full"><Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}</Button>
+                <div className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+                  <KeyRound className="h-3 w-3" /> {p.keyMasked}
+                </div>
+                <Button
+                  onClick={() => takeActivation.mutate(p.id)}
+                  disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending}
+                  className="w-full"
+                >
+                  <Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}
+                </Button>
               </div>
             )}
             emptyState={
@@ -113,7 +185,11 @@ export default function RequestsPage() {
                 decoration={
                   <div className="mt-4 flex justify-center gap-1.5" aria-hidden>
                     {[0, 1, 2].map((i) => (
-                      <span key={i} className="h-2 w-2 animate-pulse rounded-full bg-primary/50" style={{ animationDelay: `${i * 200}ms` }} />
+                      <span
+                        key={i}
+                        className="h-2 w-2 animate-pulse rounded-full bg-primary/50"
+                        style={{ animationDelay: `${i * 200}ms` }}
+                      />
                     ))}
                   </div>
                 }

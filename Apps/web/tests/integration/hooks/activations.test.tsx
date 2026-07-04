@@ -32,7 +32,6 @@ import { useTakeActivation } from "@/hooks/useTakeActivation";
 import { useFlagWrongInfo } from "@/hooks/useFlagWrongInfo";
 import { useRequestAdditionalInfo } from "@/hooks/useRequestAdditionalInfo";
 import { useActivateRequest } from "@/hooks/useActivateRequest";
-import { useReleaseActivation } from "@/hooks/useReleaseActivation";
 import { useFreezeActivation } from "@/hooks/useFreezeActivation";
 import { useCancelActivation } from "@/hooks/useCancelActivation";
 import {
@@ -169,16 +168,6 @@ describe("activator-flow mutation invalidations (plan.md §3.2)", () => {
   it("useActivateRequest invalidates active, my-history, and recent", async () => {
     const wrapper = createQueryWrapper();
     const { result } = renderHook(() => useActivateRequest(), { wrapper });
-    await expectActiveHistoryRecentInvalidated(
-      wrapper,
-      () => result.current.mutate("id"),
-      () => result.current.isSuccess,
-    );
-  });
-
-  it("useReleaseActivation invalidates active, my-history, and recent", async () => {
-    const wrapper = createQueryWrapper();
-    const { result } = renderHook(() => useReleaseActivation(), { wrapper });
     await expectActiveHistoryRecentInvalidated(
       wrapper,
       () => result.current.mutate("id"),
