@@ -2,7 +2,7 @@
 sprint: 1
 title: Foundation — Schema, i18n, RTL-ready infra & public 401-exempt
 status: ✅ Done
-commit: TBD
+commit: 8afc049
 ---
 
 # Sprint 1 Report — Foundation
