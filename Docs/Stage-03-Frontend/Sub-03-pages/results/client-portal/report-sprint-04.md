@@ -2,7 +2,7 @@
 sprint: 4
 title: Assembly & Wiring — Step 3 + Realtime + Sections
 status: ✅ Done
-commit: TBD
+commit: 7db9b2d
 ---
 
 # Sprint 4 Report — Step 3 + Realtime + Sections
