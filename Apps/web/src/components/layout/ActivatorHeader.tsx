@@ -49,7 +49,12 @@ export function ActivatorHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-background/90 px-4 backdrop-blur-md">
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 lg:hidden"
+            aria-label={t("activator.shell.openMenu")}
+          >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
@@ -68,7 +73,12 @@ export function ActivatorHeader() {
       <div className="ml-auto flex items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label={t("activator.shell.notifications")}
+            >
               <Bell className="h-5 w-5" />
               {reconnecting && (
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-warning" />

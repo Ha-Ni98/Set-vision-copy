@@ -20,7 +20,7 @@ export function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground sm:h-7 sm:w-7"
       aria-label={t("common.actions.copy")}
     >
       {done ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}

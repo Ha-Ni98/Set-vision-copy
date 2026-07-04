@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AccountInformation, ActivationStat, type ActiveRequestDTO } from "@my-app/contract";
@@ -53,13 +53,16 @@ import { freezeRequestSchema, type FreezeRequestFormValues } from "./freeze-requ
 
 interface Props {
   req: ActiveRequestDTO;
+  /** True while RequestsPage's useExitingActiveList holds this card past its own removal from
+   *  `active`, just long enough for the exit animation to play (Activate/Cancel). */
+  exiting?: boolean;
 }
 
 // Every action button is gated off req.state directly (not a one-way local flag) — a card
 // that mounts already FREEZE (e.g. a page refresh mid-freeze) must show disabled actions
 // immediately, not just after a freeze happens within this session. This same `isFrozen`
 // value is the "gating prop" the sprint plan's risk note flags for Sprint 4 to build on.
-export function ActiveRequestCard({ req }: Props) {
+export function ActiveRequestCard({ req, exiting = false }: Props) {
   const { t } = useTranslation();
   const [distributorOpen, setDistributorOpen] = useState(false);
 
@@ -84,7 +87,10 @@ export function ActiveRequestCard({ req }: Props) {
     defaultValues: { fields: [] },
   });
   const selectedFields = watchWrong("fields");
-  const wrongInfoFields = correctableFields(req.subscriptionLabel);
+  const wrongInfoFields = useMemo(
+    () => correctableFields(req.subscriptionLabel),
+    [req.subscriptionLabel],
+  );
   const toggleField = (f: AccountInformation) => {
     const next = selectedFields.includes(f)
       ? selectedFields.filter((x) => x !== f)
@@ -143,7 +149,10 @@ export function ActiveRequestCard({ req }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-all">
+    <div
+      className={`rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-all ${exiting ? "pointer-events-none animate-fade-out" : ""}`}
+      aria-hidden={exiting || undefined}
+    >
       <div className="flex items-start justify-between gap-3">
         <StatusBadge status={req.state} />
         <LiveTimer since={req.takenAt} />
@@ -250,7 +259,9 @@ export function ActiveRequestCard({ req }: Props) {
                   </label>
                 ))}
                 {wrongErrors.fields && (
-                  <p className="text-xs text-destructive">{wrongErrors.fields.message}</p>
+                  <p role="alert" className="text-xs text-destructive">
+                    {wrongErrors.fields.message}
+                  </p>
                 )}
               </div>
               <DialogFooter>
@@ -328,10 +339,14 @@ export function ActiveRequestCard({ req }: Props) {
               <Textarea
                 rows={4}
                 placeholder={t("activator.requests.card.adminPlaceholder")}
+                aria-invalid={!!freezeErrors.reason}
+                aria-describedby={freezeErrors.reason ? "freeze-reason-error" : undefined}
                 {...registerFreeze("reason")}
               />
               {freezeErrors.reason && (
-                <p className="mt-1 text-xs text-destructive">{freezeErrors.reason.message}</p>
+                <p id="freeze-reason-error" role="alert" className="mt-1 text-xs text-destructive">
+                  {freezeErrors.reason.message}
+                </p>
               )}
               <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setFreezeOpen(false)}>

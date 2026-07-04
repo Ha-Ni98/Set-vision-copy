@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { PendingActivationDTO } from "@my-app/contract";
+import type { ActiveRequestDTO, PendingActivationDTO } from "@my-app/contract";
 import { ActiveRequestCard } from "@/components/sections/activator/ActiveRequestCard";
 import { LiveTimer } from "@/components/shared/LiveTimer";
 import { DataTable } from "@/components/shared/DataTable";
@@ -18,7 +18,48 @@ import { useTakeActivation } from "@/hooks/useTakeActivation";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { ACTIVE_SLOTS_CAP } from "@/config/constants";
 
-const NEW_ROW_HIGHLIGHT_MS = 4000;
+// Matches index.css's .animate-row-glow duration (3s) so the class is dropped right as the
+// one-shot fade finishes, not a beat after.
+const NEW_ROW_HIGHLIGHT_MS = 3000;
+// Slightly longer than index.css's fade-out-up duration (0.35s) so the CSS animation always
+// finishes before the card actually unmounts.
+const CARD_EXIT_MS = 400;
+
+// A card leaving `active` (Activate/Cancel succeeded) still renders — with the exit class —
+// for CARD_EXIT_MS after the query no longer contains it, so `.animate-fade-out` gets a chance
+// to play instead of the card just vanishing the instant the list re-renders (plan.md Sprint 4
+// risk: "coordinate so a removed card animates out cleanly"). No animation library added — the
+// plan's own audit states "no new libraries" — this is plain state tracking.
+function useExitingActiveList(active: ActiveRequestDTO[]) {
+  const [displayed, setDisplayed] = useState<ActiveRequestDTO[]>(active);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setDisplayed((prevDisplayed) => {
+      const currentIds = new Set(active.map((r) => r.id));
+      const stillThere = prevDisplayed.filter((r) => currentIds.has(r.id));
+      const removed = prevDisplayed.filter((r) => !currentIds.has(r.id));
+      const arrived = active.filter((r) => !prevDisplayed.some((p) => p.id === r.id));
+
+      if (removed.length > 0) {
+        setExitingIds((prev) => new Set([...prev, ...removed.map((r) => r.id)]));
+        removed.forEach((r) => {
+          setTimeout(() => {
+            setDisplayed((cur) => cur.filter((c) => c.id !== r.id));
+            setExitingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(r.id);
+              return next;
+            });
+          }, CARD_EXIT_MS);
+        });
+      }
+      return [...stillThere, ...removed, ...arrived];
+    });
+  }, [active]);
+
+  return { displayed, isExiting: (id: string) => exitingIds.has(id) };
+}
 
 export default function RequestsPage() {
   const { t } = useTranslation();
@@ -40,6 +81,7 @@ export default function RequestsPage() {
   const active = activeData ?? [];
   const pool = pendingData ?? [];
   const slotsUsed = active.length;
+  const { displayed: displayedActive, isExiting } = useExitingActiveList(active);
 
   // New-request chime/glow (spec line 260): diffed against the *previous* pending id set, not
   // fired on the very first load or on refetch churn where the set is unchanged (plan.md
@@ -149,7 +191,7 @@ export default function RequestsPage() {
             <RequestCardSkeleton />
             <RequestCardSkeleton />
           </div>
-        ) : active.length === 0 ? (
+        ) : displayedActive.length === 0 ? (
           <EmptyState
             icon={<Zap className="h-8 w-8" />}
             title={t("activator.requests.emptyActive.title")}
@@ -157,8 +199,8 @@ export default function RequestsPage() {
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
-            {active.map((req) => (
-              <ActiveRequestCard key={req.id} req={req} />
+            {displayedActive.map((req) => (
+              <ActiveRequestCard key={req.id} req={req} exiting={isExiting(req.id)} />
             ))}
           </div>
         )}
@@ -192,11 +234,7 @@ export default function RequestsPage() {
             columns={columns}
             data={pool}
             getRowKey={(p) => p.id}
-            getRowClassName={(p) =>
-              newRowIds.has(p.id)
-                ? "bg-primary-light transition-colors duration-[3000ms]"
-                : "transition-colors duration-[1000ms]"
-            }
+            getRowClassName={(p) => (newRowIds.has(p.id) ? "animate-row-glow" : undefined)}
             renderMobileRow={(p) => (
               <div className="space-y-3 p-4">
                 <div className="flex items-center justify-between">
@@ -209,7 +247,7 @@ export default function RequestsPage() {
                 <Button
                   onClick={() => takeActivation.mutate(p.id)}
                   disabled={slotsUsed >= ACTIVE_SLOTS_CAP || takeActivation.isPending}
-                  className="w-full"
+                  className="h-11 w-full"
                 >
                   <Zap className="mr-1 h-4 w-4" /> {t("common.actions.activate")}
                 </Button>

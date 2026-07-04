@@ -67,6 +67,8 @@
   "auth.login.lockout": { "en": "Too many failed attempts. Try again in 5 minutes.", "fr": "Trop de tentatives échouées. Réessayez dans 5 minutes.", "ar": "" },
   "auth.login.network": { "en": "Network error. Please check your connection and try again.", "fr": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.", "ar": "" },
   "auth.login.password": { "en": "Password", "fr": "Mot de passe", "ar": "" },
+  "auth.login.showPassword": { "en": "Show password", "fr": "Afficher le mot de passe", "ar": "" },
+  "auth.login.hidePassword": { "en": "Hide password", "fr": "Masquer le mot de passe", "ar": "" },
   "auth.login.submit": { "en": "Log In", "fr": "Se connecter", "ar": "" },
   "auth.login.submitting": { "en": "Signing in...", "fr": "Connexion en cours...", "ar": "" },
   "auth.login.subtitle": { "en": "Activator Login", "fr": "Connexion Activateur", "ar": "" },
@@ -139,6 +141,7 @@
 
   "activator.shell.notifications": { "en": "Notifications", "fr": "Notifications", "ar": "" },
   "activator.shell.reconnecting": { "en": "Reconnecting…", "fr": "Reconnexion en cours…", "ar": "" },
+  "activator.shell.openMenu": { "en": "Open menu", "fr": "Ouvrir le menu", "ar": "" },
   "activator.shell.noNotifications": { "en": "No notifications yet", "fr": "Aucune notification pour le moment", "ar": "" },
   "activator.shell.signOut": { "en": "Sign Out", "fr": "Se déconnecter", "ar": "" },
   "activator.shell.signOutTitle": { "en": "Sign out?", "fr": "Se déconnecter ?", "ar": "" },

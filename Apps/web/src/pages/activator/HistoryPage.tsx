@@ -117,87 +117,95 @@ export default function HistoryPage() {
     }
   }, [historyData, sort]);
 
-  const recentColumns: ColumnDef<RecentActivationDTO>[] = [
-    {
-      id: "subscription",
-      header: t("activator.history.recentTable.subscription"),
-      cell: ({ row }) => (
-        <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span>
-      ),
-    },
-    {
-      id: "key",
-      header: t("activator.history.recentTable.key"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.keyMasked}</span>,
-    },
-    {
-      id: "completed",
-      header: t("activator.history.recentTable.completed"),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {format(parseISO(row.original.completedAt), "MMM d, HH:mm")}
-        </span>
-      ),
-    },
-    {
-      id: "status",
-      header: t("activator.history.recentTable.status"),
-      cell: ({ row }) => <StatusBadge status={row.original.state} />,
-    },
-  ];
+  const recentColumns: ColumnDef<RecentActivationDTO>[] = useMemo(
+    () => [
+      {
+        id: "subscription",
+        header: t("activator.history.recentTable.subscription"),
+        cell: ({ row }) => (
+          <span className="font-medium text-foreground">{row.original.subscriptionLabel}</span>
+        ),
+      },
+      {
+        id: "key",
+        header: t("activator.history.recentTable.key"),
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.keyMasked}</span>,
+      },
+      {
+        id: "completed",
+        header: t("activator.history.recentTable.completed"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {format(parseISO(row.original.completedAt), "MMM d, HH:mm")}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: t("activator.history.recentTable.status"),
+        cell: ({ row }) => <StatusBadge status={row.original.state} />,
+      },
+    ],
+    [t],
+  );
 
-  const historyColumns: ColumnDef<ActivatorHistoryItemDTO>[] = [
-    {
-      id: "subscription",
-      header: t("activator.history.myTable.subscription"),
-      cell: ({ row }) => <span className="text-foreground">{row.original.subscriptionLabel}</span>,
-    },
-    {
-      id: "client",
-      header: t("activator.history.myTable.client"),
-      cell: ({ row }) => <span className="font-medium">{row.original.client.fullName}</span>,
-    },
-    {
-      id: "phone",
-      header: t("activator.history.myTable.phone"),
-      cell: ({ row }) => (
-        <a
-          href={`tel:${row.original.client.phone}`}
-          className="text-muted-foreground hover:text-primary hover:underline"
-        >
-          {row.original.client.phone}
-        </a>
-      ),
-    },
-    {
-      id: "key",
-      header: t("activator.history.myTable.key"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
-    },
-    {
-      id: "status",
-      header: t("activator.history.myTable.status"),
-      cell: ({ row }) => <StatusBadge status={row.original.state} />,
-    },
-    {
-      id: "time",
-      header: t("activator.history.myTable.time"),
-      cell: ({ row }) => (
-        <span className="font-mono">
-          {row.original.durationSeconds ? formatTime(row.original.durationSeconds) : "—"}
-        </span>
-      ),
-    },
-    {
-      id: "earning",
-      header: t("activator.history.myTable.earning"),
-      cell: ({ row }) => (
-        <span className="font-semibold">
-          {row.original.earning ? formatDZD(row.original.earning, language) : "—"}
-        </span>
-      ),
-    },
-  ];
+  const historyColumns: ColumnDef<ActivatorHistoryItemDTO>[] = useMemo(
+    () => [
+      {
+        id: "subscription",
+        header: t("activator.history.myTable.subscription"),
+        cell: ({ row }) => (
+          <span className="text-foreground">{row.original.subscriptionLabel}</span>
+        ),
+      },
+      {
+        id: "client",
+        header: t("activator.history.myTable.client"),
+        cell: ({ row }) => <span className="font-medium">{row.original.client.fullName}</span>,
+      },
+      {
+        id: "phone",
+        header: t("activator.history.myTable.phone"),
+        cell: ({ row }) => (
+          <a
+            href={`tel:${row.original.client.phone}`}
+            className="text-muted-foreground hover:text-primary hover:underline"
+          >
+            {row.original.client.phone}
+          </a>
+        ),
+      },
+      {
+        id: "key",
+        header: t("activator.history.myTable.key"),
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
+      },
+      {
+        id: "status",
+        header: t("activator.history.myTable.status"),
+        cell: ({ row }) => <StatusBadge status={row.original.state} />,
+      },
+      {
+        id: "time",
+        header: t("activator.history.myTable.time"),
+        cell: ({ row }) => (
+          <span className="font-mono">
+            {row.original.durationSeconds ? formatTime(row.original.durationSeconds) : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "earning",
+        header: t("activator.history.myTable.earning"),
+        cell: ({ row }) => (
+          <span className="font-semibold">
+            {row.original.earning ? formatDZD(row.original.earning, language) : "—"}
+          </span>
+        ),
+      },
+    ],
+    [t, language],
+  );
 
   return (
     <div className="space-y-8">
@@ -296,7 +304,7 @@ export default function HistoryPage() {
               <SelectItem value="SLOW">{t("activator.history.sortSlowest")}</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Input
               type="date"
               aria-label={t("activator.history.dateFrom")}
@@ -305,9 +313,11 @@ export default function HistoryPage() {
                 setDateFrom(e.target.value);
                 setPage(1);
               }}
-              className="w-40"
+              className="w-0 min-w-0 flex-1 sm:w-40 sm:flex-none"
             />
-            <span className="text-sm text-muted-foreground">{t("activator.history.dateTo")}</span>
+            <span className="shrink-0 text-sm text-muted-foreground">
+              {t("activator.history.dateTo")}
+            </span>
             <Input
               type="date"
               aria-label={t("activator.history.dateTo")}
@@ -316,7 +326,7 @@ export default function HistoryPage() {
                 setDateTo(e.target.value);
                 setPage(1);
               }}
-              className="w-40"
+              className="w-0 min-w-0 flex-1 sm:w-40 sm:flex-none"
             />
           </div>
         </div>

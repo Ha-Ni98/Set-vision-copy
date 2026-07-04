@@ -75,7 +75,10 @@ export default function LoginPage() {
           </div>
 
           {err && (
-            <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+            >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{err}</span>
             </div>
@@ -84,9 +87,17 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(submit)} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="username">{t("auth.login.username")}</Label>
-              <Input id="username" autoComplete="username" {...register("username")} />
+              <Input
+                id="username"
+                autoComplete="username"
+                aria-invalid={!!errors.username}
+                aria-describedby={errors.username ? "username-error" : undefined}
+                {...register("username")}
+              />
               {errors.username && (
-                <p className="text-xs text-destructive">{errors.username.message}</p>
+                <p id="username-error" role="alert" className="text-xs text-destructive">
+                  {errors.username.message}
+                </p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -97,6 +108,8 @@ export default function LoginPage() {
                   type={showP ? "text" : "password"}
                   autoComplete="current-password"
                   className="pr-10"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "password-error" : undefined}
                   {...register("password")}
                 />
                 <button
@@ -104,12 +117,15 @@ export default function LoginPage() {
                   onClick={() => setShowP((v) => !v)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
+                  aria-label={t(showP ? "auth.login.hidePassword" : "auth.login.showPassword")}
                 >
                   {showP ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-destructive">{errors.password.message}</p>
+                <p id="password-error" role="alert" className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
             <Button type="submit" disabled={isLoggingIn} className="h-11 w-full text-base">
