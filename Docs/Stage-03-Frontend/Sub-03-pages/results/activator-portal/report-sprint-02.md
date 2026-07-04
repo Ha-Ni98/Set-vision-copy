@@ -2,7 +2,7 @@
 sprint: 2
 title: Primitives & States — shell + all four pages
 status: ✅ Done
-commit: TBD
+commit: a9198d0
 ---
 
 # Sprint 2 Report — Primitives & States
