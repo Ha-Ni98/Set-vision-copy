@@ -2,7 +2,7 @@
 sprint: 3
 title: Assembly & Wiring — Login + Dashboard + History
 status: ✅ Done
-commit: TBD
+commit: 81a7521
 ---
 
 # Sprint 3 Report — Assembly & Wiring (Login + Dashboard + History)
