@@ -1,5 +1,6 @@
 import { AlertCircle, MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SOCIAL_LINKS } from "@/config/social-links";
 
 // Split out of the old single CompletedStep (client-portal plan.md D4) — Activated and
 // Failed are visually and semantically distinct completion-style cards, not one component
@@ -16,7 +17,9 @@ export function FailedStep() {
         <p className="mt-3 text-muted-foreground">{t("public.landing.failed.body")}</p>
       </div>
       <a
-        href="#"
+        href={SOCIAL_LINKS.whatsapp}
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex items-center gap-2 rounded-full bg-primary-light px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
       >
         <MessageCircle className="h-4 w-4" /> {t("common.actions.contactWhatsapp")}

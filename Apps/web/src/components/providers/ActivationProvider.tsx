@@ -32,17 +32,29 @@ interface ActivationContextValue {
    * layered on top by the button itself once Sprint 4 wires it in, not this context's job.
    */
   reset: () => void;
+  /**
+   * Bumped on every `reset()` call, including a no-op (`activation` already `null` — e.g.
+   * the header logo or "Check Another Key" clicked while still on Step 1 with unsubmitted
+   * input typed but never verified). `activation` alone can't signal that case since a
+   * null→null update never re-renders; pages that need to clear their own local Step-1 ui
+   * state (LandingPage's key input/inline errors) key an effect off this instead.
+   */
+  resetToken: number;
 }
 
 const Ctx = createContext<ActivationContextValue | null>(null);
 
 export function ActivationProvider({ children }: { children: ReactNode }) {
   const [activation, setActivation] = useState<ActivationData | null>(null);
+  const [resetToken, setResetToken] = useState(0);
+
+  const reset = () => {
+    setActivation(null);
+    setResetToken((n) => n + 1);
+  };
 
   return (
-    <Ctx.Provider value={{ activation, setActivation, reset: () => setActivation(null) }}>
-      {children}
-    </Ctx.Provider>
+    <Ctx.Provider value={{ activation, setActivation, reset, resetToken }}>{children}</Ctx.Provider>
   );
 }
 

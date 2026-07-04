@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { AccountInformation } from "@my-app/contract";
+import { AccountInformation, type ClientActivationStatusDTO } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { AlertCircle } from "lucide-react";
@@ -17,10 +17,10 @@ const MAX_ATTEMPTS = 5;
 
 interface Props {
   activationId: string | undefined;
-  onComplete: () => void;
+  onSuccess: (result: ClientActivationStatusDTO) => void;
 }
 
-export function OtpStep({ activationId, onComplete }: Props) {
+export function OtpStep({ activationId, onSuccess }: Props) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [countdown, setCountdown] = useState(RESEND_COOLDOWN_SECONDS);
@@ -42,7 +42,7 @@ export function OtpStep({ activationId, onComplete }: Props) {
     submitAdditionalInfo.mutate(
       { activationId, command: { accountFields: [{ field: AccountInformation.OTP, value }] } },
       {
-        onSuccess: onComplete,
+        onSuccess,
         onError: (err) => {
           // A network/5xx failure preserves the entered code and doesn't count as a wrong
           // attempt — only a resolved (wrong-code) response from the server does.

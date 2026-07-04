@@ -1,61 +1,136 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { ClientActivationStatus } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StepIndicator } from "@/components/sections/landing/StepIndicator";
-import { AccountForm } from "@/components/sections/landing/AccountForm";
-import { OtpStep } from "@/components/sections/landing/OtpStep";
 import { CompletedStep } from "@/components/sections/landing/CompletedStep";
+import { FailedStep } from "@/components/sections/landing/FailedStep";
+import { UnderReviewStep } from "@/components/sections/landing/UnderReviewStep";
+import { CheckAnotherKeyButton } from "@/components/sections/landing/CheckAnotherKeyButton";
 import { StatsRow } from "@/components/sections/landing/StatsRow";
 import { WhoWeAre } from "@/components/sections/landing/WhoWeAre";
+import { getPlanForm } from "@/components/sections/landing/plan-forms";
 import { useVerifyKey } from "@/hooks/useVerifyKey";
-import type { KeyFlowView } from "@/types/key-flow";
-import { AlertCircle, CheckCircle2, KeyRound, RotateCcw, Loader2 } from "lucide-react";
+import { useActivation } from "@/components/providers/ActivationProvider";
+import { AlertCircle, KeyRound, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { cn } from "@/lib/utils";
 
-const PENDING_LIKE = new Set<ClientActivationStatus>([
-  ClientActivationStatus.READY,
-  ClientActivationStatus.SUBMITTED,
-  ClientActivationStatus.PROCESSING,
-  ClientActivationStatus.UNDER_REVIEW,
-  ClientActivationStatus.NEEDS_CORRECTION,
-]);
+// Matches the Step 1 input's own placeholder shape (spec: "XXXX-XXXX-XXXX-XXXX") — the
+// contract has no fixed key-generation format to validate against, so this is only a soft
+// client-side shape check; the backend's verify response (INVALID) is the real authority.
+const KEY_FORMAT_PATTERN = /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/;
+
+type StepView = "keyEntry" | "form" | "otp" | "review" | "activated" | "failed";
+
+const STEP_FOR_VIEW: Record<StepView, 1 | 2 | 3> = {
+  keyEntry: 1,
+  form: 2,
+  otp: 3,
+  review: 3,
+  activated: 3,
+  failed: 3,
+};
+
+// Total over ClientActivationStatus's 9 members (client-portal plan.md §D2) — this exact
+// mapping is what Sprint 4's realtime re-dispatch reuses, so it must stay a pure function of
+// `status` alone. PROCESSING stays routed to "form": AccountForm's own read-only D-variant
+// (Sprint 2) already covers it, matching plan.md §D3's combined "Processing/Under-review"
+// label — the same reading Sprint 2 already used to route UNDER_REVIEW to Step 3 instead.
+// The OTP API also resolves back to PROCESSING (spec §Step 3A), so a correct OTP submission
+// revisits this same Step-2 view rather than advancing to Step 3 — an accepted quirk given
+// the spec's own "Step 2/Step 3" hedge for this status, not a bug.
+function viewForStatus(status: ClientActivationStatus): StepView {
+  switch (status) {
+    case ClientActivationStatus.INVALID:
+      return "keyEntry";
+    case ClientActivationStatus.READY:
+    case ClientActivationStatus.SUBMITTED:
+    case ClientActivationStatus.PROCESSING:
+    case ClientActivationStatus.NEEDS_CORRECTION:
+      return "form";
+    case ClientActivationStatus.NEEDS_OTP:
+      return "otp";
+    case ClientActivationStatus.UNDER_REVIEW:
+      return "review";
+    case ClientActivationStatus.ACTIVATED:
+      return "activated";
+    case ClientActivationStatus.FAILED:
+      return "failed";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
 
 export default function LandingPage() {
   const { t } = useTranslation();
-  const [view, setView] = useState<KeyFlowView>({ name: "IDLE" });
+  const { activation, setActivation, resetToken } = useActivation();
   const [input, setInput] = useState("");
+  const [clientErrorKey, setClientErrorKey] = useState<string | null>(null);
+  const [serverErrorKey, setServerErrorKey] = useState<string | null>(null);
   const verifyKey = useVerifyKey();
 
-  const currentStep: 1 | 2 | 3 =
-    view.name === "IDLE" || view.name === "MESSAGE" ? 1 :
-    view.name === "FORM" ? 2 : 3;
+  const view = useMemo(
+    () => (activation ? viewForStatus(activation.status) : "keyEntry"),
+    [activation],
+  );
+  const currentStep = STEP_FOR_VIEW[view];
+  const isInvalid = activation?.status === ClientActivationStatus.INVALID;
+  const { FormComponent, AdditionalInfoComponent } = useMemo(
+    () => getPlanForm(activation?.planKey),
+    [activation?.planKey],
+  );
+
+  // Mirrors "Check Another Key" and the header logo's reset (both live outside this
+  // component, calling ActivationContext's own reset) onto this page's local Step-1 ui
+  // state — keyed on `resetToken`, not `activation`, since a reset clicked while still on
+  // Step 1 (typed input, never successfully verified) is a null→null update that would
+  // never re-run an effect keyed on `activation` itself. Plain state sync, not a fetch —
+  // same pattern as LanguageProvider's `dir` effect.
+  useEffect(() => {
+    setInput("");
+    setClientErrorKey(null);
+    setServerErrorKey(null);
+  }, [resetToken]);
 
   const verify = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    setServerErrorKey(null);
+    if (!trimmed) {
+      setClientErrorKey("public.landing.verify.emptyKey");
+      return;
+    }
+    if (!KEY_FORMAT_PATTERN.test(trimmed)) {
+      setClientErrorKey("public.landing.verify.badFormat");
+      return;
+    }
+    setClientErrorKey(null);
     verifyKey.mutate(
-      { key: input },
+      { key: trimmed },
       {
-        onSuccess: (data) => {
-          const key = { ...data, key: input };
-          if (PENDING_LIKE.has(key.status)) {
-            setView({ name: "FORM", key });
-          } else if (key.status === ClientActivationStatus.NEEDS_OTP) {
-            setView({ name: "OTP", key });
-          } else if (key.status === ClientActivationStatus.ACTIVATED) {
-            setView({ name: "COMPLETED", key });
-          } else if (key.status === ClientActivationStatus.FAILED) {
-            setView({ name: "MESSAGE", tone: "error", titleKey: "public.landing.message.failedTitle", bodyKey: "public.landing.message.failedBody" });
-          } else {
-            setView({ name: "MESSAGE", tone: "error", titleKey: "public.landing.message.invalidTitle", bodyKey: "public.landing.message.invalidBody" });
-          }
+        onSuccess: (data) => setActivation({ ...data, key: trimmed }),
+        onError: (err) => {
+          setServerErrorKey(
+            axios.isAxiosError(err) && !err.response
+              ? "public.landing.verify.networkError"
+              : "public.landing.serverError",
+          );
         },
       },
     );
   };
 
-  const reset = () => { setInput(""); setView({ name: "IDLE" }); };
+  const inputErrorMessage = clientErrorKey
+    ? t(clientErrorKey)
+    : serverErrorKey
+      ? t(serverErrorKey)
+      : isInvalid
+        ? t("public.landing.message.invalidBody")
+        : null;
 
   return (
     <>
@@ -65,7 +140,7 @@ export default function LandingPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
-          {view.name === "IDLE" && (
+          {view === "keyEntry" && (
             <form onSubmit={verify} className="space-y-5 text-center">
               <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
                 <KeyRound className="h-7 w-7" />
@@ -77,50 +152,74 @@ export default function LandingPage() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value.toUpperCase())}
-                placeholder="SV-XXXX-XXXX-XXXX"
-                className="h-14 text-center text-lg tracking-widest font-mono"
+                placeholder={t("public.landing.verify.placeholder")}
+                className={cn(
+                  "h-14 text-center text-lg tracking-widest font-mono",
+                  inputErrorMessage && "border-destructive focus-visible:ring-destructive",
+                )}
+                aria-invalid={!!inputErrorMessage}
                 autoFocus
               />
-              <Button type="submit" disabled={verifyKey.isPending || !input.trim()} className="h-12 w-full text-base sm:w-auto sm:min-w-[220px]">
-                {verifyKey.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("public.landing.verify.verifying")}</> : t("public.landing.verify.submit")}
+              {inputErrorMessage && (
+                <p
+                  role="alert"
+                  className="flex items-center justify-center gap-1.5 text-sm text-destructive"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0" /> {inputErrorMessage}
+                </p>
+              )}
+              <Button
+                type="submit"
+                disabled={verifyKey.isPending}
+                className="h-12 w-full text-base sm:w-auto sm:min-w-[220px]"
+              >
+                {verifyKey.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    {t("public.landing.verify.verifying")}
+                  </>
+                ) : (
+                  t("public.landing.verify.submit")
+                )}
               </Button>
             </form>
           )}
 
-          {view.name === "MESSAGE" && (
-            <div className="space-y-4 text-center">
-              <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${view.tone === "success" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                {view.tone === "success" ? <CheckCircle2 className="h-9 w-9" /> : <AlertCircle className="h-9 w-9" />}
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">{t(view.titleKey)}</h2>
-              <p className="text-muted-foreground">{t(view.bodyKey)}</p>
-            </div>
-          )}
-
-          {view.name === "FORM" && (
-            <AccountForm
-              key={view.key.key}
-              keyData={view.key}
-              onSubmitted={() => { /* form transitions itself to pending state internally */ }}
+          {view === "form" && activation && (
+            <FormComponent
+              key={activation.key}
+              keyData={activation}
+              onSubmitted={(result) =>
+                setActivation({
+                  ...activation,
+                  status: result.status,
+                  activationId: result.activationId,
+                })
+              }
             />
           )}
 
-          {view.name === "OTP" && (
-            <OtpStep activationId={view.key.activationId} onComplete={() => setView({ name: "COMPLETED", key: view.key })} />
+          {view === "otp" && activation && (
+            <AdditionalInfoComponent
+              activationId={activation.activationId}
+              onSuccess={(result) =>
+                setActivation({
+                  ...activation,
+                  status: result.status,
+                  activationId: result.activationId,
+                })
+              }
+            />
           )}
 
-          {view.name === "COMPLETED" && (
-            <CompletedStep username={view.key.accountUsername} />
-          )}
+          {view === "review" && <UnderReviewStep />}
+          {view === "activated" && <CompletedStep username={activation?.accountUsername} />}
+          {view === "failed" && <FailedStep />}
         </div>
 
-        {view.name !== "IDLE" && (
-          <div className="mt-6 text-center">
-            <Button variant="outline" onClick={reset}>
-              <RotateCcw className="mr-2 h-4 w-4" /> {t("public.landing.verify.checkAnother")}
-            </Button>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <CheckAnotherKeyButton />
+        </div>
       </section>
 
       <WhoWeAre />

@@ -86,6 +86,7 @@
 
   "public.landing.verify.title": { "en": "Enter Your Activation Key", "fr": "Saisissez votre clé d'activation", "ar": "" },
   "public.landing.verify.subtitle": { "en": "Scratch your card and enter the key below", "fr": "Grattez votre carte et saisissez la clé ci-dessous", "ar": "" },
+  "public.landing.verify.placeholder": { "en": "XXXX-XXXX-XXXX-XXXX", "fr": "XXXX-XXXX-XXXX-XXXX", "ar": "" },
   "public.landing.verify.submit": { "en": "Verify Key", "fr": "Vérifier la clé", "ar": "" },
   "public.landing.verify.verifying": { "en": "Verifying...", "fr": "Vérification en cours...", "ar": "" },
   "public.landing.verify.checkAnother": { "en": "Check Another Key", "fr": "Vérifier une autre clé", "ar": "" },
@@ -95,9 +96,6 @@
 
   "public.landing.serverError": { "en": "Something went wrong on our end. Please try again later or contact support.", "fr": "Une erreur est survenue de notre côté. Veuillez réessayer plus tard ou contacter le support.", "ar": "" },
 
-  "public.landing.message.failedTitle": { "en": "Key deactivated", "fr": "Clé désactivée", "ar": "" },
-  "public.landing.message.failedBody": { "en": "This key has been deactivated. Contact support.", "fr": "Cette clé a été désactivée. Contactez le support.", "ar": "" },
-  "public.landing.message.invalidTitle": { "en": "Key not found", "fr": "Clé introuvable", "ar": "" },
   "public.landing.message.invalidBody": { "en": "This key does not exist. Please verify the key printed on your card and try again.", "fr": "Cette clé n'existe pas. Veuillez vérifier la clé imprimée sur votre carte et réessayer.", "ar": "" },
 
   "public.landing.form.personalInfo": { "en": "Personal Information", "fr": "Informations personnelles", "ar": "" },

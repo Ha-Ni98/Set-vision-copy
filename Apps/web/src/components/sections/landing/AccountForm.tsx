@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AccountInformation, ClientActivationStatus } from "@my-app/contract";
+import {
+  AccountInformation,
+  ClientActivationStatus,
+  type ClientActivationStatusDTO,
+} from "@my-app/contract";
 import type { KeyLookupResult } from "@/types/key-flow";
+import { SOCIAL_LINKS } from "@/config/social-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,16 +53,27 @@ const READONLY_STATUSES = new Set<ClientActivationStatus>([
   ClientActivationStatus.PROCESSING,
 ]);
 
+// The backend never returns a real submitted password (verify's contract explicitly omits
+// it) — this is always a display placeholder, never a value that should be silently
+// resubmitted as-is if the user re-opens the form without touching this field.
+const MASKED_PASSWORD = "••••••••";
+
 interface Props {
   keyData: KeyLookupResult;
-  onSubmitted: () => void;
+  onSubmitted: (result: ClientActivationStatusDTO) => void;
 }
 
 export function AccountForm({ keyData, onSubmitted }: Props) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState(keyData.status);
+  const status = keyData.status;
   const isReadonlyStatus = READONLY_STATUSES.has(status);
   const isCorrection = status === ClientActivationStatus.NEEDS_CORRECTION;
+  // Only a Ready key has never had an activation created yet (spec §Step 2 API: submit
+  // creates PENDING; every other status's write goes through the update endpoint instead).
+  const isFreshSubmit = status === ClientActivationStatus.READY;
+  // Only Submitted (the pre-pickup 15-min window) can be manually re-opened for editing —
+  // Processing's read-only variant has no action at all (spec D3: "no edit").
+  const canEdit = status === ClientActivationStatus.SUBMITTED;
 
   const [editing, setEditing] = useState(!isReadonlyStatus);
   const [showPwd, setShowPwd] = useState(false);
@@ -77,6 +93,7 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<AccountFormValues>({
     resolver: zodResolver(schema),
@@ -87,32 +104,34 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
       username: findSubmitted("username"),
       email: findSubmitted("email"),
       snapchatPhone: findSubmitted("snapchatPhone"),
-      password: isReadonlyStatus ? "••••••••" : "",
-      confirmPassword: isReadonlyStatus ? "••••••••" : "",
+      password: isReadonlyStatus ? MASKED_PASSWORD : "",
+      confirmPassword: isReadonlyStatus ? MASKED_PASSWORD : "",
     },
   });
 
   const readonly = !editing;
 
   const onSubmit = (values: AccountFormValues) => {
-    const onMutationSuccess = () => {
-      setStatus(ClientActivationStatus.PROCESSING);
+    const handleSuccess = (result: ClientActivationStatusDTO) => {
+      // Mask the password back out immediately — it's never retained after a write, so a
+      // disabled read-only field must never echo plaintext, and a later "Update Information"
+      // re-open must never have a stale real value sitting there ready to be resubmitted.
+      setValue("password", MASKED_PASSWORD);
       setEditing(false);
-      onSubmitted();
+      onSubmitted(result);
     };
 
-    if (isCorrection) {
-      // NEEDS_CORRECTION always carries an activationId (there's an existing activation
-      // to correct) — the contract doesn't encode that invariant in the type, so this
-      // trusts it the way rules ask internal code to trust framework/contract guarantees.
+    if (isFreshSubmit) {
+      submitActivation.mutate(toSubmitCommand(keyData.key, values), { onSuccess: handleSuccess });
+    } else {
+      // NEEDS_CORRECTION and a Submitted re-edit both always carry an activationId (there's
+      // an existing activation to update) — the contract doesn't encode that invariant in
+      // the type, so this trusts it the way rules ask internal code to trust framework/
+      // contract guarantees.
       updateActivation.mutate(
         { activationId: keyData.activationId!, command: toUpdateCommand(values) },
-        { onSuccess: onMutationSuccess },
+        { onSuccess: handleSuccess },
       );
-    } else {
-      submitActivation.mutate(toSubmitCommand(keyData.key, values), {
-        onSuccess: onMutationSuccess,
-      });
     }
   };
 
@@ -266,7 +285,9 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             </p>
             {status === ClientActivationStatus.SUBMITTED && (
               <a
-                href="#"
+                href={SOCIAL_LINKS.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
                 <MessageCircle className="h-4 w-4" /> {t("common.actions.contactWhatsapp")}
@@ -278,9 +299,20 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         {isReadonlyStatus && !editing ? (
-          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
-            {t("public.landing.form.updateInfo")}
-          </Button>
+          canEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                // Never leave the mask sitting there ready to be silently resubmitted as the
+                // literal password — force a deliberate re-entry.
+                setValue("password", "");
+                setEditing(true);
+              }}
+            >
+              {t("public.landing.form.updateInfo")}
+            </Button>
+          )
         ) : (
           <>
             {editing && status === ClientActivationStatus.READY && (
