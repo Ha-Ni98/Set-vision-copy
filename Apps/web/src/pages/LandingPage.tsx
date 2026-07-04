@@ -12,6 +12,7 @@ import { StatsRow } from "@/components/sections/landing/StatsRow";
 import { WhoWeAre } from "@/components/sections/landing/WhoWeAre";
 import { getPlanForm } from "@/components/sections/landing/plan-forms";
 import { useVerifyKey } from "@/hooks/useVerifyKey";
+import { useActivationStatus } from "@/hooks/useActivationStatus";
 import { useActivation } from "@/components/providers/ActivationProvider";
 import { AlertCircle, KeyRound, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -32,6 +33,13 @@ const STEP_FOR_VIEW: Record<StepView, 1 | 2 | 3> = {
   activated: 3,
   failed: 3,
 };
+
+// No further status changes are ever expected once here — the status query stays disabled
+// rather than polling/re-subscribing an activation that's already reached its end state.
+const TERMINAL_STATUSES = new Set<ClientActivationStatus>([
+  ClientActivationStatus.ACTIVATED,
+  ClientActivationStatus.FAILED,
+]);
 
 // Total over ClientActivationStatus's 9 members (client-portal plan.md §D2) — this exact
 // mapping is what Sprint 4's realtime re-dispatch reuses, so it must stay a pure function of
@@ -83,6 +91,44 @@ export default function LandingPage() {
     () => getPlanForm(activation?.planKey),
     [activation?.planKey],
   );
+
+  // The realtime backbone (client-portal plan.md §D5): the `/client` socket only invalidates
+  // this query (lib/realtime.ts's attachClientNamespaceListeners) — it never carries data
+  // itself — so this is the one place a status change actually gets (re-)fetched, whether
+  // that invalidation came from a live event, the window-focus refetch, or the polling
+  // fallback (all configured on the hook itself). Disabled once a terminal status is reached.
+  const activationId = activation?.activationId;
+  const statusQuery = useActivationStatus(
+    activationId,
+    !!activationId && !TERMINAL_STATUSES.has(activation!.status),
+  );
+
+  // Folds a fresh status back into the single source of truth — reused by the realtime sync
+  // below and by Step 2/3's own mutation successes, so all three paths update context the
+  // same way. Note: `useActivationStatus` only ever returns `{activationId, status}` (the
+  // contract's `ClientActivationStatusDTO` — a real gap documented in this sprint's report),
+  // so a realtime-driven transition into Needs-correction/Activated updates the status
+  // correctly but can't refresh flaggedFields/accountUsername — those stay whatever the last
+  // verify/mutation response had.
+  const applyStatus = (result: { status: ClientActivationStatus; activationId?: string }) => {
+    if (!activation) return;
+    setActivation({ ...activation, status: result.status, activationId: result.activationId });
+  };
+
+  // Plain state sync, not a fetch — the fetch already happened inside useActivationStatus's
+  // own useQuery; this only folds its result into context once it actually changes. Mirrors
+  // LanguageProvider's `dir` effect syncing external state into local state.
+  useEffect(() => {
+    if (
+      activation &&
+      statusQuery.data &&
+      statusQuery.data.activationId === activation.activationId &&
+      statusQuery.data.status !== activation.status
+    ) {
+      applyStatus(statusQuery.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusQuery.data]);
 
   // Mirrors "Check Another Key" and the header logo's reset (both live outside this
   // component, calling ActivationContext's own reset) onto this page's local Step-1 ui
@@ -186,29 +232,13 @@ export default function LandingPage() {
           )}
 
           {view === "form" && activation && (
-            <FormComponent
-              key={activation.key}
-              keyData={activation}
-              onSubmitted={(result) =>
-                setActivation({
-                  ...activation,
-                  status: result.status,
-                  activationId: result.activationId,
-                })
-              }
-            />
+            <FormComponent key={activation.key} keyData={activation} onSubmitted={applyStatus} />
           )}
 
           {view === "otp" && activation && (
             <AdditionalInfoComponent
               activationId={activation.activationId}
-              onSuccess={(result) =>
-                setActivation({
-                  ...activation,
-                  status: result.status,
-                  activationId: result.activationId,
-                })
-              }
+              onSuccess={applyStatus}
             />
           )}
 

@@ -79,6 +79,7 @@
   "auth.login.username": { "en": "Username", "fr": "Nom d'utilisateur", "ar": "" },
 
   "public.landing.shell.openMenu": { "en": "Open menu", "fr": "Ouvrir le menu", "ar": "" },
+  "public.landing.shell.connectionLost": { "en": "Connection lost. Reconnecting…", "fr": "Connexion perdue. Reconnexion…", "ar": "" },
 
   "public.landing.steps.enterKey": { "en": "Enter Key", "fr": "Saisir la clé", "ar": "" },
   "public.landing.steps.accountInfo": { "en": "Account Info", "fr": "Informations du compte", "ar": "" },

@@ -22,6 +22,10 @@ vi.mock("@/hooks/useTranslation", () => ({
 vi.mock("@/lib/realtime", () => ({
   subscribeActivation: vi.fn(),
   unsubscribeActivation: vi.fn(),
+  // useActivationStatus (Sprint 4) reads this to decide its polling fallback — reporting
+  // "connected" keeps these hook-behavior tests from also having to account for interval
+  // timers, which aren't this file's concern (that's tests/unit/lib/realtime.test.ts).
+  getRealtimeStatus: vi.fn(() => "connected"),
 }));
 
 import { useVerifyKey } from "@/hooks/useVerifyKey";
