@@ -15,8 +15,20 @@ const interpolate = (template: string, vars?: Record<string, string | number>): 
 
 // Non-reactive — for non-component code only (e.g. toasts fired from lib/query-client.ts).
 // Components must use the useTranslation hook so they re-render on language toggle.
-export function translate(key: string, lang: Language, vars?: Record<string, string | number>): string {
+export function translate(
+  key: string,
+  lang: Language,
+  vars?: Record<string, string | number>,
+): string {
   const entry = values[key];
   if (!entry) return key;
   return interpolate(entry[lang], vars);
+}
+
+// Reads the persisted language directly rather than via context — the non-reactive
+// `translate()` escape hatch's companion, for the same non-component call sites
+// (lib/query-client.ts, lib/realtime.ts).
+export function getLanguage(): Language {
+  const saved = typeof window !== "undefined" ? localStorage.getItem("sv_lang") : null;
+  return saved === "fr" ? "fr" : "en";
 }

@@ -138,6 +138,7 @@
   "activator.nav.history": { "en": "Activation History", "fr": "Historique des activations", "ar": "" },
 
   "activator.shell.notifications": { "en": "Notifications", "fr": "Notifications", "ar": "" },
+  "activator.shell.reconnecting": { "en": "Reconnecting…", "fr": "Reconnexion en cours…", "ar": "" },
   "activator.shell.noNotifications": { "en": "No notifications yet", "fr": "Aucune notification pour le moment", "ar": "" },
   "activator.shell.signOut": { "en": "Sign Out", "fr": "Se déconnecter", "ar": "" },
   "activator.shell.signOutTitle": { "en": "Sign out?", "fr": "Se déconnecter ?", "ar": "" },
@@ -178,6 +179,7 @@
   "activator.requests.table.key": { "en": "Key", "fr": "Clé", "ar": "" },
   "activator.requests.table.waiting": { "en": "Waiting", "fr": "Attente", "ar": "" },
   "activator.requests.takenToast": { "en": "Request taken!", "fr": "Demande prise en charge !", "ar": "" },
+  "activator.requests.takeRaceToast": { "en": "This request was taken by another activator.", "fr": "Cette demande a été prise par un autre activateur.", "ar": "" },
   "activator.requests.emptyPending.title": { "en": "No pending requests right now.", "fr": "Aucune demande en attente pour le moment.", "ar": "" },
   "activator.requests.emptyPending.body": { "en": "We'll notify you when one comes in!", "fr": "Nous vous notifierons dès qu'une demande arrive !", "ar": "" },
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { PendingActivationDTO } from "@my-app/contract";
 import { ActiveRequestCard } from "@/components/sections/activator/ActiveRequestCard";
@@ -14,7 +15,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useActiveRequests } from "@/hooks/useActiveRequests";
 import { usePendingActivations } from "@/hooks/usePendingActivations";
 import { useTakeActivation } from "@/hooks/useTakeActivation";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { ACTIVE_SLOTS_CAP } from "@/config/constants";
+
+const NEW_ROW_HIGHLIGHT_MS = 4000;
 
 export default function RequestsPage() {
   const { t } = useTranslation();
@@ -31,10 +35,39 @@ export default function RequestsPage() {
     refetch: refetchPending,
   } = usePendingActivations();
   const takeActivation = useTakeActivation();
+  const { playChime } = useNotificationSound();
 
   const active = activeData ?? [];
   const pool = pendingData ?? [];
   const slotsUsed = active.length;
+
+  // New-request chime/glow (spec line 260): diffed against the *previous* pending id set, not
+  // fired on the very first load or on refetch churn where the set is unchanged (plan.md
+  // Sprint 4 risk). The actual "purple glow" animation polish + reduced-motion handling is
+  // Sprint 5's job (plan.md splits this explicitly) — this sprint owns the detection + a
+  // functional highlight + the chime, gated by useNotificationSound's own mute check.
+  const prevPendingIdsRef = useRef<Set<string> | null>(null);
+  const [newRowIds, setNewRowIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!pendingData) return;
+    const currentIds = new Set(pendingData.map((p) => p.id));
+    const prevIds = prevPendingIdsRef.current;
+    if (prevIds) {
+      const arrived = [...currentIds].filter((id) => !prevIds.has(id));
+      if (arrived.length > 0) {
+        playChime();
+        setNewRowIds(new Set(arrived));
+      }
+    }
+    prevPendingIdsRef.current = currentIds;
+  }, [pendingData, playChime]);
+
+  useEffect(() => {
+    if (newRowIds.size === 0) return;
+    const timer = setTimeout(() => setNewRowIds(new Set()), NEW_ROW_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [newRowIds]);
 
   const columns: ColumnDef<PendingActivationDTO>[] = [
     {
@@ -159,6 +192,11 @@ export default function RequestsPage() {
             columns={columns}
             data={pool}
             getRowKey={(p) => p.id}
+            getRowClassName={(p) =>
+              newRowIds.has(p.id)
+                ? "bg-primary-light transition-colors duration-[3000ms]"
+                : "transition-colors duration-[1000ms]"
+            }
             renderMobileRow={(p) => (
               <div className="space-y-3 p-4">
                 <div className="flex items-center justify-between">

@@ -47,7 +47,7 @@ import { useRequestAdditionalInfo } from "@/hooks/useRequestAdditionalInfo";
 import { useActivateRequest } from "@/hooks/useActivateRequest";
 import { useCancelActivation } from "@/hooks/useCancelActivation";
 import { useFreezeActivation } from "@/hooks/useFreezeActivation";
-import { correctableFields } from "./plan-fields";
+import { correctableFields, requestableFields } from "./plan-fields";
 import { flagWrongInfoSchema, type FlagWrongInfoFormValues } from "./flag-wrong-info.schema";
 import { freezeRequestSchema, type FreezeRequestFormValues } from "./freeze-request.schema";
 
@@ -123,10 +123,14 @@ export function ActiveRequestCard({ req }: Props) {
     );
   };
 
-  // Request OTP is hardcoded to the one field (Snapchat+'s only additional-info field) — a
-  // future plan with more than one requestable field would need a picker here instead.
+  // Driven by the plan-fields registry, same as the Wrong-Info checkbox set — today that's
+  // always just [OTP] (Snapchat+'s only additional-info field). A future plan with more than
+  // one requestable field would need a picker here instead of this single button.
   const onOtp = () => {
-    requestAdditionalInfo.mutate({ id: req.id, command: { fields: [AccountInformation.OTP] } });
+    requestAdditionalInfo.mutate({
+      id: req.id,
+      command: { fields: requestableFields(req.subscriptionLabel) },
+    });
   };
   // Activate has no confirm step and no extra fields (spec: "-> state ACTIVATED, card leaves
   // the queue (exit anim)") — the earlier email-collecting dialog here was a leftover from a

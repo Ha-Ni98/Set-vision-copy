@@ -29,11 +29,14 @@ import { Bell, Menu, LogOut, ChevronsUpDown, Volume2, VolumeX } from "lucide-rea
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 
 export function ActivatorHeader() {
   const { t } = useTranslation();
   const { displayName, logout } = useAuth();
   const { muted, toggleMute } = useNotificationSound();
+  const realtimeStatus = useRealtimeStatus();
+  const reconnecting = realtimeStatus === "connecting";
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -65,15 +68,20 @@ export function ActivatorHeader() {
       <div className="ml-auto flex items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
+              {reconnecting && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-warning" />
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
             <DropdownMenuLabel>{t("activator.shell.notifications")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-              {t("activator.shell.noNotifications")}
+              {reconnecting
+                ? t("activator.shell.reconnecting")
+                : t("activator.shell.noNotifications")}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
