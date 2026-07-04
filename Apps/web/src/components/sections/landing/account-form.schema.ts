@@ -14,10 +14,9 @@ const FULL_NAME_PATTERN = /^[\p{L}\s-]+$/u;
 // not shared — e.g. pages/admin/activators/components/create-activator.schema.ts).
 const ALGERIAN_PHONE_PATTERN = /^(?:\+213|0)(5|6|7)\d{8}$/;
 
-// `phoneNumber` keeps its current name here — Sprint 2/3 renames it to `snapchatPhone`
-// (matching the plan's own field naming) at the same time AccountForm.tsx itself gets
-// rewritten into its 5 status variants; renaming it now with no consumer changes yet would
-// be a no-op field-name churn with no behavioral difference this sprint.
+// Renamed from `phoneNumber` to `snapchatPhone` in Sprint 2 (matching the plan's own field
+// naming), at the same time AccountForm.tsx itself got rewritten to consume these helpers —
+// deferred from Sprint 1 specifically to land both changes together, not as a no-op rename.
 export function createAccountFormSchema(t: ReturnType<typeof useTranslation>["t"]) {
   const required = t("common.validation.required");
   return z
@@ -33,7 +32,7 @@ export function createAccountFormSchema(t: ReturnType<typeof useTranslation>["t"
       // Optional, but if set it's validated as a real phone number (spec: "defaults to the
       // personal phone; if set, valid format") — an empty string skips the regex entirely
       // rather than failing on required-but-blank.
-      phoneNumber: z
+      snapchatPhone: z
         .string()
         .optional()
         .refine((v) => !v || ALGERIAN_PHONE_PATTERN.test(v), {
@@ -52,16 +51,15 @@ export type AccountFormValues = z.infer<ReturnType<typeof createAccountFormSchem
 
 // Snapchat's collected fields → `Activation information` rows (contract's per-field
 // storage) — the one mapping every write (submit/update) needs, so it's built once here
-// rather than duplicated at each call site. `phoneNumber` (optional) defaults to the
+// rather than duplicated at each call site. `snapchatPhone` (optional) defaults to the
 // Group-A `phone` when left blank — the account's phone_number field is never omitted, per
-// spec ("defaults to the personal phone"), unlike the current AccountForm.tsx inline mapping
-// which drops the field entirely when blank (fixed here; AccountForm.tsx switches to this
-// helper when Sprint 3 rewires its submit handler).
+// spec ("defaults to the personal phone"), unlike the old AccountForm.tsx inline mapping
+// which dropped the field entirely when blank.
 export function toAccountFields(values: AccountFormValues): AccountField[] {
   return [
     { field: AccountInformation.USERNAME, value: values.username },
     { field: AccountInformation.EMAIL, value: values.email },
-    { field: AccountInformation.PHONE_NUMBER, value: values.phoneNumber || values.phone },
+    { field: AccountInformation.PHONE_NUMBER, value: values.snapchatPhone || values.phone },
     { field: AccountInformation.PASSWORD, value: values.password },
   ];
 }

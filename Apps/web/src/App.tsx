@@ -10,6 +10,7 @@ import { NotFoundState } from "@/components/shared/NotFoundState";
 import { RouteErrorBoundary } from "@/components/shared/RouteErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { ActivationProvider } from "@/components/providers/ActivationProvider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { setRedirect } from "@/lib/axios";
 
@@ -65,13 +66,25 @@ function CatchAllRoute() {
   return isAuthenticated ? (
     <ActivatorLayout>{content}</ActivatorLayout>
   ) : (
-    <PublicLayout>{content}</PublicLayout>
+    // PublicHeader reads useActivation() for its logo's reset-on-click — this standalone
+    // (non-nested-route) PublicLayout usage needs the same provider the router's own
+    // PublicLayout route gets, or that hook throws.
+    <ActivationProvider>
+      <PublicLayout>{content}</PublicLayout>
+    </ActivationProvider>
   );
 }
 
 const router = createBrowserRouter([
   {
-    element: <PublicLayout />,
+    // Wraps the shell so PublicHeader's logo can reset the in-progress activation flow
+    // (client-portal plan.md §D1) on click, not just navigate — LandingPage itself doesn't
+    // consume this context's data yet (that's Sprint 3's job).
+    element: (
+      <ActivationProvider>
+        <PublicLayout />
+      </ActivationProvider>
+    ),
     children: [
       { index: true, element: withSuspense(LandingPage), errorElement: <RouteErrorBoundary /> },
     ],
