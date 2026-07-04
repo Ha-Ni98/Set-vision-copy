@@ -140,4 +140,7 @@
   /* Color-only (no transform), so this stays as a plain static tint rather than dropping the
      highlight entirely — the JS-driven timeout still clears the class after its own delay. */
   .animate-row-glow { animation: none; background-color: oklch(var(--primary-light)); }
+  /* Client-portal Activated check (client-portal plan.md §S5): no scale-bounce — the circle
+     just appears at its final size/opacity instead of animating in. */
+  .animate-pop-in { animation: none; }
 }

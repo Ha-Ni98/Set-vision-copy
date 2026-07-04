@@ -23,7 +23,7 @@ export function PublicHeader() {
             href={SOCIAL_LINKS.instagram}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="rounded-md p-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             aria-label={t("common.social.instagram")}
           >
             <Instagram className="h-5 w-5" />
@@ -32,7 +32,7 @@ export function PublicHeader() {
             href={SOCIAL_LINKS.whatsapp}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="rounded-md p-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             aria-label={t("common.social.whatsapp")}
           >
             <MessageCircle className="h-5 w-5" />
@@ -57,7 +57,12 @@ export function PublicHeader() {
           <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={t("public.landing.shell.openMenu")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11"
+                aria-label={t("public.landing.shell.openMenu")}
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

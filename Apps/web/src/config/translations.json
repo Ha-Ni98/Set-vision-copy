@@ -84,6 +84,10 @@
   "public.landing.steps.enterKey": { "en": "Enter Key", "fr": "Saisir la clé", "ar": "" },
   "public.landing.steps.accountInfo": { "en": "Account Info", "fr": "Informations du compte", "ar": "" },
   "public.landing.steps.activation": { "en": "Activation", "fr": "Activation", "ar": "" },
+  "public.landing.steps.ariaLabel": { "en": "Activation progress", "fr": "Progression de l'activation", "ar": "" },
+  "public.landing.steps.stateCompleted": { "en": "Completed", "fr": "Terminé", "ar": "" },
+  "public.landing.steps.stateCurrent": { "en": "Current step", "fr": "Étape actuelle", "ar": "" },
+  "public.landing.steps.stateUpcoming": { "en": "Upcoming", "fr": "À venir", "ar": "" },
 
   "public.landing.verify.title": { "en": "Enter Your Activation Key", "fr": "Saisissez votre clé d'activation", "ar": "" },
   "public.landing.verify.subtitle": { "en": "Scratch your card and enter the key below", "fr": "Grattez votre carte et saisissez la clé ci-dessous", "ar": "" },
@@ -123,6 +127,7 @@
   "public.landing.form.clearFieldsConfirmBody": { "en": "This will erase everything you've entered in this form.", "fr": "Cela effacera tout ce que vous avez saisi dans ce formulaire.", "ar": "" },
   "public.landing.form.submitNetworkError": { "en": "Unable to submit your information. Please try again.", "fr": "Impossible d'envoyer vos informations. Veuillez réessayer.", "ar": "" },
 
+  "public.landing.otp.inputLabel": { "en": "Verification code", "fr": "Code de vérification", "ar": "" },
   "public.landing.otp.title": { "en": "OTP Verification Required", "fr": "Vérification OTP requise", "ar": "" },
   "public.landing.otp.body": { "en": "A verification code was sent to your device. Enter it below.", "fr": "Un code de vérification a été envoyé sur votre appareil. Saisissez-le ci-dessous.", "ar": "" },
   "public.landing.otp.submit": { "en": "Submit OTP", "fr": "Envoyer le code", "ar": "" },

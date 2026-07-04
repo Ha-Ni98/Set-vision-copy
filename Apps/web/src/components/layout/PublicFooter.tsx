@@ -18,7 +18,7 @@ export function PublicFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("common.social.facebook")}
-            className="rounded-full bg-primary-light p-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="rounded-full bg-primary-light p-3.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <Facebook className="h-4 w-4" />
           </a>
@@ -27,7 +27,7 @@ export function PublicFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("common.social.instagram")}
-            className="rounded-full bg-primary-light p-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="rounded-full bg-primary-light p-3.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <Instagram className="h-4 w-4" />
           </a>
@@ -36,7 +36,7 @@ export function PublicFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("common.social.whatsapp")}
-            className="rounded-full bg-primary-light p-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="rounded-full bg-primary-light p-3.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <MessageCircle className="h-4 w-4" />
           </a>

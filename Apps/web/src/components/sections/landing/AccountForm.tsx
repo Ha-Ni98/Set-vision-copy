@@ -164,10 +164,24 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
           id="fullName"
           error={errors.fullName?.message}
         >
-          <Input id="fullName" disabled={readonly} {...register("fullName")} required />
+          <Input
+            id="fullName"
+            disabled={readonly}
+            aria-invalid={!!errors.fullName}
+            aria-describedby={errors.fullName ? "fullName-error" : undefined}
+            {...register("fullName")}
+            required
+          />
         </Field>
         <Field label={t("public.landing.form.phone")} id="phone" error={errors.phone?.message}>
-          <Input id="phone" disabled={readonly} {...register("phone")} required />
+          <Input
+            id="phone"
+            disabled={readonly}
+            aria-invalid={!!errors.phone}
+            aria-describedby={errors.phone ? "phone-error" : undefined}
+            {...register("phone")}
+            required
+          />
         </Field>
       </fieldset>
 
@@ -185,6 +199,12 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             id="username"
             disabled={readonly}
             className={cn(isFlagged(AccountInformation.USERNAME) && "border-destructive")}
+            aria-invalid={!!errors.username || isFlagged(AccountInformation.USERNAME)}
+            aria-describedby={
+              errors.username || isFlagged(AccountInformation.USERNAME)
+                ? "username-error"
+                : undefined
+            }
             {...register("username")}
             required
           />
@@ -200,6 +220,10 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             type="email"
             disabled={readonly}
             className={cn(isFlagged(AccountInformation.EMAIL) && "border-destructive")}
+            aria-invalid={!!errors.email || isFlagged(AccountInformation.EMAIL)}
+            aria-describedby={
+              errors.email || isFlagged(AccountInformation.EMAIL) ? "email-error" : undefined
+            }
             {...register("email")}
             required
           />
@@ -209,7 +233,13 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
           id="snapchatPhone"
           error={errors.snapchatPhone?.message}
         >
-          <Input id="snapchatPhone" disabled={readonly} {...register("snapchatPhone")} />
+          <Input
+            id="snapchatPhone"
+            disabled={readonly}
+            aria-invalid={!!errors.snapchatPhone}
+            aria-describedby={errors.snapchatPhone ? "snapchatPhone-error" : undefined}
+            {...register("snapchatPhone")}
+          />
         </Field>
         <Field
           label={t("public.landing.form.password")}
@@ -226,6 +256,12 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                 "pe-10",
                 isFlagged(AccountInformation.PASSWORD) && "border-destructive",
               )}
+              aria-invalid={!!errors.password || isFlagged(AccountInformation.PASSWORD)}
+              aria-describedby={
+                errors.password || isFlagged(AccountInformation.PASSWORD)
+                  ? "password-error"
+                  : undefined
+              }
               {...register("password")}
               required
             />
@@ -251,6 +287,8 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                 id="confirmPassword"
                 type={showPwd2 ? "text" : "password"}
                 className="pe-10"
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
                 {...register("confirmPassword")}
                 required
               />
@@ -303,6 +341,7 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             <Button
               type="button"
               variant="outline"
+              className="h-11"
               onClick={() => {
                 // Never leave the mask sitting there ready to be silently resubmitted as the
                 // literal password — force a deliberate re-entry.
@@ -318,7 +357,7 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
             {editing && status === ClientActivationStatus.READY && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button type="button" variant="outline">
+                  <Button type="button" variant="outline" className="h-11">
                     {t("common.actions.clearFields")}
                   </Button>
                 </AlertDialogTrigger>
@@ -340,7 +379,7 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <Button type="submit" disabled={submitting} className="min-w-[160px]">
+            <Button type="submit" disabled={submitting} className="h-11 min-w-[160px]">
               {submitting
                 ? t("common.actions.submitting")
                 : isCorrection
@@ -376,8 +415,12 @@ function Field({
       <Label htmlFor={id}>{label}</Label>
       {children}
       {message && (
-        <p className="flex items-center gap-1 text-xs text-destructive">
-          <AlertCircle className="h-3 w-3 shrink-0" /> {message}
+        <p
+          id={`${id}-error`}
+          role="alert"
+          className="flex items-center gap-1 text-xs text-destructive"
+        >
+          <AlertCircle className="h-3 w-3 shrink-0" aria-hidden="true" /> {message}
         </p>
       )}
     </div>

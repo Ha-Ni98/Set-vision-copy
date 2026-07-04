@@ -73,6 +73,7 @@ export function OtpStep({ activationId, onSuccess }: Props) {
           value={value}
           onChange={setValue}
           disabled={submitAdditionalInfo.isPending || lockedOut}
+          aria-label={t("public.landing.otp.inputLabel")}
         >
           <InputOTPGroup>
             {Array.from({ length: OTP_LENGTH }, (_, i) => (
@@ -98,7 +99,7 @@ export function OtpStep({ activationId, onSuccess }: Props) {
         <Button
           onClick={submit}
           disabled={submitAdditionalInfo.isPending || value.length < OTP_LENGTH || lockedOut}
-          className="w-full sm:w-auto sm:min-w-[200px]"
+          className="h-11 w-full sm:w-auto sm:min-w-[200px]"
         >
           {submitAdditionalInfo.isPending
             ? t("public.landing.otp.verifying")

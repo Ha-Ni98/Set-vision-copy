@@ -16,7 +16,7 @@ export function CheckAnotherKeyButton() {
     reset();
   };
   return (
-    <Button variant="outline" onClick={handleClick}>
+    <Button variant="outline" className="h-11" onClick={handleClick}>
       <RotateCcw className="me-2 h-4 w-4" /> {t("public.landing.verify.checkAnother")}
     </Button>
   );

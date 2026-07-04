@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { ClientActivationStatus } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,20 @@ export default function LandingPage() {
     setServerErrorKey(null);
   }, [resetToken]);
 
+  // Focus management on step transitions (Sprint 5 a11y): move focus to the card whenever
+  // the view actually changes, so screen-reader/keyboard users are told the content changed
+  // instead of focus silently staying on a button that may have just disappeared. Skipped on
+  // first mount so it doesn't fight the Step-1 input's own `autoFocus`.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    cardRef.current?.focus();
+  }, [view]);
+
   const verify = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
@@ -185,7 +199,11 @@ export default function LandingPage() {
           <StepIndicator current={currentStep} />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
+        <div
+          ref={cardRef}
+          tabIndex={-1}
+          className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] focus:outline-none sm:p-8"
+        >
           {view === "keyEntry" && (
             <form onSubmit={verify} className="space-y-5 text-center">
               <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
@@ -221,7 +239,7 @@ export default function LandingPage() {
               >
                 {verifyKey.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />{" "}
                     {t("public.landing.verify.verifying")}
                   </>
                 ) : (
