@@ -2,7 +2,7 @@
 sprint: 5
 title: Polish — mobile-first responsive, a11y, dark mode, animations
 status: ✅ Done
-commit: TBD
+commit: e8f0aeb
 ---
 
 # Sprint 5 Report — Polish
