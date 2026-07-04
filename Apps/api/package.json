@@ -7,7 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --require dotenv/config src/server.ts",
     "build": "tsc --outDir dist",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -16,7 +16,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "cycles": "madge --circular --extensions ts src"
+    "cycles": "madge --circular --extensions ts src",
+    "load_wilaya": "tsx --require dotenv/config scripts/load-wilayas.ts",
+    "create_admin_account": "tsx --require dotenv/config scripts/create-admin.ts",
+    "load_mock_data": "tsx --require dotenv/config scripts/load-mock-data.ts"
   },
   "dependencies": {
     "@my-app/contract": "file:../contract",
@@ -41,6 +44,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.0.0",
     "@types/supertest": "^6.0.2",
+    "dotenv": "^17.4.2",
     "madge": "^8.0.0",
     "prisma": "^6.0.0",
     "socket.io-client": "^4.8.1",
