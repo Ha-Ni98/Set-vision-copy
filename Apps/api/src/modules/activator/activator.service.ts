@@ -96,7 +96,9 @@ export class ActivatorService implements IActivatorService {
     const existing = await this.prisma.user.findUnique({ where: { username: persistence.username } });
     if (existing) throw new ConflictError('Username already taken');
 
-    const tempPassword = generateTempPassword();
+    // Admin may supply a password (Stage-04-fix); otherwise fall back to a generated one.
+    // Either way the chosen value is returned once via toWithCredentialsDTO.
+    const tempPassword = cmd.password ?? generateTempPassword();
     const hashed = await hashPassword(tempPassword);
 
     const [newUser, newActivator] = await this.prisma.$transaction(async (tx) => {
@@ -189,10 +191,18 @@ export class ActivatorService implements IActivatorService {
       if (conflict) throw new ConflictError('Username already taken');
     }
 
+    // Optional new password (Stage-04-fix) — hashed here and folded into the same user
+    // update below. Absent = leave the password untouched.
+    const hashedPassword = cmd.password ? await hashPassword(cmd.password) : undefined;
+    const userData = {
+      ...(username !== undefined && { username }),
+      ...(hashedPassword !== undefined && { password: hashedPassword }),
+    };
+
     const [updatedUser, updatedActivator] = await this.prisma.$transaction(async (tx) => {
       const user =
-        username !== undefined
-          ? await tx.user.update({ where: { id: result.userId }, data: { username } })
+        Object.keys(userData).length > 0
+          ? await tx.user.update({ where: { id: result.userId }, data: userData })
           : result.user;
 
       const activator =
@@ -202,8 +212,12 @@ export class ActivatorService implements IActivatorService {
 
       await tx.log.create({
         data: {
-          actionType: LogActionType.CHANGE_USER_INFORMATION,
-          actionDescription: `Updated activator information: ${user.username}`,
+          actionType: hashedPassword
+            ? LogActionType.CHANGE_USER_PASSWORD
+            : LogActionType.CHANGE_USER_INFORMATION,
+          actionDescription: hashedPassword
+            ? `Updated activator information (incl. password): ${user.username}`
+            : `Updated activator information: ${user.username}`,
           userId: actorId,
         },
       });

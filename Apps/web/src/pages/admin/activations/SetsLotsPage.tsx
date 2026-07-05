@@ -240,11 +240,15 @@ export default function SetsLotsPage() {
 
       <CreateSetModal
         open={createSetOpen}
-        onOpenChange={setCreateSetOpen}
+        onOpenChange={(open) => {
+          setCreateSetOpen(open);
+          if (!open) createSet.reset(); // clear a stale 409 so reopening starts clean
+        }}
         onSubmit={(command: CreateSetCommand) =>
           createSet.mutate(command, { onSuccess: () => setCreateSetOpen(false) })
         }
         isPending={createSet.isPending}
+        createError={createSet.error}
       />
 
       <CreateLotModal

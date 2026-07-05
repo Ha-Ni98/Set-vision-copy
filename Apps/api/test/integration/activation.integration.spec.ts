@@ -243,14 +243,14 @@ describe('GET /activations/pending', () => {
     expect(res.status).toBe(401);
   });
 
-  it('403 — admin role is rejected (activator only)', async () => {
+  it('200 — admin is allowed (admin dashboard reads the global pending pool, Stage-04-fix)', async () => {
     const { user } = await seedAdm();
     const token = mintToken({ id: user.id, role: UserRole.ADMIN });
     const res = await request(app)
       .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_PENDING}`)
       .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   it('200 — activator sees pending activations (key masked)', async () => {
@@ -503,11 +503,14 @@ describe('GET /activations/:id (admin getById)', () => {
     })();
     const actToken = mintToken({ id: actUser.id, role: UserRole.ACTIVATOR });
 
-    // Admin hitting /pending → 403 (route found, role wrong) not 404
+    // Admin hitting /pending → 200 with the pending list (Stage-04-fix widened this to
+    // admin+activator). This still proves static-before-param resolution: had `/pending`
+    // been caught by `/:id`, getById's uuid param validation would 400, never 200 an array.
     const adminRes = await request(app)
       .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_PENDING}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(adminRes.status).toBe(403);
+    expect(adminRes.status).toBe(200);
+    expect(Array.isArray(adminRes.body.data)).toBe(true);
 
     // Activator hitting / → 403 (adminOnly GET_ALL is found, role wrong) not 404
     const actRes = await request(app)

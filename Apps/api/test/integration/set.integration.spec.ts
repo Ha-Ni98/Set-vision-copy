@@ -6,6 +6,7 @@ import { seedAdmin } from '../data/admin.factory';
 import { seedActivator } from '../data/activator.factory';
 import { seedPlan } from '../data/subscription-plan.factory';
 import { seedSet } from '../data/set.factory';
+import { seedCard } from '../data/card.factory';
 import { mintToken } from '../fixtures/auth.fixture';
 import {
   UserRole,
@@ -62,7 +63,7 @@ afterEach(async () => {
 // ─── POST /sets (create) ─────────────────────────────────────────────────────
 
 describe('POST /sets', () => {
-  it('201 — creates set with exactly numberOfKeys cards in IN_SET', async () => {
+  it('201 — creates a set from the provided keys as IN_SET cards', async () => {
     const { user } = await seedAdm();
     const token = mintToken({ id: user.id, role: UserRole.ADMIN });
     const plan = await seedPlan(prisma, {
@@ -71,10 +72,11 @@ describe('POST /sets', () => {
     });
     seededPlanIds.push(plan.id);
 
+    const keys = ['A1A1A1A1A1A1', 'B2B2B2B2B2B2', 'C3C3C3C3C3C3'];
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ numberOfKeys: 3, subscriptionPlanId: plan.id });
+      .send({ keys, subscriptionPlanId: plan.id });
 
     if (res.body.data?.id) seededSetIds.push(res.body.data.id as string);
 
@@ -85,8 +87,48 @@ describe('POST /sets', () => {
 
     const cards = await prisma.card.findMany({ where: { setId: res.body.data.id } });
     expect(cards).toHaveLength(3);
+    expect(new Set(cards.map((c) => c.key))).toEqual(new Set(keys));
     expect(cards.every((c) => c.cardStat === 'IN_SET')).toBe(true);
     expect(cards.every((c) => c.isActive === false)).toBe(true);
+  });
+
+  it('409 — RESOURCE_CONFLICT when a provided key already exists, listing it', async () => {
+    const { user } = await seedAdm();
+    const token = mintToken({ id: user.id, role: UserRole.ADMIN });
+    const { card, set } = await seedCard(prisma, {});
+    seededSetIds.push(set.id);
+    const plan = await seedPlan(prisma, {
+      subscriptionType: SubscriptionType.SNAPCHAT_PLUS,
+      subscriptionDuration: SubscriptionDuration.ONE_WEEK,
+    });
+    seededPlanIds.push(plan.id);
+
+    const res = await request(app)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ keys: ['D4D4D4D4D4D4', card.key], subscriptionPlanId: plan.id });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
+    expect(res.body.error.details.takenKeys).toContain(card.key);
+  });
+
+  it('400 — VALIDATION_ERROR for a malformed key', async () => {
+    const { user } = await seedAdm();
+    const token = mintToken({ id: user.id, role: UserRole.ADMIN });
+    const plan = await seedPlan(prisma, {
+      subscriptionType: SubscriptionType.SNAPCHAT_PLUS,
+      subscriptionDuration: SubscriptionDuration.ONE_DAY,
+    });
+    seededPlanIds.push(plan.id);
+
+    const res = await request(app)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ keys: ['not-a-valid-key'], subscriptionPlanId: plan.id });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
   });
 
   it('400 — returns VALIDATION_ERROR for inactive plan', async () => {
@@ -102,7 +144,7 @@ describe('POST /sets', () => {
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ numberOfKeys: 2, subscriptionPlanId: plan.id });
+      .send({ keys: ['E5E5E5E5E5E5', 'F6F6F6F6F6F6'], subscriptionPlanId: plan.id });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
@@ -120,7 +162,7 @@ describe('POST /sets', () => {
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ numberOfKeys: 1, subscriptionPlanId: plan.id });
+      .send({ keys: ['0A0A0A0A0A0A'], subscriptionPlanId: plan.id });
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN);

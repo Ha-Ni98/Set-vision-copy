@@ -27,6 +27,10 @@ const controller = new ActivationController(service);
 
 const activatorOnly = requireAuth({ roles: [UserRole.ACTIVATOR] });
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+// The global pending pool and global recent feed carry no per-activator scoping (their
+// service methods take no viewer id), so the admin dashboard reads them too — not just the
+// activator portal. Widened from activatorOnly to fix the admin dashboard 403 (Stage-04-fix).
+const activatorOrAdmin = requireAuth({ roles: [UserRole.ACTIVATOR, UserRole.ADMIN] });
 
 // ─── Key Router (public — no auth) ───────────────────────────────────────────
 
@@ -67,7 +71,7 @@ keyRouter.get(
 export const activationRouter = Router();
 
 // Static GET routes registered before /:id to avoid param-shadow
-activationRouter.get(ACTIVATION_ROUTES.GET_PENDING, activatorOnly, controller.getPending);
+activationRouter.get(ACTIVATION_ROUTES.GET_PENDING, activatorOrAdmin, controller.getPending);
 
 activationRouter.get(ACTIVATION_ROUTES.GET_ACTIVE, activatorOnly, controller.getActive);
 
@@ -78,7 +82,7 @@ activationRouter.get(
   controller.getMyHistory,
 );
 
-activationRouter.get(ACTIVATION_ROUTES.GET_RECENT, activatorOnly, controller.getRecent);
+activationRouter.get(ACTIVATION_ROUTES.GET_RECENT, activatorOrAdmin, controller.getRecent);
 
 activationRouter.get(
   ACTIVATION_ROUTES.GET_ALL,

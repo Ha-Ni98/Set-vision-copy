@@ -1,9 +1,24 @@
 import { z } from 'zod';
 import { SetStat } from './set.enums';
 
+// Card key format: 12 uppercase hex characters (e.g. "A1B2C3D4E5F6") — matches the server's
+// generator (randomBytes(6).toString('hex').toUpperCase()). Shared so the client generator,
+// the client form schema, and this command all validate the same shape (Stage-04-fix).
+export const CARD_KEY_PATTERN = /^[0-9A-F]{12}$/;
+export const MAX_KEYS_PER_SET = 1000;
+
+// A set is now created from an explicit, admin-editable list of keys (Stage-04-fix) rather
+// than a bare count. The server derives numberOfKeys from keys.length and rejects any key
+// that already exists.
 export const CreateSetSchema = z.object({
-  numberOfKeys: z.number().int().positive(),
   subscriptionPlanId: z.uuid(),
+  keys: z
+    .array(z.string().regex(CARD_KEY_PATTERN))
+    .min(1)
+    .max(MAX_KEYS_PER_SET)
+    .refine((keys) => new Set(keys).size === keys.length, {
+      message: 'Duplicate keys are not allowed',
+    }),
 });
 export type CreateSetCommand = z.infer<typeof CreateSetSchema>;
 
