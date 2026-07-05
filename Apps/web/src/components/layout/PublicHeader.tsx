@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageToggle } from "@/components/shared/LanguageToggle";
-import { Instagram, MessageCircle, Menu } from "lucide-react";
+import { Instagram, MessageCircle, Phone, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -36,6 +36,13 @@ export function PublicHeader() {
             aria-label={t("common.social.whatsapp")}
           >
             <MessageCircle className="h-5 w-5" />
+          </a>
+          <a
+            href={SOCIAL_LINKS.callcenter}
+            className="rounded-md p-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label={t("common.social.callcenter")}
+          >
+            <Phone className="h-5 w-5" />
           </a>
           <span className="mx-2 h-6 w-px bg-border" />
           <a
@@ -87,6 +94,12 @@ export function PublicHeader() {
                   className="flex items-center gap-3 rounded-md p-3 hover:bg-accent"
                 >
                   <MessageCircle className="h-5 w-5" /> {t("common.social.whatsapp")}
+                </a>
+                <a
+                  href={SOCIAL_LINKS.callcenter}
+                  className="flex items-center gap-3 rounded-md p-3 hover:bg-accent"
+                >
+                  <Phone className="h-5 w-5" /> {t("common.social.callcenter")}
                 </a>
                 <a href={LEGAL_LINKS.terms} className="rounded-md p-3 hover:bg-accent">
                   {t("common.legal.terms")}

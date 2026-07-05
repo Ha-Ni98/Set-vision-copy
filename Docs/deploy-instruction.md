@@ -133,18 +133,54 @@ Deploy. Render will run the build command (installs, `prisma generate`, `prisma 
 
 ### One-time data seeding
 
-These are interactive/local scripts (`Apps/api/scripts/`) — the simplest way to run them against
-the production database is **from your own machine**, pointed at Neon, not on Render itself
-(Render's free tier has no shell console anyway):
+`Apps/api/scripts/load-wilayas.ts` and `Apps/api/scripts/create-admin.ts` are plain Node scripts
+that connect straight to whatever `DATABASE_URL` is in the environment — they're not exposed as
+API routes. Run them **from your own machine**, pointed at Neon, not on Render itself (Render's
+free tier has no shell console anyway, and these are interactive/one-shot, not services).
+
+**Prerequisites (one-time, on your machine):**
 
 ```bash
 cd Apps/api
-DATABASE_URL="<your neon connection string>" npm run load_wilaya          # required: distributor wilaya/commune reference data
-DATABASE_URL="<your neon connection string>" npm run create_admin_account # prompts for username/password — creates your first ADMIN login
+npm install          # if you haven't already
+npx prisma generate  # generates the Prisma Client these scripts import
 ```
 
-Both are idempotent/safe to re-run. Skip `load_mock_data` — it's for local/demo seeding, not a
-production database.
+**1. Load wilayas/communes** (required reference data — distributors are addressed by wilaya/
+commune, so this must exist before you create distributors). Safe to re-run — it's an upsert
+keyed on each wilaya/commune's code:
+
+```bash
+DATABASE_URL="<your neon connection string>" npm run load_wilaya
+```
+
+Expected output: `✓ Loaded 69 wilayas and 1541 communes.`
+
+**2. Create your admin login.** This one is interactive — it'll prompt you one field at a time:
+
+```bash
+DATABASE_URL="<your neon connection string>" npm run create_admin_account
+```
+
+```
+Username: admin
+Full name (blank = username): Admin
+Password: ********        ← typed characters show as * on a real terminal, not echoed at all otherwise
+Phone: 0555000000
+✓ Admin "admin" created (adminId: ...).
+```
+
+All four fields are required except full name (blank falls back to the username). It fails
+loudly if the username is already taken (`✗ create_admin_account failed: Username "admin" is
+already taken.`) — re-run with a different username, or just log in with the existing one. You
+can run this again anytime to add more admin accounts.
+
+Skip `load_mock_data` — it's for local/demo seeding, not a production database.
+
+> If you already restored a full local dump (previous section), both of these are optional:
+> `load_wilaya` would just re-upsert data that's already there, and any admin accounts from your
+> local `User`/`Admin` tables came along with the dump too. Still fine to run `create_admin_account`
+> again if you want a dedicated production login separate from your local test accounts.
 
 ## Step 3 — Web (Vercel)
 

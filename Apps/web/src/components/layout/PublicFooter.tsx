@@ -1,5 +1,5 @@
 import { Logo } from "@/components/shared/Logo";
-import { Facebook, Instagram, MessageCircle } from "lucide-react";
+import { Facebook, Instagram, MessageCircle, Phone } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SOCIAL_LINKS, LEGAL_LINKS } from "@/config/social-links";
 
@@ -39,6 +39,13 @@ export function PublicFooter() {
             className="rounded-full bg-primary-light p-3.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <MessageCircle className="h-4 w-4" />
+          </a>
+          <a
+            href={SOCIAL_LINKS.callcenter}
+            aria-label={t("common.social.callcenter")}
+            className="rounded-full bg-primary-light p-3.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+          >
+            <Phone className="h-4 w-4" />
           </a>
         </div>
         <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground sm:items-end">

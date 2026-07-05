@@ -5,9 +5,10 @@
 // (no page exists to link to at all, unlike the social accounts which at least plausibly
 // exist) rather than a fabricated external URL.
 export const SOCIAL_LINKS = {
-  instagram: "https://instagram.com/setvision",
-  whatsapp: "https://wa.me/213500000000",
-  facebook: "https://facebook.com/setvision",
+  instagram: "https://instagram.com/setvision.19",
+  whatsapp: "https://wa.me/213556715428",
+  facebook: "https://facebook.com/profile.php?id=61550274938326",
+  callcenter: "tel:+213554813850",
 } as const;
 
 export const LEGAL_LINKS = {
