@@ -1,5 +1,14 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MoreHorizontal, Printer, CheckCircle2, CreditCard, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  MoreHorizontal,
+  Printer,
+  CheckCircle2,
+  CreditCard,
+  Download,
+  Trash2,
+} from "lucide-react";
 import { SetStat, type SetDTO } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/hooks/useTranslation";
+import { downloadTextFile } from "@/lib/utils";
+import * as cardsService from "@/services/cards.service";
 
 interface Props {
   set: SetDTO;
@@ -20,7 +31,8 @@ interface Props {
 
 // Dumb menu — gates each item off set.setStat (plan §D2.5: Send to Print only NOT_PRINTED;
 // Mark Printed only PENDING_PRINTING; Delete only NOT_PRINTED|PENDING_PRINTING, cascade
-// warning). "View Cards" is always available (deep-links via ?set=).
+// warning). "View Cards" and "Download Keys" are always available (the set's cards exist
+// from creation, regardless of print status).
 export function SetActionsMenu({
   set,
   onRequestSendToPrint,
@@ -31,6 +43,23 @@ export function SetActionsMenu({
   const canSendToPrint = set.setStat === SetStat.NOT_PRINTED;
   const canMarkPrinted = set.setStat === SetStat.PENDING_PRINTING;
   const canDelete = set.setStat === SetStat.NOT_PRINTED || set.setStat === SetStat.PENDING_PRINTING;
+
+  const [isDownloading, setIsDownloading] = useState(false);
+  const onDownloadKeys = async () => {
+    setIsDownloading(true);
+    try {
+      const keys = await cardsService.getAllKeysForSet(set.setNumber);
+      if (keys.length === 0) {
+        toast.error(t("admin.setsLots.sets.actions.downloadKeysEmptyToast"));
+        return;
+      }
+      downloadTextFile(`set-${set.setNumber}-keys.txt`, keys.join("\n"));
+    } catch {
+      toast.error(t("admin.setsLots.sets.actions.downloadKeysErrorToast"));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -44,6 +73,14 @@ export function SetActionsMenu({
           <Link to={`/admin/activations/cards?set=${set.setNumber}`}>
             <CreditCard className="mr-2 h-4 w-4" /> {t("common.actions.viewCards")}
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={isDownloading} onClick={onDownloadKeys}>
+          <Download className="mr-2 h-4 w-4" />
+          {t(
+            isDownloading
+              ? "admin.setsLots.sets.actions.downloadingKeys"
+              : "admin.setsLots.sets.actions.downloadKeys",
+          )}
         </DropdownMenuItem>
         {canSendToPrint && (
           <DropdownMenuItem onClick={() => onRequestSendToPrint(set)}>

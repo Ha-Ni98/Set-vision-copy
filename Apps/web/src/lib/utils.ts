@@ -29,6 +29,20 @@ export function formatDateTime(iso: string, language: Language = "en"): string {
   }).format(new Date(iso));
 }
 
+// Browser-only text-file download (Blob + a throwaway anchor) — no server round-trip beyond
+// whatever fetched `content` already, so this is just the local "save as" trigger.
+export function downloadTextFile(filename: string, content: string): void {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Stats with zero items are omitted from InventorySummaryDTO's arrays (contract comment) —
 // consumers must treat a missing stat as 0, not undefined (plan.md §B3).
 export function countOf<T extends string>(
