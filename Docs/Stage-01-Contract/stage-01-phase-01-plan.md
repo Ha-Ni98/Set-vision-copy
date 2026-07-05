@@ -51,4 +51,4 @@ Analyze every spec in `module-contracts/` and the Prisma schema to produce a det
 
 ## Expected Output
 
-- A detailed plan file: **`/docs/stage-01-contract/plan.md`**.
+- A detailed plan file: **`/docs/stage-01-contract/results/plan.md`**.

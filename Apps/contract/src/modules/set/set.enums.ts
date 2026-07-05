@@ -1,0 +1,5 @@
+export enum SetStat {
+  NOT_PRINTED = 'NOT_PRINTED',
+  PENDING_PRINTING = 'PENDING_PRINTING',
+  PRINTED = 'PRINTED',
+}

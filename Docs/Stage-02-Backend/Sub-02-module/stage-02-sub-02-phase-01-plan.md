@@ -1,6 +1,6 @@
 # Stage 02 · Sub-02 · Phase 01 — Module Implementation Plan
 
-Planning for a **single module**. Repeat this sub-stage once per module. **No code yet.**
+Planning for a **set of module**. Repeat this sub-stage once per set. **No code yet.**
 
 ---
 
@@ -12,9 +12,9 @@ Analyze one module's contract + schema and map the **6-file architecture** (mapp
 
 ## Context & Inputs
 
-- **Target module:** `[MODULE NAME]` (e.g. `User`).
+- **Target modules:** `[MODULE NAME]` (e.g. `User`).
 - **Module spec:** `module-contracts/[module].md` (same folder used in Stage 01).
-- **Contract:** `@my-app/contract` (DTOs, Commands, Queries, route constants, enums, event types).
+- **Contract:** `Apps/contract` (DTOs, Commands, Queries, route constants, enums, event types).
 - **Rules:** `module-implementation-rules.md`.
 
 ---
@@ -37,7 +37,7 @@ Analyze one module's contract + schema and map the **6-file architecture** (mapp
 - Conformance: responses parse against the contract DTO schema.
 
 ### Step 4 — Generate the Plan
-Output `/docs/stage-02-backend/sub-02-module/plan-[module].md` — a checklist of files to create (only those the module needs):
+Output `/docs/stage-02-backend/sub-02-module/results/plan-[module]-[setnumber].md` — a checklist of files to create (only those the modules needs):
 1. `[name].mapper.ts`
 2. `[name].interface.ts`
 3. `[name].service.ts`
@@ -49,4 +49,4 @@ Output `/docs/stage-02-backend/sub-02-module/plan-[module].md` — a checklist o
 
 ## Expected Outputs
 
-- **`/docs/stage-02-backend/sub-02-module/plan-[module].md`** and a clear "vertical slice" for the module.
+- **`docs/stage-02-backend/sub-02-module/results/plan-[module]-[setnumber].md`** and a clear "vertical slice" for the modules.

@@ -14,7 +14,7 @@ Plan a production-ready Express/TypeScript skeleton with strict env validation, 
 
 - **Contract:** `@my-app/contract` (built in Stage 01) — source of truth for routes, schemas, DTOs, error codes, event types.
 - **Database:** `prisma/schema.prisma`.
-- **Rules:** `back-end-rules.md` (structure, env, Pino, single auth guard, envelope, conformance).
+- **Rules:** `back-end-rules.md` and `realtime-rules.md` (structure, env, Pino, single auth guard, envelope, conformance and websocket).
 - **Test rules:** `test-rules.md` (test-DB isolation, folder structure, factories).
 - **Constraint:** core infrastructure only — no `src/modules/` content.
 
@@ -54,4 +54,4 @@ Plan a production-ready Express/TypeScript skeleton with strict env validation, 
 
 ## Expected Outputs
 
-- A detailed plan file: **`/docs/stage-02-backend/sub-01-init/plan.md`** listing every file, its dependency order, and its test.
+- A detailed plan file: **`/docs/stage-02-backend/sub-01-init/results/plan.md`** listing every file, its dependency order, and its test.

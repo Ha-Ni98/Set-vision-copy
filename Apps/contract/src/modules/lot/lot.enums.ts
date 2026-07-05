@@ -1,0 +1,6 @@
+export enum LotStat {
+  PENDING = 'PENDING',
+  IN_DELIVERY = 'IN_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  RETURNED = 'RETURNED',
+}

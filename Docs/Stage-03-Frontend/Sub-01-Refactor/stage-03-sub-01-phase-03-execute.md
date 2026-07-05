@@ -12,9 +12,9 @@ Systematically execute `sprints.md` to produce a standardized frontend that foll
 
 ## Context & Inputs
 
-- **Sprints & plan:** `/docs/stage-03-frontend/sub-01-refactor/sprints.md`, `plan.md`.
+- **Sprints & plan:** `/docs/stage-03-frontend/sub-01-refactor/results/sprints.md`, `plan.md`.
 - **Rules:** `front-end-rules.md`, `front-end-best-practices.md`.
-- **Contract:** `@my-app/contract`. **Codebase:** `/src`, `package.json`.
+- **Contract:** `Apps/contract`. **Codebase:** `/src`, `package.json`.
 
 ---
 
@@ -30,7 +30,7 @@ First sprint not ✅. Re-read `front-end-rules.md` (folder structure, `useTransl
 - Moving files: update every relative/alias import so nothing breaks.
 - Extracting data: move `useEffect`/`axios` out of components into a Hook (`use[Name].ts`) + Service (`[name].service.ts`) that return **typed empty defaults** (`[]` for lists) — enough to keep the UI rendering. The real implementation lands in Sub-02.
 - i18n: replace hardcoded text with `useTranslation` keys; update `translations.json`.
-- Types come from `@my-app/contract`; frontend-only view models go in `src/types`.
+- Types come from `Apps/contract`; frontend-only view models go in `src/types`.
 
 ### Step 3 — Validate
 `tsc --noEmit` clean · `npm run build` succeeds · UI renders, no layout crash · no leftover `console.*`.

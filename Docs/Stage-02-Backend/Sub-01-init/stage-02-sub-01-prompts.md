@@ -10,10 +10,10 @@ I have the Contract and the Prisma schema. I need the backend skeleton (infrastr
 
 Read and follow strictly:
 - **Phase file:** `stage-02-sub-01-phase-01-plan.md`
-- **Rules:** `back-end-rules.md` and `test-rules.md`
+- **Rules:** `back-end-rules.md` and `test-rules.md` and `realtime-rules.md`
 - **Inputs:** `@my-app/contract`, `prisma/schema.prisma`
 
-Constraints: no code; no `src/modules/` content; output only `/docs/stage-02-backend/sub-01-init/plan.md`.
+Constraints: no code; no `src/modules/` content; output only `/Docs/stage-02-backend/sub-01-init/results/plan.md`.
 
 ---
 
@@ -24,7 +24,7 @@ The plan is done. Produce the sprint plan.
 Read and follow strictly:
 - **Phase file:** `stage-02-sub-01-phase-02-sprints.md`
 - **Plan:** `/docs/stage-02-backend/sub-01-init/plan.md`
-- **Rules:** `back-end-rules.md` and `test-rules.md`
+- **Rules:** `back-end-rules.md` and `test-rules.md` and `realtime-rules.md`
 
 Constraints: no code; respect the dependency order; every sprint has a Validation block covering compilation **and** unit tests; before declaring any type/enum/route, confirm it doesn't already exist in `@my-app/contract`; output only `/docs/stage-02-backend/sub-01-init/sprints.md`.
 
@@ -37,6 +37,6 @@ Begin execution.
 Read and follow strictly:
 - **Phase file:** `stage-02-sub-01-phase-03-execute.md`
 - **Sprints:** `/docs/stage-02-backend/sub-01-init/sprints.md`
-- **Rules:** `back-end-rules.md` and `test-rules.md`
+- **Rules:** `back-end-rules.md` and `test-rules.md` and `realtime-rules.md`
 
 Instructions: follow the Context Protocol; take the **first sprint not marked ✅**; test-alongside; validate (`tsc --noEmit`, `npm run test:unit`, lint); commit on green; write the report; mark ✅; stop and wait for `next`.

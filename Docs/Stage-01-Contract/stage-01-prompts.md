@@ -20,7 +20,7 @@ Read and follow strictly:
 Constraints:
 1. Do not write any code.
 2. No business logic, DB code, or backend imports anywhere.
-3. Output only `/docs/stage-01-contract/plan.md`.
+3. Output only `/docs/stage-01-contract/results/plan.md`.
 
 ---
 

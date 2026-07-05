@@ -11,9 +11,9 @@ A layer-by-layer playbook to build the page, wire its hooks, and enforce error/l
 ---
 
 ## Context & Inputs
-- **Plan:** `/docs/stage-03-frontend/sub-03-pages/[page]/plan.md`.
+- **Plan:** `/Docs/stage-03-frontend/sub-03-pages/[pages-set-name]/plan.md`.
 - **Rules:** `front-end-rules.md`, `front-end-test-rules.md`.
-- **Contract:** `@my-app/contract`.
+- **Contract:** `Apps/contract`.
 
 ---
 
@@ -56,7 +56,7 @@ A layer-by-layer playbook to build the page, wire its hooks, and enforce error/l
 ---
 
 ## Expected Output
-`/docs/stage-03-frontend/sub-03-pages/[page]/sprints.md`.
+`/docs/stage-03-frontend/sub-03-pages/[pages-set-name]/sprints.md`.
 
 ## Principles
 Zero code. Wiring (Sprint 3) never precedes primitives (Sprint 2). Test the UI with mocked hooks (`vi.mock`), not MSW.

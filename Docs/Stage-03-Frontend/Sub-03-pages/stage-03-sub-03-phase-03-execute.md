@@ -1,6 +1,6 @@
 # Stage 03 · Sub-03 · Phase 03 — Page Assembly Execution Protocol
 
-Build and wire one page's UI sprint by sprint, powered by the Integration Engine and protected by granular states, backed by unit tests.
+Build and wire one page's or set of pages UI sprint by sprint, powered by the Integration Engine and protected by granular states, backed by unit tests.
 
 ---
 
@@ -11,9 +11,9 @@ Execute the page's `sprints.md` to deliver a production-ready, responsive page a
 ---
 
 ## Context & Inputs
-- **Sprints & plan:** `/docs/stage-03-frontend/sub-03-pages/[page]/sprints.md`, `plan.md`.
+- **Sprints & plan:** `/Docs/stage-03-frontend/sub-03-pages/results/[page-set-name]/sprints.md`, `plan.md`.
 - **Rules:** `front-end-rules.md`, `front-end-test-rules.md`, `front-end-best-practices.md`.
-- **Contract:** `@my-app/contract`. **Codebase:** `/src` (`components`, `pages`, `hooks`, `config`), `/tests/unit`.
+- **Contract:** `@my-app/contract`. **Codebase:** `Apps/web/src` (`components`, `pages`, `hooks`, `config`), `Apps/web/tests/unit`.
 
 ---
 
@@ -35,11 +35,12 @@ First sprint not ✅. Re-read layout/responsive rules (admin desktop-first, publ
 ### Step 3 — Validate
 `tsc --noEmit` clean · `vitest run` green under all mocked hook states · no inline strings · no `useEffect` fetching · no test files in `/src`.
 
-### Step 4 — Commit on Green
-`git commit -m "fe: [page] sprint [N] — [name]"`.
-
-### Step 5 — Update Docs
+### Step 4 — Update Docs
 Mark ✅ in `sprints.md`; update `plan.md` if architecture shifted.
+generate the sprint report and write it in `/Docs/stage-03-frontend/sub-03-pages/results/[page-set-names]/report-sprint-[NN].md`.
+
+### Step 5 — Commit on Green
+`git add . && git commit -m "fe: [page] sprint [N] — [name]"`.
 
 ### Step 6 — Pause
 Wait for `next`.

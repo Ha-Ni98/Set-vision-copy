@@ -1,6 +1,6 @@
 # Stage 03 · Sub-02 · Phase 01 — Integration Engine Planning
 
-Map the type-safe data layer (Axios, Services, Hooks) and its test strategy from `@my-app/contract`. **No code — audit and plan only.**
+Map the type-safe data layer (Axios, Services, Hooks) and its test strategy from `Apps/contract`. **No code — audit and plan only.**
 
 ---
 
@@ -13,8 +13,8 @@ Design the single Axios instance, every Service function, the TanStack Query hoo
 ## Context & Inputs
 
 - **Rules:** `front-end-rules.md`, `front-end-test-rules.md`, `front-end-best-practices.md`.
-- **Contract:** `@my-app/contract` (routes + DTOs — source of truth).
-- **Current state:** the refactored `/src` with lean empty-default services from Sub-01 (which this stage **replaces**).
+- **Contract:** `Apps/contract` (routes + DTOs — source of truth).
+- **Current state:** the refactored `Apps/web` with lean empty-default services from Sub-01 (which this stage **replaces**).
 
 ---
 
@@ -33,7 +33,7 @@ Read the contract: list every route constant (`USER_ROUTES.GET_ALL`, …), Comma
 Per domain (Auth, User, Product, …): list Service functions with input Command / output DTO types from the contract (returning the **unwrapped** DTO). Define the matching hooks — Query Keys (`['users','list']`) and, for mutations, which keys to invalidate (`useCreateUser` → `['users','list']`). List MSW handlers (200 + explicit 4xx/5xx) and the hook state-transition tests for `/tests/integration/`.
 
 ### Step 4 — Integration Plan
-Create `/docs/stage-03-frontend/sub-02-integration/plan.md`:
+Create `/docs/stage-03-frontend/sub-02-integration/results/plan.md`:
 1. **Core Setup** (Axios, route builder, Query Client).
 2. **Domain Mapping** (Services, Hooks, MSW handlers per domain).
 3. **Query Key Registry** (one central list).
@@ -46,4 +46,4 @@ Create `/docs/stage-03-frontend/sub-02-integration/plan.md`:
 `plan.md` (path above) and a summary confirming every contract route is mapped.
 
 ## Principles
-Zero code. Think like an SDET (empty array vs null? token expires mid-request?). Contract is king — if it's not in `@my-app/contract`, it doesn't exist. No UI thinking.
+Zero code. Think like an SDET (empty array vs null? token expires mid-request?). Contract is king — if it's not in `Apps/contract`, it doesn't exist. No UI thinking.
