@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type {
-  AccountFieldValue,
   AccountInformation,
   ClientActivationStatus,
+  SubmittedField,
 } from "@my-app/contract";
 
 // Promoted from types/key-flow.ts's KeyFlowView (client-portal plan.md §D1) — this holds the
@@ -16,7 +16,11 @@ export interface ActivationData {
   planKey?: string;
   activationId?: string;
   subscriptionLabel?: string;
-  submittedFields?: AccountFieldValue[];
+  // Real, unmasked saved values (incl. password) keyed by field enum — prefills Step 2 on
+  // re-check or a live status change (Stage-04-fix #4A).
+  submittedFields?: SubmittedField[];
+  clientFullName?: string | null;
+  clientPhone?: string | null;
   flaggedFields?: { field: AccountInformation; label: string }[];
   requestedFields?: { field: AccountInformation; label: string }[];
   accountUsername?: string;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Prisma } from '@prisma/client';
 import { ActivatorService } from '@modules/activator/activator.service';
 import { ErrorCode, UserRole, LogActionType } from '@my-app/contract';
@@ -392,6 +392,10 @@ describe('ActivatorService.delete', () => {
 // ─── myStats ─────────────────────────────────────────────────────────────────
 
 describe('ActivatorService.myStats', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('throws AUTH_FORBIDDEN (403) when principal has no activator row', async () => {
     const prisma = buildPrisma();
     prisma.activator.findFirst.mockResolvedValue(null);
@@ -417,7 +421,10 @@ describe('ActivatorService.myStats', () => {
     expect(result.activeSlotsUsed).toBe(3);
   });
 
-  it('queries activeSlotsUsed with exactly the 4 in-progress states', async () => {
+  // Stage-04-fix #3.1: FREEZE hands the activation to the admin, so it must stop occupying
+  // one of the activator's 3 slots — activeSlotsUsed excludes it (unlike the delete-guard's
+  // IN_PROGRESS_STATS, which still includes FREEZE — covered in ActivatorService.delete).
+  it('queries activeSlotsUsed with the 3 in-progress states, excluding FREEZE', async () => {
     const record = makeActivatorWithUser();
     const prisma = buildPrisma();
     prisma.activator.findFirst.mockResolvedValue(record);
@@ -433,8 +440,8 @@ describe('ActivatorService.myStats', () => {
     expect(states).toContain('PROCESSING');
     expect(states).toContain('WRONG_INFORMATION');
     expect(states).toContain('ADDITIONAL_INFORMATION');
-    expect(states).toContain('FREEZE');
-    expect(states).toHaveLength(4);
+    expect(states).not.toContain('FREEZE');
+    expect(states).toHaveLength(3);
   });
 
   it('returns earningsTrendPercent 0 when previous period had no earnings', async () => {
@@ -462,6 +469,30 @@ describe('ActivatorService.myStats', () => {
     const result = await service.myStats(record.userId);
 
     expect(result.weekly).toHaveLength(7);
+  });
+
+  // Stage-04-fix #2A: 23:30 UTC is already past midnight in Algiers (00:30 next day) — a
+  // naive local-midnight bucket key serialized via toISOString() drops this activation from
+  // "today" entirely. Same fixed instant statistics.time.spec.ts pins todayStart() to.
+  it("buckets a completedAt that's already 'tomorrow' in UTC into today's Algiers bucket, not dropped", async () => {
+    vi.useFakeTimers({ now: new Date('2026-03-10T23:30:00.000Z').getTime() });
+    const record = makeActivatorWithUser();
+    const prisma = buildPrisma();
+    prisma.activator.findFirst.mockResolvedValue(record);
+    prisma.activation.count.mockResolvedValue(0);
+    prisma.activation.findMany
+      .mockResolvedValueOnce([{ completedAt: new Date('2026-03-10T23:45:00.000Z') }]) // weeklyActivations
+      .mockResolvedValueOnce([]); // completedActivations (avg-time calc)
+
+    const service = new ActivatorService(prisma as any);
+    const result = await service.myStats(record.userId);
+
+    expect(result.weekly).toHaveLength(7);
+    const today = result.weekly[6]!;
+    expect(today.date).toBe('2026-03-10T23:00:00.000Z');
+    expect(today.count).toBe(1);
+    const totalBucketed = result.weekly.reduce((sum, d) => sum + d.count, 0);
+    expect(totalBucketed).toBe(1);
   });
 });
 

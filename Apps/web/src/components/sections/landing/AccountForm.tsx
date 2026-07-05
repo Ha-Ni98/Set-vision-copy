@@ -34,17 +34,6 @@ import {
   type AccountFormValues,
 } from "./account-form.schema";
 
-// Stable English keys used only to match against mock submittedFields entries — decoupled
-// from the (language-reactive) display labels below, since the contract's submittedFields
-// carries free-text labels rather than an AccountInformation discriminator (see Sprint 2 report).
-const SUBMITTED_FIELD_LABELS = {
-  fullName: "Full Name",
-  phone: "Phone Number",
-  username: "Snapchat Username",
-  email: "Snapchat Email",
-  snapchatPhone: "Snapchat Phone",
-} as const;
-
 // UNDER_REVIEW is deliberately absent — the status→view dispatch (Step 1) routes it straight
 // to the dedicated Step 3 "review" view, never to this component (client-portal plan.md D2's
 // status table). This component only ever needs to know about its own two read-only statuses.
@@ -52,11 +41,6 @@ const READONLY_STATUSES = new Set<ClientActivationStatus>([
   ClientActivationStatus.SUBMITTED,
   ClientActivationStatus.PROCESSING,
 ]);
-
-// The backend never returns a real submitted password (verify's contract explicitly omits
-// it) — this is always a display placeholder, never a value that should be silently
-// resubmitted as-is if the user re-opens the form without touching this field.
-const MASKED_PASSWORD = "••••••••";
 
 interface Props {
   keyData: KeyLookupResult;
@@ -83,8 +67,12 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
   const updateActivation = useUpdateActivation();
   const submitting = submitActivation.isPending || updateActivation.isPending;
 
-  const findSubmitted = (key: keyof typeof SUBMITTED_FIELD_LABELS) =>
-    keyData.submittedFields?.find((f) => f.fieldLabel === SUBMITTED_FIELD_LABELS[key])?.value ?? "";
+  // Real, unmasked values keyed by field enum (Stage-04-fix #4A) — access is gated by the
+  // client's own key, so prefilling from the server's last-known-good values (incl. password)
+  // is safe and lets a re-check/live status change repopulate what was already saved instead
+  // of showing blank fields.
+  const findByField = (field: AccountInformation) =>
+    keyData.submittedFields?.find((f) => f.field === field)?.value ?? "";
   const isFlagged = (field: AccountInformation) =>
     isCorrection && (keyData.flaggedFields?.some((f) => f.field === field) ?? false);
 
@@ -99,13 +87,13 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
     resolver: zodResolver(schema),
     mode: "onBlur",
     defaultValues: {
-      fullName: findSubmitted("fullName"),
-      phone: findSubmitted("phone"),
-      username: findSubmitted("username"),
-      email: findSubmitted("email"),
-      snapchatPhone: findSubmitted("snapchatPhone"),
-      password: isReadonlyStatus ? MASKED_PASSWORD : "",
-      confirmPassword: isReadonlyStatus ? MASKED_PASSWORD : "",
+      fullName: keyData.clientFullName ?? "",
+      phone: keyData.clientPhone ?? "",
+      username: findByField(AccountInformation.USERNAME),
+      email: findByField(AccountInformation.EMAIL),
+      snapchatPhone: findByField(AccountInformation.PHONE_NUMBER),
+      password: findByField(AccountInformation.PASSWORD),
+      confirmPassword: findByField(AccountInformation.PASSWORD),
     },
   });
 
@@ -113,10 +101,6 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
 
   const onSubmit = (values: AccountFormValues) => {
     const handleSuccess = (result: ClientActivationStatusDTO) => {
-      // Mask the password back out immediately — it's never retained after a write, so a
-      // disabled read-only field must never echo plaintext, and a later "Update Information"
-      // re-open must never have a stale real value sitting there ready to be resubmitted.
-      setValue("password", MASKED_PASSWORD);
       setEditing(false);
       onSubmitted(result);
     };
@@ -337,8 +321,9 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
               variant="outline"
               className="h-11"
               onClick={() => {
-                // Never leave the mask sitting there ready to be silently resubmitted as the
-                // literal password — force a deliberate re-entry.
+                // Deliberate re-entry required before resubmitting, even though the real
+                // password is now prefilled elsewhere (Stage-04-fix #4A) — a manual "Update
+                // Information" re-open is the one path where re-confirming it is intentional.
                 setValue("password", "");
                 setEditing(true);
               }}

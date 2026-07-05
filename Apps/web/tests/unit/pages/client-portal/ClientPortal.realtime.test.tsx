@@ -12,11 +12,18 @@ import * as useSubmitAdditionalInfoHook from "@/hooks/useSubmitAdditionalInfo";
 import * as realtimeLib from "@/lib/realtime";
 import { renderLandingPage, rerenderLandingPage } from "./support/renderLandingPage";
 import { mutationMock, statusQueryMock } from "./support/testHelpers";
-import { mockKeyNeedsOtp } from "../../../fixtures/data/keys.mock";
+import {
+  mockKeyNeedsOtp,
+  mockKeyUnderReview,
+  mockKeySubmitted,
+  mockKeyNeedsCorrection,
+} from "../../../fixtures/data/keys.mock";
 
 const KEY_PLACEHOLDER = "public.landing.verify.placeholder";
 const SUBMIT_BUTTON = "public.landing.verify.submit";
-const VALID_KEY = "ABCD-1234-EFGH-5678";
+// LandingPage's KEY_FORMAT_PATTERN is a flat 12-char [A-Z0-9] string (no hyphens) — this must
+// match that shape or Step 1's client-side validation rejects it before verify() ever mutates.
+const VALID_KEY = "ABCD1234EFGH";
 
 let verifyMutate: ReturnType<typeof vi.fn>;
 
@@ -51,7 +58,7 @@ beforeEach(() => {
 });
 
 describe("LandingPage — realtime re-sync", () => {
-  it("a status change delivered via useActivationStatus re-dispatches the view (no click involved)", async () => {
+  it("a status change delivered via useActivationStatus re-verifies and re-dispatches the view (no click involved)", async () => {
     const user = userEvent.setup();
     const { rerender } = await seedView(user, mockKeyNeedsOtp);
     expect(await screen.findByText("public.landing.otp.title")).toBeInTheDocument();
@@ -59,6 +66,13 @@ describe("LandingPage — realtime re-sync", () => {
     // Simulates what a real socket invalidation (or the window-focus/polling refetch,
     // wired inside useActivationStatus itself — see tests/integration/hooks/keys.test.tsx
     // for that layer) delivers: a fresh ClientActivationStatusDTO for the same activation.
+    // Stage-04-fix #4B: this now triggers a full re-verify (not just folding in the new
+    // status), so the mocked verify must resolve with the post-transition DTO on this next
+    // call — refreshing flaggedFields/submittedFields is the whole point of the fix.
+    verifyMutate.mockImplementationOnce(
+      (_vars: unknown, opts?: { onSuccess?: (d: KeyVerificationDTO) => void }) =>
+        opts?.onSuccess?.(mockKeyUnderReview),
+    );
     vi.mocked(useActivationStatusHook.useActivationStatus).mockReturnValue(
       statusQueryMock({
         activationId: mockKeyNeedsOtp.activationId!,
@@ -69,6 +83,32 @@ describe("LandingPage — realtime re-sync", () => {
 
     expect(await screen.findByText("public.landing.review.title")).toBeInTheDocument();
     expect(screen.queryByText("public.landing.otp.title")).not.toBeInTheDocument();
+  });
+
+  // Stage-04-fix #4B: before this fix, a live SUBMITTED → NEEDS_CORRECTION push updated the
+  // status but the form's `editing` state (set once at mount) never re-initialized, so fields
+  // stayed disabled and unflagged until the client manually refreshed and re-checked the key.
+  it("a live SUBMITTED → NEEDS_CORRECTION push makes fields editable and flags the reported one, without a manual refresh", async () => {
+    const user = userEvent.setup();
+    const { rerender } = await seedView(user, mockKeySubmitted);
+    expect(screen.getByLabelText("public.landing.form.fullName")).toBeDisabled();
+
+    verifyMutate.mockImplementationOnce(
+      (_vars: unknown, opts?: { onSuccess?: (d: KeyVerificationDTO) => void }) =>
+        opts?.onSuccess?.(mockKeyNeedsCorrection),
+    );
+    vi.mocked(useActivationStatusHook.useActivationStatus).mockReturnValue(
+      statusQueryMock({
+        activationId: mockKeySubmitted.activationId!,
+        status: ClientActivationStatus.NEEDS_CORRECTION,
+      }) as never,
+    );
+    rerenderLandingPage(rerender);
+
+    expect(await screen.findByText("public.landing.form.correctionBanner")).toBeInTheDocument();
+    expect(screen.getByLabelText("public.landing.form.fullName")).toBeEnabled();
+    expect(screen.getByLabelText("public.landing.form.username")).toBeEnabled();
+    expect(screen.getByText("public.landing.form.flagged")).toBeInTheDocument();
   });
 
   it('"Check Another Key" unsubscribes the current activation before resetting to Step 1', async () => {

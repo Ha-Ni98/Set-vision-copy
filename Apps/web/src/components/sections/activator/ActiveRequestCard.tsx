@@ -228,29 +228,32 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
         title={t("activator.requests.card.snapAccount")}
         icon={<Smartphone className="h-3.5 w-3.5" />}
       >
-        {req.accountFields.map((f) => (
-          <Row
-            key={f.fieldLabel}
-            label={f.fieldLabel}
-            value={f.value}
-            mono={f.fieldLabel.toLowerCase().includes("password")}
-          />
-        ))}
+        {req.accountFields
+          .filter((f) => f.value !== "")
+          .map((f) => (
+            <Row
+              key={f.fieldLabel}
+              label={f.fieldLabel}
+              value={f.value}
+              mono={f.fieldLabel.toLowerCase().includes("password")}
+            />
+          ))}
         {req.otpValue && (
           <Row label={t("activator.requests.card.otpFieldLabel")} value={req.otpValue} mono />
         )}
       </Section>
 
-      <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
         <Dialog open={wrongOpen} onOpenChange={setWrongOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
               disabled={isFrozen}
-              className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="min-w-0 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
-              <X className="mr-1 h-3.5 w-3.5" /> {t("activator.requests.card.wrongInfo")}
+              <X className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{t("activator.requests.card.wrongInfo")}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -297,19 +300,21 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
           size="sm"
           onClick={onOtp}
           disabled={isFrozen || requestAdditionalInfo.isPending}
-          className={
+          className={`min-w-0 ${
             req.state === ActivationStat.ADDITIONAL_INFORMATION
               ? "border-warning bg-warning/10 text-warning-foreground"
               : ""
-          }
+          }`}
         >
-          <Smartphone className="mr-1 h-3.5 w-3.5" /> {t("activator.requests.card.otp")}
+          <Smartphone className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{t("activator.requests.card.otp")}</span>
         </Button>
 
         <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" disabled={isFrozen || activateRequest.isPending}>
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {t("common.actions.activate")}
+            <Button size="sm" disabled={isFrozen || activateRequest.isPending} className="min-w-0">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{t("common.actions.activate")}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -348,8 +353,14 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={isFrozen || cancelActivation.isPending}>
-              <RotateCcw className="mr-1 h-3.5 w-3.5" /> {t("common.actions.cancel")}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isFrozen || cancelActivation.isPending}
+              className="min-w-0"
+            >
+              <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{t("common.actions.cancel")}</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -377,9 +388,10 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
               variant="outline"
               size="sm"
               disabled={isFrozen}
-              className="border-warning/40 text-warning-foreground hover:bg-warning/10"
+              className="min-w-0 border-warning/40 text-warning-foreground hover:bg-warning/10"
             >
-              <ShieldAlert className="mr-1 h-3.5 w-3.5" /> {t("activator.requests.card.freeze")}
+              <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{t("activator.requests.card.freeze")}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>

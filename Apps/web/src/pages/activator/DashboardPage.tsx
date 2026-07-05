@@ -124,7 +124,7 @@ export default function DashboardPage() {
                       {t("activator.dashboard.last7Days")}
                     </span>
                   </div>
-                  <div className="flex h-48 items-end gap-3">
+                  <div className="flex h-48 items-stretch gap-3">
                     {data.weekly.map((d) => {
                       const h = max > 0 ? (d.count / max) * 100 : 0;
                       return (
@@ -132,7 +132,7 @@ export default function DashboardPage() {
                           <div className="relative flex w-full flex-1 items-end">
                             <div
                               className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary-hover transition-all hover:opacity-80"
-                              style={{ height: `${h}%` }}
+                              style={{ height: `${h}%`, minHeight: d.count > 0 ? "2px" : 0 }}
                               title={t("activator.dashboard.activationsCount", { count: d.count })}
                             />
                             <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-foreground">

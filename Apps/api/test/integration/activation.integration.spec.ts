@@ -152,6 +152,57 @@ describe('POST /keys/verify', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('SUBMITTED');
   });
+
+  // Stage-04-fix #4A: the old code read only the base ActivationInformation (the value at
+  // submit time) — a correction made in an earlier step, never touched since, was invisible
+  // on re-check. Verifies the real DB → service → mapper → HTTP path, not just the merge
+  // helper in isolation.
+  it('NEEDS_CORRECTION re-check — submittedFields reflects a value corrected in an earlier step', async () => {
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      clientFullName: 'Jane Doe',
+      clientPhone: '+213555000001',
+      accountFields: [{ field: AccountInformation.USERNAME, value: 'wrongname' }],
+    });
+
+    // An earlier WRONG_INFORMATION round whose correction was already applied in place
+    // (mirrors what ActivationService.update does), predating seedActivation's own PROCESSING
+    // step so the query's `orderBy: createdAt desc` puts it second.
+    const oldStep = await prisma.activationStep.create({
+      data: {
+        activationId: activation.id,
+        activationStat: ActivationStat.WRONG_INFORMATION,
+        createdAt: new Date(Date.now() - 60_000),
+      },
+    });
+    await prisma.wrongInformation.create({
+      data: {
+        activationStepId: oldStep.id,
+        accountInform: AccountInformation.USERNAME,
+        value: 'corrected_name',
+      },
+    });
+
+    const res = await request(app)
+      .post(`${KEY_BASE}${KEY_ROUTES.VERIFY}`)
+      .send({ key: card.key });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.clientFullName).toBe('Jane Doe');
+    expect(res.body.data.clientPhone).toBe('+213555000001');
+    const username = (res.body.data.submittedFields as Array<{ field: string; value: string }>).find(
+      (f) => f.field === AccountInformation.USERNAME,
+    );
+    expect(username?.value).toBe('corrected_name');
+  });
 });
 
 // ─── POST /keys/submit ────────────────────────────────────────────────────────
@@ -506,6 +557,35 @@ describe('GET /activations/active — PASSWORD exposure', () => {
     }>;
     const passwordField = item[0]?.accountFields.find((f) => f.value === 'secret123');
     expect(passwordField).toBeDefined();
+  });
+});
+
+// Stage-04-fix #3.1: freezing hands the activation to the admin — it must leave the
+// activator's own Active Requests list (not just visually, via a real GET after the freeze).
+describe('GET /activations/active — FREEZE exclusion', () => {
+  it("a frozen activation does not appear in the activator's own active list", async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    await seedActivation(prisma, card, {
+      activationStat: ActivationStat.FREEZE,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_ACTIVE}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
   });
 });
 

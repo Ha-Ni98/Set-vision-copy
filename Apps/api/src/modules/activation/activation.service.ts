@@ -57,6 +57,12 @@ const WORKING_STATS: PrismaActivationStat[] = [
 
 const LIVE_STATS: PrismaActivationStat[] = [PrismaActivationStat.PENDING, ...WORKING_STATS];
 
+// FREEZE hands the activation off to the admin (activate-by-admin/cancel resolve it) — it
+// must leave the activator's own active-request list and stop occupying a slot (Stage-04-fix
+// #3.1), while still counting as WORKING for ownership/integrity checks (LIVE_STATS,
+// assertOwnerAndWorking) so it can't be silently orphaned or double-activated.
+const ACTIVE_SLOT_STATS = WORKING_STATS.filter((s) => s !== PrismaActivationStat.FREEZE);
+
 const CANCELLED_STATS: PrismaActivationStat[] = [
   PrismaActivationStat.CANCELLED_BY_ACTIVATOR,
   PrismaActivationStat.REMOVED_FROM_ACTIVATOR,
@@ -187,7 +193,13 @@ export class ActivationService implements IActivationService {
   ): ActiveRequestDTO {
     const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
     const distributor = this.buildDistributorJoin(activation.card.distributor!);
-    const info = this.resolveLatestWinsInfo(activation.information, activation.steps);
+    // OTP gets its own dedicated `otpValue` field below — drop it from the general fields
+    // list so the activator's card doesn't show it twice (Stage-04-fix #3.3). Scoped to this
+    // DTO only: resolveLatestWinsInfo stays untouched since the admin detail view's
+    // submittedInformation (a separate DTO) reuses it and has no equivalent dedicated field.
+    const info = this.resolveLatestWinsInfo(activation.information, activation.steps).filter(
+      (i) => i.accountInform !== AccountInformation.OTP,
+    );
     const otpValue = this.extractOtpValue(activation.steps);
     return ActivationMapper.toActiveRequestDTO(
       activation,
@@ -245,7 +257,6 @@ export class ActivationService implements IActivationService {
             information: true,
             steps: {
               orderBy: { createdAt: 'desc' },
-              take: 1,
               include: { wrongInformation: true, additionalInformation: true },
             },
           },
@@ -269,14 +280,18 @@ export class ActivationService implements IActivationService {
       activationStat: live.activationStat,
     }).status;
 
+    // Latest-wins across the FULL step history (not just the latest step) — a field can be
+    // corrected in an early round and never touched again, so only merging every step's
+    // values (the same helper buildActiveRequestDTO uses for the activator's card) surfaces
+    // the true current value for the client's own Step-2 prefill (Stage-04-fix #4A).
+    const submittedInfo = this.resolveLatestWinsInfo(live.information, live.steps);
     const latestStep = live.steps[0] ?? null;
 
     return ActivationMapper.toKeyVerificationDTO(status, plan, {
       id: live.id,
-      information: live.information.map((i) => ({
-        accountInform: i.accountInform as AccountInformation,
-        value: i.value,
-      })),
+      clientFullName: live.clientFullName,
+      clientPhone: live.clientPhone,
+      submittedInfo,
       latestStep: latestStep
         ? {
             wrongInformation: latestStep.wrongInformation.map((w) => ({
@@ -518,7 +533,7 @@ export class ActivationService implements IActivationService {
     const activations = await this.prisma.activation.findMany({
       where: {
         activatorId: activator.id,
-        activationStat: { in: WORKING_STATS },
+        activationStat: { in: ACTIVE_SLOT_STATS },
       },
       include: ACTIVE_REQUEST_INCLUDE,
     });
@@ -530,7 +545,7 @@ export class ActivationService implements IActivationService {
     const activator = await this.resolveActivator(principalUserId);
 
     const activeCount = await this.prisma.activation.count({
-      where: { activatorId: activator.id, activationStat: { in: WORKING_STATS } },
+      where: { activatorId: activator.id, activationStat: { in: ACTIVE_SLOT_STATS } },
     });
 
     if (activeCount >= 3) {

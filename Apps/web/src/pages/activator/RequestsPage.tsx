@@ -42,7 +42,13 @@ function useExitingActiveList(active: ActiveRequestDTO[]) {
   useEffect(() => {
     setDisplayed((prevDisplayed) => {
       const currentIds = new Set(active.map((r) => r.id));
-      const stillThere = prevDisplayed.filter((r) => currentIds.has(r.id));
+      // Sourced from `active` (the fresh query data), not `prevDisplayed` — a card that's
+      // still present must always show its latest fields. Filtering `prevDisplayed` instead
+      // (matching only by id) silently kept every still-present card frozen on whatever data
+      // it had at its last arrival: a client's correction, a new OTP, anything, never showed
+      // up until the card left and re-entered this list, or a full page reload reseeded this
+      // state from scratch (the exact "need a refresh to see updates" bug report).
+      const stillThere = active.filter((r) => prevDisplayed.some((p) => p.id === r.id));
       const removed = prevDisplayed.filter((r) => !currentIds.has(r.id));
       const arrived = active.filter((r) => !prevDisplayed.some((p) => p.id === r.id));
 

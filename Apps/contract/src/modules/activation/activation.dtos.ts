@@ -23,6 +23,15 @@ export const AccountFieldValueSchema = z.object({
 });
 export type AccountFieldValue = z.infer<typeof AccountFieldValueSchema>;
 
+// Discriminator-keyed (unlike AccountFieldValueSchema's free-text fieldLabel) so the client
+// form can match a submitted value back to its own field by enum, the same way flaggedFields/
+// requestedFields already do — matching on a label string couldn't survive relabeling/i18n.
+export const SubmittedFieldSchema = z.object({
+  field: z.enum(AccountInformation),
+  value: z.string(),
+});
+export type SubmittedField = z.infer<typeof SubmittedFieldSchema>;
+
 export const TimelineEntrySchema = z.object({
   stat: z.enum(ActivationStat),
   createdAt: z.iso.datetime(),
@@ -44,7 +53,12 @@ export const KeyVerificationResponseSchema = z.object({
   subscriptionLabel: z.string().optional(),
   planKey: z.string().optional(),
   activationId: z.uuid().optional(),
-  submittedFields: z.array(AccountFieldValueSchema).optional(),
+  // Real, unmasked saved values (incl. password) — access is gated by the client's own key,
+  // so the Step-2 form can prefill on re-check or a live status change (Stage-04-fix #4A)
+  // instead of showing blank fields the client already filled in.
+  submittedFields: z.array(SubmittedFieldSchema).optional(),
+  clientFullName: z.string().nullable().optional(),
+  clientPhone: z.string().nullable().optional(),
   flaggedFields: z
     .array(z.object({ field: z.enum(AccountInformation), label: z.string() }))
     .optional(),

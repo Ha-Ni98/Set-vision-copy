@@ -15,7 +15,7 @@ const io = createSocketServer(httpServer);
 io.of(NS.ACTIVATORS).use(authNamespace([UserRole.ACTIVATOR]));
 io.of(NS.ADMIN).use(authNamespace([UserRole.ADMIN]));
 
-initRealtimeGateway(io);
+initRealtimeGateway(io, prisma);
 
 async function main(): Promise<void> {
   await prisma.$connect();

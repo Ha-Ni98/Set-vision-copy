@@ -56,6 +56,9 @@ function makeStep(overrides: Partial<ActivationStepEntry> = {}): ActivationStepE
 
 // ─── toKeyVerificationDTO ─────────────────────────────────────────────────────
 
+const CLIENT_FULL_NAME = 'Jane Doe';
+const CLIENT_PHONE = '+213555000001';
+
 describe('ActivationMapper.toKeyVerificationDTO', () => {
   it('returns only status when no plan and no activation', () => {
     const result = ActivationMapper.toKeyVerificationDTO(ClientActivationStatus.INVALID, null, null);
@@ -70,40 +73,69 @@ describe('ActivationMapper.toKeyVerificationDTO', () => {
     expect(result.subscriptionLabel).toBe('Snapchat Plus — 01 Month');
   });
 
-  it('includes activationId when activation is supplied', () => {
+  it('includes activationId, clientFullName, and clientPhone when activation is supplied', () => {
     const result = ActivationMapper.toKeyVerificationDTO(
       ClientActivationStatus.SUBMITTED,
       PLAN,
-      { id: ACTIVATION_ID, information: [], latestStep: null },
+      {
+        id: ACTIVATION_ID,
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: [],
+        latestStep: null,
+      },
     );
     expect(result.activationId).toBe(ACTIVATION_ID);
+    expect(result.clientFullName).toBe(CLIENT_FULL_NAME);
+    expect(result.clientPhone).toBe(CLIENT_PHONE);
   });
 
-  it('masks PASSWORD in submittedFields', () => {
+  // Stage-04-fix #4A: real values (incl. password) are returned unmasked — access is gated
+  // by the client's own key, so the Step-2 form can prefill on re-check or a live status
+  // change. Unlike toActivationDetailDTO's admin-facing maskValue, untouched below.
+  it('does not mask PASSWORD in submittedFields', () => {
     const result = ActivationMapper.toKeyVerificationDTO(
       ClientActivationStatus.PROCESSING,
       PLAN,
-      { id: ACTIVATION_ID, information: makeInformation(), latestStep: null },
+      {
+        id: ACTIVATION_ID,
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
+        latestStep: null,
+      },
     );
-    const pwd = result.submittedFields?.find((f) => f.fieldLabel === 'Password');
-    expect(pwd?.value).toBe('****');
+    const pwd = result.submittedFields?.find((f) => f.field === AccountInformation.PASSWORD);
+    expect(pwd?.value).toBe('secret123');
   });
 
   it('does not mask USERNAME in submittedFields', () => {
     const result = ActivationMapper.toKeyVerificationDTO(
       ClientActivationStatus.PROCESSING,
       PLAN,
-      { id: ACTIVATION_ID, information: makeInformation(), latestStep: null },
+      {
+        id: ACTIVATION_ID,
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
+        latestStep: null,
+      },
     );
-    const user = result.submittedFields?.find((f) => f.fieldLabel === 'Username');
+    const user = result.submittedFields?.find((f) => f.field === AccountInformation.USERNAME);
     expect(user?.value).toBe('john_doe');
   });
 
-  it('populates accountUsername from USERNAME information entry', () => {
+  it('populates accountUsername from the USERNAME submittedInfo entry', () => {
     const result = ActivationMapper.toKeyVerificationDTO(
       ClientActivationStatus.ACTIVATED,
       PLAN,
-      { id: ACTIVATION_ID, information: makeInformation(), latestStep: null },
+      {
+        id: ACTIVATION_ID,
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
+        latestStep: null,
+      },
     );
     expect(result.accountUsername).toBe('john_doe');
   });
@@ -114,7 +146,9 @@ describe('ActivationMapper.toKeyVerificationDTO', () => {
       PLAN,
       {
         id: ACTIVATION_ID,
-        information: makeInformation(),
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
         latestStep: {
           wrongInformation: [{ accountInform: AccountInformation.USERNAME }],
           additionalInformation: [],
@@ -131,7 +165,9 @@ describe('ActivationMapper.toKeyVerificationDTO', () => {
       PLAN,
       {
         id: ACTIVATION_ID,
-        information: makeInformation(),
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
         latestStep: {
           wrongInformation: [],
           additionalInformation: [{ accountInform: AccountInformation.OTP }],
@@ -146,7 +182,13 @@ describe('ActivationMapper.toKeyVerificationDTO', () => {
     const result = ActivationMapper.toKeyVerificationDTO(
       ClientActivationStatus.SUBMITTED,
       PLAN,
-      { id: ACTIVATION_ID, information: makeInformation(), latestStep: null },
+      {
+        id: ACTIVATION_ID,
+        clientFullName: CLIENT_FULL_NAME,
+        clientPhone: CLIENT_PHONE,
+        submittedInfo: makeInformation(),
+        latestStep: null,
+      },
     );
     expect(KeyVerificationResponseSchema.safeParse(result).success).toBe(true);
   });

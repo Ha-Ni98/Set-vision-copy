@@ -109,7 +109,9 @@ export class ActivationMapper {
     plan: ActivationPlanJoin | null,
     activation: {
       id: string;
-      information: ActivationInfoEntry[];
+      clientFullName: string;
+      clientPhone: string;
+      submittedInfo: ActivationInfoEntry[];
       latestStep: {
         wrongInformation: Array<{ accountInform: string }>;
         additionalInformation: Array<{ accountInform: string }>;
@@ -124,13 +126,18 @@ export class ActivationMapper {
 
     if (activation) {
       dto.activationId = activation.id;
+      dto.clientFullName = activation.clientFullName;
+      dto.clientPhone = activation.clientPhone;
 
-      dto.submittedFields = activation.information.map((i) => ({
-        fieldLabel: toLabel(i.accountInform),
-        value: maskValue(i.accountInform, i.value),
+      // Real, unmasked values (incl. password) — unlike toActivationDetailDTO's admin-facing
+      // maskValue below, access here is gated by the client's own key (Stage-04-fix #4A: the
+      // Step-2 form prefills from these on re-check or a live status change).
+      dto.submittedFields = activation.submittedInfo.map((i) => ({
+        field: i.accountInform as AccountInformation,
+        value: i.value ?? '',
       }));
 
-      const usernameEntry = activation.information.find(
+      const usernameEntry = activation.submittedInfo.find(
         (i) => i.accountInform === AccountInformation.USERNAME,
       );
       if (usernameEntry?.value) {
