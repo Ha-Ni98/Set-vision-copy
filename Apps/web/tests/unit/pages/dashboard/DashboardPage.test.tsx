@@ -113,7 +113,7 @@ describe("DashboardPage", () => {
     expect(recentRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it("confirms Activate on a frozen row and calls useActivateByAdmin.mutate with its id", async () => {
+  it("confirms Activate on a frozen row, requires a valid email, and calls useActivateByAdmin.mutate with {id, command}", async () => {
     const user = userEvent.setup();
     const activateMutate = vi.fn();
     vi.mocked(useAdminActivationsHook.useAdminActivations).mockReturnValue({
@@ -152,7 +152,18 @@ describe("DashboardPage", () => {
     await user.click(screen.getByText("common.actions.activate"));
     const dialog = await screen.findByRole("alertdialog");
     await user.click(within(dialog).getByText("common.actions.activate"));
+    expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+    expect(activateMutate).not.toHaveBeenCalled();
 
-    expect(activateMutate).toHaveBeenCalledWith("activation-1");
+    await user.type(
+      within(dialog).getByPlaceholderText("activator.requests.card.activationEmailPlaceholder"),
+      "client@example.com",
+    );
+    await user.click(within(dialog).getByText("common.actions.activate"));
+
+    expect(activateMutate).toHaveBeenCalledWith({
+      id: "activation-1",
+      command: { activationEmail: "client@example.com" },
+    });
   });
 });

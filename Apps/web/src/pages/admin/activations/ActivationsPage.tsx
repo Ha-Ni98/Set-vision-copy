@@ -226,7 +226,7 @@ export default function ActivationsPage() {
         onRetry={activationsQuery.refetch}
         hasFilters={hasFilters}
         onClearFilters={clearFilters}
-        onActivate={(activation) => activateByAdmin.mutate(activation.id)}
+        onActivate={(activation, command) => activateByAdmin.mutate({ id: activation.id, command })}
         onCancel={(activation) => cancelByAdmin.mutate(activation.id)}
         onSetPrice={(activation, amount) =>
           setActivationPrice.mutate({ id: activation.id, command: { amount } })

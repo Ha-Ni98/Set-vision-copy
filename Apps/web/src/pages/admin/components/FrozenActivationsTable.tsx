@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AdminActivationDTO } from "@my-app/contract";
+import type { ActivateActivationCommand, AdminActivationDTO } from "@my-app/contract";
 import { DataTable } from "@/components/shared/DataTable";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -15,7 +15,7 @@ interface Props {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  onActivate: (activationId: string) => void;
+  onActivate: (activationId: string, command: ActivateActivationCommand) => void;
   onCancel: (activationId: string) => void;
 }
 
@@ -136,9 +136,9 @@ export function FrozenActivationsTable({
         onOpenChange={(open) => {
           if (!open) setDialogRow(null);
         }}
-        onConfirm={() => {
+        onConfirm={(command) => {
           if (!dialogRow) return;
-          if (dialogRow.action === "activate") onActivate(dialogRow.row.id);
+          if (dialogRow.action === "activate") onActivate(dialogRow.row.id, command!);
           else onCancel(dialogRow.row.id);
           setDialogRow(null);
         }}

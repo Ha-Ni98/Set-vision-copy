@@ -132,6 +132,13 @@ export default function HistoryPage() {
         cell: ({ row }) => <span className="font-mono text-xs">{row.original.keyMasked}</span>,
       },
       {
+        id: "activationEmail",
+        header: t("activator.history.recentTable.email"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.original.activationEmail ?? "—"}</span>
+        ),
+      },
+      {
         id: "completed",
         header: t("activator.history.recentTable.completed"),
         cell: ({ row }) => (
@@ -221,7 +228,7 @@ export default function HistoryPage() {
             action={<Button onClick={() => refetchRecent()}>{t("common.actions.tryAgain")}</Button>}
           />
         ) : isLoadingRecent ? (
-          <TableSkeleton rows={5} columns={4} />
+          <TableSkeleton rows={5} columns={5} />
         ) : (
           <DataTable
             columns={recentColumns}

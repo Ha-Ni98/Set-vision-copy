@@ -15,6 +15,7 @@ import {
   SetActivatorPriceSchema,
   GetActivationsQuerySchema,
   GetActivatorHistoryQuerySchema,
+  ActivateActivationSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
@@ -124,7 +125,7 @@ activationRouter.post(
 activationRouter.post(
   ACTIVATION_ROUTES.ACTIVATE,
   activatorOnly,
-  validateRequest({ params: ActivationActionParamsSchema }),
+  validateRequest({ params: ActivationActionParamsSchema, body: ActivateActivationSchema }),
   controller.activate,
 );
 
@@ -153,7 +154,7 @@ activationRouter.post(
 activationRouter.post(
   ACTIVATION_ROUTES.ACTIVATE_BY_ADMIN,
   adminOnly,
-  validateRequest({ params: ActivationActionParamsSchema }),
+  validateRequest({ params: ActivationActionParamsSchema, body: ActivateActivationSchema }),
   controller.activateByAdmin,
 );
 

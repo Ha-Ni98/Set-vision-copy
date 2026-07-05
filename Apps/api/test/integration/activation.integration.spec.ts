@@ -347,6 +347,130 @@ describe('POST /activations/:id/take', () => {
   });
 });
 
+// ─── POST /activations/:id/activate ──────────────────────────────────────────
+// Stage-04-fix #2: a required, valid activationEmail on the activator's own Activate.
+
+describe('POST /activations/:id/activate', () => {
+  it('200 — activator activates a PROCESSING activation and stores the required activationEmail', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
+
+    expect(res.status).toBe(200);
+    expect(() => ActiveRequestResponseSchema.parse(res.body.data)).not.toThrow();
+
+    const updated = await prisma.activation.findUnique({ where: { id: activation.id } });
+    expect(updated?.activationEmail).toBe('client@example.com');
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is missing', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is not a valid email', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'not-an-email' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
+  });
+});
+
+// ─── GET /activations/recent ──────────────────────────────────────────────────
+// Stage-04-fix #2: activationEmail rides all the way through to the recent feed.
+
+describe('GET /activations/recent', () => {
+  it('200 — includes the activationEmail set on activate', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'recent@example.com' });
+
+    const res = await request(app)
+      .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_RECENT}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const row = (res.body.data as Array<{ id: string; activationEmail: string | null }>).find(
+      (r) => r.id === activation.id,
+    );
+    expect(row?.activationEmail).toBe('recent@example.com');
+  });
+});
+
 // ─── GET /activations/active ──────────────────────────────────────────────────
 
 describe('GET /activations/active — PASSWORD exposure', () => {
@@ -543,10 +667,14 @@ describe('POST /activations/:id/activate-by-admin', () => {
 
     const res = await request(app)
       .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
 
     expect(res.status).toBe(200);
     expect(res.body.data.state).toBe(ActivationStat.ACTIVATED_BY_ADMIN);
+
+    const updated = await prisma.activation.findUnique({ where: { id: activation.id } });
+    expect(updated?.activationEmail).toBe('client@example.com');
   });
 
   it('409 — RESOURCE_CONFLICT when activation is not in FREEZE state', async () => {
@@ -566,10 +694,38 @@ describe('POST /activations/:id/activate-by-admin', () => {
 
     const res = await request(app)
       .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is missing', async () => {
+    const { user } = await seedAdm();
+    const token = mintToken({ id: user.id, role: UserRole.ADMIN });
+    const { activator } = await seedAct();
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.FREEZE,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
   });
 });
 

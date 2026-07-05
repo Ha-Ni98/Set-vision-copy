@@ -167,7 +167,13 @@ describe("ActivationDetailPage", () => {
     );
   });
 
-  it("does not show Set Price when the activation already has a price", () => {
+  it("shows Edit Price (not Set Price) for a completed+priced activation, prefills the amount, and re-submits with the new amount (Stage-04-fix #1)", async () => {
+    const user = userEvent.setup();
+    const setPriceMutate = vi.fn();
+    vi.mocked(useAdminActivationsHook.useSetActivationPrice).mockReturnValue({
+      mutate: setPriceMutate,
+      isPending: false,
+    } as never);
     vi.mocked(useAdminActivationsHook.useActivationDetail).mockReturnValue({
       data: detail({
         timeline: [
@@ -188,5 +194,18 @@ describe("ActivationDetailPage", () => {
     renderDetail();
 
     expect(screen.queryByText("admin.activations.actions.setPrice")).not.toBeInTheDocument();
+    await user.click(screen.getByText("admin.activations.actions.editPrice"));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("admin.activations.setPriceModal.editTitle");
+    const amountInput = within(dialog).getByLabelText("admin.activations.setPriceModal.amount");
+    expect(amountInput).toHaveValue(500);
+    await user.clear(amountInput);
+    await user.type(amountInput, "750");
+    await user.click(within(dialog).getByText("common.actions.confirm"));
+
+    expect(setPriceMutate).toHaveBeenCalledWith(
+      { id: "act-1", command: { amount: 750 } },
+      expect.anything(),
+    );
   });
 });

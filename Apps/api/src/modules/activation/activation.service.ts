@@ -32,6 +32,7 @@ import {
   type SetActivatorPriceCommand,
   type GetActivationsQuery,
   type GetActivatorHistoryQuery,
+  type ActivateActivationCommand,
 } from '@my-app/contract';
 import type { IActivationService } from './activation.interface';
 import {
@@ -667,7 +668,11 @@ export class ActivationService implements IActivationService {
     });
   }
 
-  async activate(id: string, principalUserId: string): Promise<ActiveRequestDTO> {
+  async activate(
+    id: string,
+    principalUserId: string,
+    cmd: ActivateActivationCommand,
+  ): Promise<ActiveRequestDTO> {
     const activator = await this.resolveActivator(principalUserId);
 
     const activation = await this.prisma.activation.findUnique({
@@ -701,6 +706,7 @@ export class ActivationService implements IActivationService {
         data: {
           activationStat: PrismaActivationStat.ACTIVATED,
           completedAt: now,
+          activationEmail: cmd.activationEmail,
           ...(price && { activationPrice: price }),
         },
       });
@@ -1002,6 +1008,7 @@ export class ActivationService implements IActivationService {
           id: a.id,
           activationStat: a.activationStat,
           completedAt: a.completedAt!,
+          activationEmail: a.activationEmail,
         },
         a.card.subscriptionPlan as unknown as ActivationPlanJoin,
         a.card.key,
@@ -1130,7 +1137,7 @@ export class ActivationService implements IActivationService {
     );
   }
 
-  async activateByAdmin(id: string): Promise<AdminActivationDTO> {
+  async activateByAdmin(id: string, cmd: ActivateActivationCommand): Promise<AdminActivationDTO> {
     const activation = await this.prisma.activation.findUnique({
       where: { id },
       include: {
@@ -1160,6 +1167,7 @@ export class ActivationService implements IActivationService {
         data: {
           activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
           completedAt: now,
+          activationEmail: cmd.activationEmail,
           ...(price && { activationPrice: price }),
         },
       });

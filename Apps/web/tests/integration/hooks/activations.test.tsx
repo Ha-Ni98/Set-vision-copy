@@ -184,7 +184,7 @@ describe("activator-flow mutation invalidations (plan.md §3.2)", () => {
     const { result } = renderHook(() => useActivateRequest(), { wrapper });
     await expectActiveHistoryRecentInvalidated(
       wrapper,
-      () => result.current.mutate("id"),
+      () => result.current.mutate({ id: "id", command: { activationEmail: "client@example.com" } }),
       () => result.current.isSuccess,
     );
   });
@@ -313,7 +313,7 @@ describe("admin activation hooks (no UI consumer yet — full contract coverage,
     const { result } = renderHook(() => useActivateByAdmin(), { wrapper });
     await expectDomainPrefixesInvalidated(
       wrapper,
-      () => result.current.mutate("id"),
+      () => result.current.mutate({ id: "id", command: { activationEmail: "client@example.com" } }),
       () => result.current.isSuccess,
     );
   });

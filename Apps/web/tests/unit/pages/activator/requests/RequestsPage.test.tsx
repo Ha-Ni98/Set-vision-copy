@@ -207,15 +207,27 @@ describe("RequestsPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("Activate: clicking calls useActivateRequest.mutate(id) directly (no confirm)", async () => {
+  it("Activate: requires a valid email, then calls useActivateRequest.mutate with {id, command}", async () => {
     const user = userEvent.setup();
     mockActive([activeRequest({ id: "act-done" })]);
     render(<RequestsPage />);
 
     await user.click(screen.getByText("common.actions.activate"));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByText("common.actions.confirm"));
+    expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+    expect(activateMutate).not.toHaveBeenCalled();
 
-    expect(activateMutate).toHaveBeenCalledWith("act-done");
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await user.type(
+      within(dialog).getByPlaceholderText("activator.requests.card.activationEmailPlaceholder"),
+      "client@example.com",
+    );
+    await user.click(within(dialog).getByText("common.actions.confirm"));
+
+    expect(activateMutate).toHaveBeenCalledWith(
+      { id: "act-done", command: { activationEmail: "client@example.com" } },
+      expect.anything(),
+    );
   });
 
   it("Cancel: requires confirmation, then calls useCancelActivation.mutate(id)", async () => {

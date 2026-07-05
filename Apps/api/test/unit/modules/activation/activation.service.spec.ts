@@ -537,6 +537,7 @@ describe('ActivationService.activate', () => {
   const userId = faker.string.uuid();
   const activator = makeActivator({ userId });
   const id = '11111111-1111-1111-8111-111111111111';
+  const ACTIVATE_CMD = { activationEmail: 'client@example.com' };
 
   function makeActivationWithCommissions(overrides: Record<string, unknown> = {}) {
     return makeActivation({
@@ -572,7 +573,7 @@ describe('ActivationService.activate', () => {
     prisma.activation.findUnique.mockResolvedValue(
       makeActivation({ id, activatorId: activator.id, activationStat: ActivationStat.PENDING }),
     );
-    await expect(service.activate(id, userId)).rejects.toThrow(ConflictError);
+    await expect(service.activate(id, userId, ACTIVATE_CMD)).rejects.toThrow(ConflictError);
   });
 
   it('picks commission tier by duration (within-range tier)', async () => {
@@ -588,7 +589,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     // Verify activationPrice set to tier commission (150)
     expect(prisma.activation.update).toHaveBeenCalledWith(
@@ -611,7 +612,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     expect(prisma.activation.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -630,7 +631,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     expect(prisma.activator.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -651,6 +652,25 @@ describe('ActivationService.activate', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('activation:status-changed', expect.objectContaining({
       status: ClientActivationStatus.ACTIVATED,
     }));
+  });
+
+  it('stores the required activationEmail (Stage-04-fix #2)', async () => {
+    const activation = makeActivationWithCommissions();
+    prisma.activator.findUnique.mockResolvedValue(activator);
+    prisma.activation.findUnique.mockResolvedValue(activation);
+    prisma.activation.update.mockResolvedValue({});
+    prisma.card.update.mockResolvedValue({});
+    prisma.activator.update.mockResolvedValue({});
+    prisma.distributor.update.mockResolvedValue({});
+    prisma.activationStep.create.mockResolvedValue({});
+
+    await service.activate(id, userId, { activationEmail: 'client@example.com' });
+
+    expect(prisma.activation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ activationEmail: 'client@example.com' }),
+      }),
+    );
   });
 });
 
@@ -827,12 +847,13 @@ describe('ActivationService.getMyHistory', () => {
 // ─── getRecent ────────────────────────────────────────────────────────────────
 
 describe('ActivationService.getRecent', () => {
-  it('returns last 10 completed activations with keyMasked', async () => {
+  it('returns last 10 completed activations with keyMasked and activationEmail (Stage-04-fix #2)', async () => {
     prisma.activation.findMany.mockResolvedValue([
       {
         id: '11111111-1111-1111-8111-111111111111',
         activationStat: ActivationStat.ACTIVATED,
         completedAt: new Date('2024-06-01T10:00:00.000Z'),
+        activationEmail: 'client@example.com',
         card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
       },
     ]);
@@ -840,5 +861,6 @@ describe('ActivationService.getRecent', () => {
     const result = await service.getRecent();
     expect(result).toHaveLength(1);
     expect(result[0]!.keyMasked).toBe('********E5F6');
+    expect(result[0]!.activationEmail).toBe('client@example.com');
   });
 });

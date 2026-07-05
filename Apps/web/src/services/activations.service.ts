@@ -14,6 +14,7 @@ import {
   type AdminActivationDTO,
   type SetActivatorPriceCommand,
   type GetActivationsQuery,
+  type ActivateActivationCommand,
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
@@ -70,12 +71,15 @@ export async function requestAdditionalInfo(
   return res.data.data;
 }
 
-// Supersedes the Sub-01 no-op: ACTIVATION_ROUTES.ACTIVATE exists and needs no command body
-// (plan.md D3, closing codebase-map §8.Q4). The "Done" dialog's email field still has no
-// contract home and stays UI-only.
-export async function activate(id: string): Promise<ActiveRequestDTO> {
+// Stage-04-fix #2: now takes a required ActivateActivationCommand ({ activationEmail }),
+// stored on the activation and surfaced later in the recent-activation tables.
+export async function activate(
+  id: string,
+  command: ActivateActivationCommand,
+): Promise<ActiveRequestDTO> {
   const res = await api.post<ApiResponse<ActiveRequestDTO>>(
     withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.ACTIVATE), { id }),
+    command,
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive
   return res.data.data;
@@ -142,9 +146,14 @@ export async function getById(id: string, signal?: AbortSignal): Promise<Activat
   return res.data.data;
 }
 
-export async function activateByAdmin(id: string): Promise<AdminActivationDTO> {
+// Stage-04-fix #2: now takes a required ActivateActivationCommand ({ activationEmail }).
+export async function activateByAdmin(
+  id: string,
+  command: ActivateActivationCommand,
+): Promise<AdminActivationDTO> {
   const res = await api.post<ApiResponse<AdminActivationDTO>>(
     withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.ACTIVATE_BY_ADMIN), { id }),
+    command,
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive
   return res.data.data;

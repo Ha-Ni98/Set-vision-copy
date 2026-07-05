@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
@@ -50,6 +51,7 @@ import { useFreezeActivation } from "@/hooks/useFreezeActivation";
 import { correctableFields, requestableFields } from "./plan-fields";
 import { flagWrongInfoSchema, type FlagWrongInfoFormValues } from "./flag-wrong-info.schema";
 import { freezeRequestSchema, type FreezeRequestFormValues } from "./freeze-request.schema";
+import { activateRequestSchema, type ActivateRequestFormValues } from "./activate-request.schema";
 
 interface Props {
   req: ActiveRequestDTO;
@@ -109,6 +111,26 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
     );
   };
 
+  // Activate — required activation email (Stage-04-fix #2).
+  const [activateOpen, setActivateOpen] = useState(false);
+  const {
+    register: registerActivate,
+    handleSubmit: handleActivateSubmit,
+    reset: resetActivate,
+    formState: { errors: activateErrors },
+  } = useForm<ActivateRequestFormValues>({ resolver: zodResolver(activateRequestSchema(t)) });
+  const submitActivate = (data: ActivateRequestFormValues) => {
+    activateRequest.mutate(
+      { id: req.id, command: data },
+      {
+        onSuccess: () => {
+          setActivateOpen(false);
+          resetActivate();
+        },
+      },
+    );
+  };
+
   // Freeze — reason textarea.
   const [freezeOpen, setFreezeOpen] = useState(false);
   const {
@@ -137,12 +159,6 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
       id: req.id,
       command: { fields: requestableFields(req.subscriptionLabel) },
     });
-  };
-  // Activate has no confirm step and no extra fields (spec: "-> state ACTIVATED, card leaves
-  // the queue (exit anim)") — the earlier email-collecting dialog here was a leftover from a
-  // draft with no backing command; useActivateRequest takes only the id.
-  const onActivate = () => {
-    activateRequest.mutate(req.id);
   };
   const onCancel = () => {
     cancelActivation.mutate(req.id);
@@ -290,9 +306,45 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
           <Smartphone className="mr-1 h-3.5 w-3.5" /> {t("activator.requests.card.otp")}
         </Button>
 
-        <Button size="sm" onClick={onActivate} disabled={isFrozen || activateRequest.isPending}>
-          <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {t("common.actions.activate")}
-        </Button>
+        <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" disabled={isFrozen || activateRequest.isPending}>
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {t("common.actions.activate")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("activator.requests.card.activateDialogTitle")}</DialogTitle>
+              <DialogDescription>
+                {t("activator.requests.card.activateDialogBody")}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleActivateSubmit(submitActivate)}>
+              <Input
+                type="email"
+                placeholder={t("activator.requests.card.activationEmailPlaceholder")}
+                aria-invalid={!!activateErrors.activationEmail}
+                aria-describedby={
+                  activateErrors.activationEmail ? "activate-email-error" : undefined
+                }
+                {...registerActivate("activationEmail")}
+              />
+              {activateErrors.activationEmail && (
+                <p id="activate-email-error" role="alert" className="mt-1 text-xs text-destructive">
+                  {activateErrors.activationEmail.message}
+                </p>
+              )}
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={() => setActivateOpen(false)}>
+                  {t("common.actions.cancel")}
+                </Button>
+                <Button type="submit" disabled={activateRequest.isPending}>
+                  {t("common.actions.confirm")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>

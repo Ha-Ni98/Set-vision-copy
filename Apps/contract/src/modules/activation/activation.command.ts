@@ -34,6 +34,13 @@ export const SubmitAdditionalInfoSchema = z.object({
 });
 export type SubmitAdditionalInfoCommand = z.infer<typeof SubmitAdditionalInfoSchema>;
 
+// Required on both the activator's own Activate and the admin's resolve-frozen-to-activate
+// (Stage-04-fix #2) — stored on Activation.activationEmail.
+export const ActivateActivationSchema = z.object({
+  activationEmail: z.email(),
+});
+export type ActivateActivationCommand = z.infer<typeof ActivateActivationSchema>;
+
 // Activator commands
 export const FlagWrongInfoSchema = z.object({
   fields: z.array(z.enum(AccountInformation)).nonempty(),

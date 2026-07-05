@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AdminActivationDTO } from "@my-app/contract";
+import type { ActivateActivationCommand, AdminActivationDTO } from "@my-app/contract";
 import { DataTable } from "@/components/shared/DataTable";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -23,7 +23,7 @@ interface Props {
   onRetry: () => void;
   hasFilters: boolean;
   onClearFilters: () => void;
-  onActivate: (activation: AdminActivationDTO) => void;
+  onActivate: (activation: AdminActivationDTO, command: ActivateActivationCommand) => void;
   onCancel: (activation: AdminActivationDTO) => void;
   onSetPrice: (activation: AdminActivationDTO, amount: number) => void;
   isMutating?: boolean;
@@ -157,9 +157,9 @@ export function ActivationsTable({
         action={resolveRow?.action ?? "activate"}
         reason={resolveRow?.row.freezeReason}
         onOpenChange={(open) => !open && setResolveRow(null)}
-        onConfirm={() => {
+        onConfirm={(command) => {
           if (!resolveRow) return;
-          if (resolveRow.action === "activate") onActivate(resolveRow.row);
+          if (resolveRow.action === "activate") onActivate(resolveRow.row, command!);
           else onCancel(resolveRow.row);
           setResolveRow(null);
         }}

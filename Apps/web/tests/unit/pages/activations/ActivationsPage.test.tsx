@@ -171,7 +171,19 @@ describe("ActivationsPage", () => {
     await user.click(within(menu).getByText("common.actions.activate"));
     const dialog = await screen.findByRole("alertdialog");
     await user.click(within(dialog).getByText("common.actions.activate"));
-    expect(activateMutate).toHaveBeenCalledWith("act-freeze");
+    expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+    expect(activateMutate).not.toHaveBeenCalled();
+
+    await user.type(
+      within(dialog).getByPlaceholderText("activator.requests.card.activationEmailPlaceholder"),
+      "client@example.com",
+    );
+    await user.click(within(dialog).getByText("common.actions.activate"));
+
+    expect(activateMutate).toHaveBeenCalledWith({
+      id: "act-freeze",
+      command: { activationEmail: "client@example.com" },
+    });
   });
 
   it("shows Set Price (not Resolve) for a completed+unpriced row, and submits the real amount", async () => {
@@ -206,8 +218,13 @@ describe("ActivationsPage", () => {
     });
   });
 
-  it("shows neither Resolve nor Set Price for an already-priced completed row", async () => {
+  it("shows Edit Price (not Set Price/Resolve) for an already-priced completed row, and re-submits the new amount (Stage-04-fix #1)", async () => {
     const user = userEvent.setup();
+    const setPriceMutate = vi.fn();
+    vi.mocked(useAdminActivationsHook.useSetActivationPrice).mockReturnValue({
+      mutate: setPriceMutate,
+      isPending: false,
+    } as never);
     mockActivations([
       activation({ id: "act-priced", state: ActivationStat.ACTIVATED, activationPrice: 500 }),
     ]);
@@ -217,6 +234,22 @@ describe("ActivationsPage", () => {
     const menu = await screen.findByRole("menu");
     expect(within(menu).queryByText("admin.activations.actions.setPrice")).not.toBeInTheDocument();
     expect(within(menu).queryByText("common.actions.activate")).not.toBeInTheDocument();
+    expect(within(menu).getByText("admin.activations.actions.editPrice")).toBeInTheDocument();
+
+    await user.click(within(menu).getByText("admin.activations.actions.editPrice"));
+    const priceDialog = await screen.findByRole("dialog");
+    const amountInput = within(priceDialog).getByLabelText(
+      "admin.activations.setPriceModal.amount",
+    );
+    expect(amountInput).toHaveValue(500);
+    await user.clear(amountInput);
+    await user.type(amountInput, "900");
+    await user.click(within(priceDialog).getByText("common.actions.confirm"));
+
+    expect(setPriceMutate).toHaveBeenCalledWith({
+      id: "act-priced",
+      command: { amount: 900 },
+    });
   });
 
   it("seeds the activator/distributor/state filters once from the URL", () => {

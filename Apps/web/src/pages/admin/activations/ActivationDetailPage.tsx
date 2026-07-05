@@ -65,10 +65,9 @@ export default function ActivationDetailPage() {
   // No top-level `state` on ActivationDetailDTO — the last timeline entry's stat is the
   // current status, same as the list's gating (§E-2 note: derive, don't fabricate a field).
   const currentState = detail.timeline.at(-1)?.stat;
-  const canSetPrice =
-    !!currentState &&
-    COMPLETED_STATES.has(currentState) &&
-    detail.financial.activationPrice == null;
+  // Any completed activation can be (re-)priced, not just an unpriced one (Stage-04-fix #1) —
+  // the backend's setPrice already adjusts the activator's earning/credits by the delta.
+  const canSetPrice = !!currentState && COMPLETED_STATES.has(currentState);
 
   return (
     <div className="flex flex-col gap-6">

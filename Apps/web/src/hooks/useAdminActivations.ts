@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { GetActivationsQuery, SetActivatorPriceCommand } from "@my-app/contract";
+import type {
+  GetActivationsQuery,
+  SetActivatorPriceCommand,
+  ActivateActivationCommand,
+} from "@my-app/contract";
 import * as activationsService from "@/services/activations.service";
 import { qk } from "@/lib/query-keys";
 
@@ -22,10 +26,12 @@ export function useActivationDetail(id: string) {
   });
 }
 
+// Stage-04-fix #2: activateByAdmin now takes a required ActivateActivationCommand.
 export function useActivateByAdmin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: activationsService.activateByAdmin,
+    mutationFn: ({ id, command }: { id: string; command: ActivateActivationCommand }) =>
+      activationsService.activateByAdmin(id, command),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.activations.all() });
       queryClient.invalidateQueries({ queryKey: qk.activators.all() });

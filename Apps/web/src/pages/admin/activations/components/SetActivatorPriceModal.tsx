@@ -51,12 +51,19 @@ export function SetActivatorPriceModal({
   }, [open, currentAmount, reset]);
 
   const submit = handleSubmit((values) => onSubmit(values));
+  const isEditing = currentAmount != null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("admin.activations.setPriceModal.title")}</DialogTitle>
+          <DialogTitle>
+            {t(
+              isEditing
+                ? "admin.activations.setPriceModal.editTitle"
+                : "admin.activations.setPriceModal.title",
+            )}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <div className="space-y-2">

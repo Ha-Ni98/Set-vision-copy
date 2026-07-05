@@ -108,7 +108,7 @@ export default function DashboardPage() {
           isLoading={frozenQuery.isLoading}
           isError={frozenQuery.isError}
           onRetry={frozenQuery.refetch}
-          onActivate={(id) => activateByAdmin.mutate(id)}
+          onActivate={(id, command) => activateByAdmin.mutate({ id, command })}
           onCancel={(id) => cancelByAdmin.mutate(id)}
         />
       </section>

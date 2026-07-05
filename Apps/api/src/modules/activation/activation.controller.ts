@@ -14,6 +14,7 @@ import type {
   SetActivatorPriceCommand,
   GetActivatorHistoryQuery,
   GetActivationsQuery,
+  ActivateActivationCommand,
 } from '@my-app/contract';
 
 export class ActivationController {
@@ -128,7 +129,10 @@ export class ActivationController {
   activate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.validated.params as ActivationActionParams;
-      sendSuccess(res, await this.service.activate(id, req.user!.id));
+      sendSuccess(
+        res,
+        await this.service.activate(id, req.user!.id, req.validated.body as ActivateActivationCommand),
+      );
     } catch (err) {
       next(err);
     }
@@ -207,7 +211,10 @@ export class ActivationController {
   activateByAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.validated.params as ActivationActionParams;
-      sendSuccess(res, await this.service.activateByAdmin(id));
+      sendSuccess(
+        res,
+        await this.service.activateByAdmin(id, req.validated.body as ActivateActivationCommand),
+      );
     } catch (err) {
       next(err);
     }

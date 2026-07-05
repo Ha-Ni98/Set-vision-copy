@@ -105,6 +105,8 @@ export const RecentActivationResponseSchema = z.object({
   keyMasked: z.string(),
   completedAt: z.iso.datetime(),
   state: z.enum(ActivationStat),
+  // Stage-04-fix #2 — surfaced in the admin dashboard and activator "Global Recent" tables.
+  activationEmail: z.string().nullable(),
 });
 export type RecentActivationDTO = z.infer<typeof RecentActivationResponseSchema>;
 

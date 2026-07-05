@@ -14,6 +14,7 @@ interface Props {
 export function FinancialBlock({ financial, canSetPrice, onRequestSetPrice }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const hasPrice = financial.activationPrice != null;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -24,7 +25,7 @@ export function FinancialBlock({ financial, canSetPrice, onRequestSetPrice }: Pr
         {canSetPrice && (
           <Button size="sm" variant="outline" onClick={onRequestSetPrice}>
             <Tag className="mr-2 h-3.5 w-3.5" />
-            {t("admin.activations.actions.setPrice")}
+            {t(hasPrice ? "admin.activations.actions.editPrice" : "admin.activations.actions.setPrice")}
           </Button>
         )}
       </div>

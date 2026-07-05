@@ -251,7 +251,12 @@ export class ActivationMapper {
   }
 
   static toRecentDTO(
-    activation: { id: string; activationStat: string; completedAt: Date },
+    activation: {
+      id: string;
+      activationStat: string;
+      completedAt: Date;
+      activationEmail: string | null;
+    },
     plan: ActivationPlanJoin,
     cardKey: string,
   ): RecentActivationDTO {
@@ -261,6 +266,7 @@ export class ActivationMapper {
       keyMasked: maskKey(cardKey),
       completedAt: activation.completedAt.toISOString(),
       state: activation.activationStat as unknown as ActivationStat,
+      activationEmail: activation.activationEmail,
     };
     return RecentActivationResponseSchema.parse(dto);
   }

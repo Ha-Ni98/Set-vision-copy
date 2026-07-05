@@ -340,7 +340,12 @@ describe('ActivationMapper.toActivatorHistoryItemDTO', () => {
 describe('ActivationMapper.toRecentDTO', () => {
   it('masks key — last 4 only', () => {
     const result = ActivationMapper.toRecentDTO(
-      { id: ACTIVATION_ID, activationStat: ActivationStat.ACTIVATED, completedAt: COMPLETED_AT },
+      {
+        id: ACTIVATION_ID,
+        activationStat: ActivationStat.ACTIVATED,
+        completedAt: COMPLETED_AT,
+        activationEmail: null,
+      },
       PLAN,
       CARD_KEY,
     );
@@ -349,7 +354,12 @@ describe('ActivationMapper.toRecentDTO', () => {
 
   it('emits completedAt as ISO string', () => {
     const result = ActivationMapper.toRecentDTO(
-      { id: ACTIVATION_ID, activationStat: ActivationStat.ACTIVATED, completedAt: COMPLETED_AT },
+      {
+        id: ACTIVATION_ID,
+        activationStat: ActivationStat.ACTIVATED,
+        completedAt: COMPLETED_AT,
+        activationEmail: null,
+      },
       PLAN,
       CARD_KEY,
     );
@@ -358,11 +368,30 @@ describe('ActivationMapper.toRecentDTO', () => {
 
   it('parses RecentActivationResponseSchema', () => {
     const result = ActivationMapper.toRecentDTO(
-      { id: ACTIVATION_ID, activationStat: ActivationStat.ACTIVATED, completedAt: COMPLETED_AT },
+      {
+        id: ACTIVATION_ID,
+        activationStat: ActivationStat.ACTIVATED,
+        completedAt: COMPLETED_AT,
+        activationEmail: null,
+      },
       PLAN,
       CARD_KEY,
     );
     expect(RecentActivationResponseSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('passes activationEmail through (Stage-04-fix #2)', () => {
+    const result = ActivationMapper.toRecentDTO(
+      {
+        id: ACTIVATION_ID,
+        activationStat: ActivationStat.ACTIVATED,
+        completedAt: COMPLETED_AT,
+        activationEmail: 'client@example.com',
+      },
+      PLAN,
+      CARD_KEY,
+    );
+    expect(result.activationEmail).toBe('client@example.com');
   });
 });
 

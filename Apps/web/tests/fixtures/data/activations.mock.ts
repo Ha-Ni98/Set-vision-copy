@@ -93,6 +93,7 @@ export const mockRecentActivation: RecentActivationDTO = RecentActivationRespons
   keyMasked: "XXXX-XXXX-5678",
   completedAt: "2026-07-01T08:00:00.000Z",
   state: ActivationStat.ACTIVATED,
+  activationEmail: "client@example.com",
 });
 
 export const mockAdminActivation: AdminActivationDTO = AdminActivationResponseSchema.parse({
