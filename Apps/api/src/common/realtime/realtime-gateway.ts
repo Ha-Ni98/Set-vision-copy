@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { PrismaClient } from '@prisma/client';
 import { eventBus } from '../events/event-bus';
 import { logger } from '../config/logger';
 import { NS, rooms } from './rooms';
@@ -14,14 +15,23 @@ const safe = (fn: () => void, evt: string): void => {
   }
 };
 
-export const initRealtimeGateway = (io: AppIOServer): void => {
+export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void => {
   const clientNs = io.of(NS.CLIENT);
   const activatorNs = io.of(NS.ACTIVATORS);
   const adminNs = io.of(NS.ADMIN);
 
   activatorNs.on('connection', (socket) => {
     const userId = socket.data.user?.id;
-    if (userId) void socket.join(rooms.activator(userId));
+    if (!userId) return;
+    // `activation:client-updated`/`activation:resolved` emit to rooms.activator(activatorId)
+    // — the Activator row's id, not the User's (Stage-04-fix #3.4: joining by userId put
+    // every activator in a room nothing ever emits to, so the card never live-updated).
+    prisma.activator
+      .findFirst({ where: { userId }, select: { id: true } })
+      .then((activator) => {
+        if (activator) void socket.join(rooms.activator(activator.id));
+      })
+      .catch((err) => logger.error({ err, userId }, 'Failed to resolve activator for realtime join'));
   });
 
   adminNs.on('connection', (socket) => {

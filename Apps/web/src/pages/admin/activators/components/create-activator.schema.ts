@@ -22,6 +22,13 @@ export function createActivatorSchema(t: ReturnType<typeof useTranslation>["t"])
       .min(0, t("common.validation.nonNegativeNumber"))
       .optional()
       .default(0),
+    // Optional admin-chosen password (Stage-04-fix): blank passes and is stripped to
+    // `undefined` so the server auto-generates; a typed value must be ≥ 8 chars.
+    password: z
+      .string()
+      .refine((v) => v.length === 0 || v.length >= 8, t("common.validation.minLength", { min: 8 }))
+      .transform((v) => (v.length === 0 ? undefined : v))
+      .optional(),
   });
 }
 

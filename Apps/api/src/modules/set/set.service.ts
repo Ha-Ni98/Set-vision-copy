@@ -10,7 +10,7 @@ import type {
 } from '@my-app/contract';
 import type { ISetService } from './set.interface';
 import { SetMapper } from './set.mapper';
-import { generateSetNumber, generateCardKey } from './set.util';
+import { generateSetNumber } from './set.util';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, BadRequestError } from '@common/errors';
 
@@ -55,24 +55,33 @@ export class SetService implements ISetService {
       throw new BadRequestError('Subscription plan not found or inactive');
     }
 
-    const setNumber = await this.uniqueSetNumber();
+    // Keys now come from the admin (auto-generated then optionally edited, Stage-04-fix).
+    // Reject any that already exist so the modal can highlight them — the Zod schema already
+    // guarantees the format and that they're unique within the request itself.
+    const existingCards = await this.prisma.card.findMany({
+      where: { key: { in: cmd.keys } },
+      select: { key: true },
+    });
+    if (existingCards.length > 0) {
+      throw new ConflictError('Some keys already exist', {
+        takenKeys: existingCards.map((c) => c.key),
+      });
+    }
 
-    const cardKeys = await Promise.all(
-      Array.from({ length: cmd.numberOfKeys }, () => this.uniqueCardKey()),
-    );
+    const setNumber = await this.uniqueSetNumber();
 
     const set = await this.prisma.$transaction(async (tx) => {
       const created = await tx.set.create({
         data: {
           setNumber,
           subscriptionPlanId: cmd.subscriptionPlanId,
-          numberOfKeys: cmd.numberOfKeys,
+          numberOfKeys: cmd.keys.length,
           setStat: PrismaSetStat.NOT_PRINTED,
         },
       });
 
       await tx.card.createMany({
-        data: cardKeys.map((key) => ({
+        data: cmd.keys.map((key) => ({
           key,
           subscriptionPlanId: cmd.subscriptionPlanId,
           setId: created.id,
@@ -156,14 +165,5 @@ export class SetService implements ISetService {
       if (!existing) return candidate;
     }
     throw new Error('Failed to generate a unique set number');
-  }
-
-  private async uniqueCardKey(): Promise<string> {
-    for (let i = 0; i < 5; i++) {
-      const candidate = generateCardKey();
-      const existing = await this.prisma.card.findUnique({ where: { key: candidate } });
-      if (!existing) return candidate;
-    }
-    throw new Error('Failed to generate a unique card key');
   }
 }

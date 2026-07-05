@@ -207,15 +207,27 @@ describe("RequestsPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("Activate: clicking calls useActivateRequest.mutate(id) directly (no confirm)", async () => {
+  it("Activate: requires a valid email, then calls useActivateRequest.mutate with {id, command}", async () => {
     const user = userEvent.setup();
     mockActive([activeRequest({ id: "act-done" })]);
     render(<RequestsPage />);
 
     await user.click(screen.getByText("common.actions.activate"));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByText("common.actions.confirm"));
+    expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+    expect(activateMutate).not.toHaveBeenCalled();
 
-    expect(activateMutate).toHaveBeenCalledWith("act-done");
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await user.type(
+      within(dialog).getByPlaceholderText("activator.requests.card.activationEmailPlaceholder"),
+      "client@example.com",
+    );
+    await user.click(within(dialog).getByText("common.actions.confirm"));
+
+    expect(activateMutate).toHaveBeenCalledWith(
+      { id: "act-done", command: { activationEmail: "client@example.com" } },
+      expect.anything(),
+    );
   });
 
   it("Cancel: requires confirmation, then calls useCancelActivation.mutate(id)", async () => {
@@ -323,5 +335,22 @@ describe("RequestsPage", () => {
     rerender(<RequestsPage />);
     expect(screen.queryByText("Snap+ 1mo")).not.toBeInTheDocument();
     expect(screen.getByText("activator.requests.emptyPending.title")).toBeInTheDocument();
+  });
+
+  // Stage-04-fix (follow-up): a card still present in `active` after a refetch must show its
+  // LATEST fields — useExitingActiveList previously kept every still-present card frozen on
+  // its very first snapshot (matched by id from the stale `prevDisplayed`, never the fresh
+  // `active`), so a client's correction/OTP/etc. never appeared until the card left and
+  // re-entered the list, or a full page reload reseeded the whole page from scratch.
+  it("shows a still-active card's updated fields once the query refetches (no id change)", () => {
+    mockActive([activeRequest({ id: "act-1", accountFields: [{ fieldLabel: "Username", value: "client_snap" }] })]);
+    const { rerender } = render(<RequestsPage />);
+    expect(screen.getByText("client_snap")).toBeInTheDocument();
+
+    mockActive([activeRequest({ id: "act-1", accountFields: [{ fieldLabel: "Username", value: "corrected_name" }] })]);
+    rerender(<RequestsPage />);
+
+    expect(screen.getByText("corrected_name")).toBeInTheDocument();
+    expect(screen.queryByText("client_snap")).not.toBeInTheDocument();
   });
 });

@@ -101,6 +101,8 @@ describe("SetsLotsPage", () => {
     vi.mocked(useSetsHook.useCreateSet).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
+      error: undefined,
+      reset: vi.fn(),
     } as never);
     vi.mocked(useSetsHook.useTransitionSet).mockReturnValue({
       mutate: vi.fn(),
@@ -206,12 +208,47 @@ describe("SetsLotsPage", () => {
     expect(within(menu).queryByText("common.actions.delete")).not.toBeInTheDocument();
   });
 
-  it("submits a valid Create Set form and calls useCreateSet.mutate", async () => {
+  it("generates keys then submits, calling useCreateSet.mutate with the key list", async () => {
     const user = userEvent.setup();
     const createMutate = vi.fn();
     vi.mocked(useSetsHook.useCreateSet).mockReturnValue({
       mutate: createMutate,
       isPending: false,
+      error: undefined,
+      reset: vi.fn(),
+    } as never);
+    renderPage();
+
+    await user.click(screen.getByText("admin.setsLots.sets.create.title"));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "Snap+ 1mo" }));
+
+    const count = within(dialog).getByLabelText("admin.setsLots.sets.create.numberOfKeys");
+    await user.clear(count);
+    await user.type(count, "2");
+    await user.click(within(dialog).getByText("admin.setsLots.sets.create.generate"));
+    await user.click(within(dialog).getByText("common.actions.add"));
+
+    expect(createMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionPlanId: "plan1",
+        keys: expect.arrayContaining([expect.stringMatching(/^[0-9A-F]{12}$/)]),
+      }),
+      expect.anything(),
+    );
+    const [command] = createMutate.mock.calls[0] as [{ keys: string[] }];
+    expect(command.keys).toHaveLength(2);
+  });
+
+  it("blocks Create Set submit until keys are generated", async () => {
+    const user = userEvent.setup();
+    const createMutate = vi.fn();
+    vi.mocked(useSetsHook.useCreateSet).mockReturnValue({
+      mutate: createMutate,
+      isPending: false,
+      error: undefined,
+      reset: vi.fn(),
     } as never);
     renderPage();
 
@@ -221,10 +258,8 @@ describe("SetsLotsPage", () => {
     await user.click(await screen.findByRole("option", { name: "Snap+ 1mo" }));
     await user.click(within(dialog).getByText("common.actions.add"));
 
-    expect(createMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ subscriptionPlanId: "plan1", numberOfKeys: 100 }),
-      expect.anything(),
-    );
+    expect(createMutate).not.toHaveBeenCalled();
+    expect(within(dialog).getByText("admin.setsLots.sets.create.noKeys")).toBeInTheDocument();
   });
 
   it("Create Lot: Select All toggles cardIds, blocks empty submit, and confirms with the real selection", async () => {

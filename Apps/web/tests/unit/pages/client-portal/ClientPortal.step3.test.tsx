@@ -22,7 +22,9 @@ import {
 const KEY_PLACEHOLDER = "public.landing.verify.placeholder";
 const SUBMIT_BUTTON = "public.landing.verify.submit";
 const OTP_LABEL = "public.landing.otp.inputLabel";
-const VALID_KEY = "ABCD-1234-EFGH-5678";
+// LandingPage's KEY_FORMAT_PATTERN is a flat 12-char [A-Z0-9] string (no hyphens) — this must
+// match that shape or Step 1's client-side validation rejects it before verify() ever mutates.
+const VALID_KEY = "ABCD1234EFGH";
 
 let verifyMutate: ReturnType<typeof vi.fn>;
 let otpMutate: ReturnType<typeof vi.fn>;

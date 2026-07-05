@@ -18,6 +18,7 @@ import type {
   SetActivatorPriceCommand,
   GetActivationsQuery,
   GetActivatorHistoryQuery,
+  ActivateActivationCommand,
 } from '@my-app/contract';
 
 export interface IActivationService {
@@ -34,7 +35,7 @@ export interface IActivationService {
   take(id: string, principalUserId: string): Promise<ActiveRequestDTO>;
   flagWrong(id: string, principalUserId: string, cmd: FlagWrongInfoCommand): Promise<ActiveRequestDTO>;
   requestAdditional(id: string, principalUserId: string, cmd: RequestAdditionalInfoCommand): Promise<ActiveRequestDTO>;
-  activate(id: string, principalUserId: string): Promise<ActiveRequestDTO>;
+  activate(id: string, principalUserId: string, cmd: ActivateActivationCommand): Promise<ActiveRequestDTO>;
   cancel(id: string, principalUserId: string): Promise<void>;
   release(id: string, principalUserId: string): Promise<void>;
   freeze(id: string, principalUserId: string, cmd: FreezeRequestCommand): Promise<ActiveRequestDTO>;
@@ -44,7 +45,7 @@ export interface IActivationService {
   // Admin
   getAll(query: GetActivationsQuery): Promise<PaginatedResult<AdminActivationDTO>>;
   getById(id: string): Promise<ActivationDetailDTO>;
-  activateByAdmin(id: string): Promise<AdminActivationDTO>;
+  activateByAdmin(id: string, cmd: ActivateActivationCommand): Promise<AdminActivationDTO>;
   cancelByAdmin(id: string): Promise<AdminActivationDTO>;
   setPrice(id: string, cmd: SetActivatorPriceCommand, actorId: string): Promise<AdminActivationDTO>;
 }

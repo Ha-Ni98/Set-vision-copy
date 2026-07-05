@@ -19,6 +19,7 @@ function recent(overrides: Partial<RecentActivationDTO> = {}): RecentActivationD
     keyMasked: "****-1234",
     completedAt: "2026-06-30T10:00:00.000Z",
     state: ActivationStat.ACTIVATED,
+    activationEmail: null,
     ...overrides,
   };
 }
@@ -74,7 +75,7 @@ describe("HistoryPage", () => {
     mockHistory([]);
   });
 
-  it("renders only the 3 present Global Recent columns (documents E-1's dropped columns)", () => {
+  it("renders the Global Recent columns, including the activation email (Stage-04-fix #2)", () => {
     mockRecent([recent()]);
     renderPage();
 
@@ -85,6 +86,7 @@ describe("HistoryPage", () => {
     expect(headers).toEqual([
       "activator.history.recentTable.subscription",
       "activator.history.recentTable.key",
+      "activator.history.recentTable.email",
       "activator.history.recentTable.completed",
       "activator.history.recentTable.status",
     ]);

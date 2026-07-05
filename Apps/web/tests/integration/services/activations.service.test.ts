@@ -122,7 +122,9 @@ describe("activations.service — activator-facing mutations", () => {
   });
 
   it("activate is no longer a no-op — returns the unwrapped ActiveRequestDTO (plan.md D3)", async () => {
-    const result = await activationsService.activate("id");
+    const result = await activationsService.activate("id", {
+      activationEmail: "client@example.com",
+    });
     expect(result).toEqual(mockActiveRequestNulls);
   });
 
@@ -173,7 +175,9 @@ describe("activations.service — admin-facing", () => {
   });
 
   it("activateByAdmin returns the unwrapped AdminActivationDTO", async () => {
-    const result = await activationsService.activateByAdmin("id");
+    const result = await activationsService.activateByAdmin("id", {
+      activationEmail: "client@example.com",
+    });
     expect(result).toEqual(mockAdminActivation);
   });
 

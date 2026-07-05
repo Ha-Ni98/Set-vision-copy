@@ -22,6 +22,7 @@ function buildPrisma() {
     },
     card: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       createMany: vi.fn().mockResolvedValue({ count: 0 }),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -39,6 +40,10 @@ function buildPrisma() {
 
 const ACTOR_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const PLAN_ID = 'b1ffcd00-0d1c-4f19-bc7e-7cc0ce491b22';
+
+// Distinct valid card keys (12 uppercase hex chars) for the create tests.
+const keysOf = (n: number): string[] =>
+  Array.from({ length: n }, (_, i) => i.toString(16).toUpperCase().padStart(12, '0'));
 
 function makePlan(overrides = {}) {
   return subscriptionPlanEntity({
@@ -66,13 +71,13 @@ describe('SetService.create', () => {
     service = new SetService(prisma as never);
   });
 
-  it('creates exactly numberOfKeys cards in IN_SET', async () => {
+  it('creates one IN_SET card per provided key', async () => {
     const plan = makePlan();
     prisma.subscriptionPlan.findUnique.mockResolvedValue(plan);
     const createdSet = makeSet({ setStat: PrismaSetStat.NOT_PRINTED });
     prisma.set.create.mockResolvedValue(createdSet);
 
-    await service.create({ numberOfKeys: 5, subscriptionPlanId: PLAN_ID }, ACTOR_ID);
+    await service.create({ keys: keysOf(5), subscriptionPlanId: PLAN_ID }, ACTOR_ID);
 
     expect(prisma.card.createMany).toHaveBeenCalledOnce();
     const callArg = prisma.card.createMany.mock.calls[0]?.[0] as { data: unknown[] };
@@ -83,11 +88,21 @@ describe('SetService.create', () => {
     }
   });
 
+  it('throws RESOURCE_CONFLICT when a provided key already exists', async () => {
+    prisma.subscriptionPlan.findUnique.mockResolvedValue(makePlan());
+    prisma.card.findMany.mockResolvedValue([{ key: keysOf(1)[0] }]);
+
+    await expect(
+      service.create({ keys: keysOf(3), subscriptionPlanId: PLAN_ID }, ACTOR_ID),
+    ).rejects.toMatchObject({ code: ErrorCode.RESOURCE_CONFLICT });
+    expect(prisma.card.createMany).not.toHaveBeenCalled();
+  });
+
   it('throws VALIDATION_ERROR when plan does not exist', async () => {
     prisma.subscriptionPlan.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.create({ numberOfKeys: 3, subscriptionPlanId: PLAN_ID }, ACTOR_ID),
+      service.create({ keys: keysOf(3), subscriptionPlanId: PLAN_ID }, ACTOR_ID),
     ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
   });
 
@@ -95,7 +110,7 @@ describe('SetService.create', () => {
     prisma.subscriptionPlan.findUnique.mockResolvedValue(makePlan({ isActive: false }));
 
     await expect(
-      service.create({ numberOfKeys: 3, subscriptionPlanId: PLAN_ID }, ACTOR_ID),
+      service.create({ keys: keysOf(3), subscriptionPlanId: PLAN_ID }, ACTOR_ID),
     ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
   });
 
@@ -104,7 +119,7 @@ describe('SetService.create', () => {
     prisma.subscriptionPlan.findUnique.mockResolvedValue(plan);
     prisma.set.create.mockResolvedValue(makeSet());
 
-    await service.create({ numberOfKeys: 2, subscriptionPlanId: PLAN_ID }, ACTOR_ID);
+    await service.create({ keys: keysOf(2), subscriptionPlanId: PLAN_ID }, ACTOR_ID);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(prisma.set.create).toHaveBeenCalledOnce();

@@ -22,7 +22,8 @@ import { SOCIAL_LINKS } from "@/config/social-links";
 // Matches the Step 1 input's own placeholder shape (spec: "XXXX-XXXX-XXXX-XXXX") — the
 // contract has no fixed key-generation format to validate against, so this is only a soft
 // client-side shape check; the backend's verify response (INVALID) is the real authority.
-const KEY_FORMAT_PATTERN = /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/;
+ //const KEY_FORMAT_PATTERN = /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/;
+const KEY_FORMAT_PATTERN = /^[A-Z0-9]{12}$/;
 
 type StepView = "keyEntry" | "form" | "otp" | "review" | "activated" | "failed";
 
@@ -104,29 +105,26 @@ export default function LandingPage() {
     !!activationId && !TERMINAL_STATUSES.has(activation!.status),
   );
 
-  // Folds a fresh status back into the single source of truth — reused by the realtime sync
-  // below and by Step 2/3's own mutation successes, so all three paths update context the
-  // same way. Note: `useActivationStatus` only ever returns `{activationId, status}` (the
-  // contract's `ClientActivationStatusDTO` — a real gap documented in this sprint's report),
-  // so a realtime-driven transition into Needs-correction/Activated updates the status
-  // correctly but can't refresh flaggedFields/accountUsername — those stay whatever the last
-  // verify/mutation response had.
-  const applyStatus = (result: { status: ClientActivationStatus; activationId?: string }) => {
-    if (!activation) return;
-    setActivation({ ...activation, status: result.status, activationId: result.activationId });
+  // Re-verifies instead of just folding in a new status — used by BOTH the realtime poll
+  // below AND Step 2/3's own submit/update/OTP mutation successes (Stage-04-fix #4A/#4B).
+  // Every one of those only ever hands back `{activationId, status}` (submit/update/additional
+  // included — same contract gap `useActivationStatus` has), and the "form" view's remount
+  // (keyed on status, below) recomputes its defaultValues from whatever's in context at that
+  // moment: a bare status swap left clientFullName/submittedFields stale or entirely unset
+  // (a fresh READY→SUBMITTED transition never had them at all), so the very next time this
+  // view was shown it prefilled blank instead of what the client just typed and saved.
+  const refreshAfterStatusChange = (result: { status: ClientActivationStatus; activationId?: string }) => {
+    if (!activation || result.status === activation.status) return;
+    const key = activation.key;
+    verifyKey.mutate({ key }, { onSuccess: (data) => setActivation({ ...data, key }) });
   };
 
   // Plain state sync, not a fetch — the fetch already happened inside useActivationStatus's
-  // own useQuery; this only folds its result into context once it actually changes. Mirrors
+  // own useQuery; this only reacts to its result once it actually changes. Mirrors
   // LanguageProvider's `dir` effect syncing external state into local state.
   useEffect(() => {
-    if (
-      activation &&
-      statusQuery.data &&
-      statusQuery.data.activationId === activation.activationId &&
-      statusQuery.data.status !== activation.status
-    ) {
-      applyStatus(statusQuery.data);
+    if (activation && statusQuery.data && statusQuery.data.activationId === activation.activationId) {
+      refreshAfterStatusChange(statusQuery.data);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusQuery.data]);
@@ -159,7 +157,7 @@ export default function LandingPage() {
 
   const verify = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = input.trim();
+    const trimmed = input;
     setServerErrorKey(null);
     if (!trimmed) {
       setClientErrorKey("public.landing.verify.emptyKey");
@@ -262,13 +260,21 @@ export default function LandingPage() {
           )}
 
           {view === "form" && activation && (
-            <FormComponent key={activation.key} keyData={activation} onSubmitted={applyStatus} />
+            // Keyed on status too (Stage-04-fix #4B): a live transition into this same view
+            // (e.g. SUBMITTED → NEEDS_CORRECTION) must remount the form so its `editing`/
+            // defaultValues re-initialize from the freshly re-verified keyData, instead of
+            // staying stuck on whatever they were computed as at the previous status.
+            <FormComponent
+              key={`${activation.key}-${activation.status}`}
+              keyData={activation}
+              onSubmitted={refreshAfterStatusChange}
+            />
           )}
 
           {view === "otp" && activation && (
             <AdditionalInfoComponent
               activationId={activation.activationId}
-              onSuccess={applyStatus}
+              onSuccess={refreshAfterStatusChange}
             />
           )}
 

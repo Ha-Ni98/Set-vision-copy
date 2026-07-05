@@ -21,7 +21,9 @@ export const mockKeyReady: KeyVerificationDTO = KeyVerificationResponseSchema.pa
 export const mockKeyNeedsCorrection: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
   status: ClientActivationStatus.NEEDS_CORRECTION,
   activationId: "9c1e0000-0000-4000-8000-000000000001",
-  submittedFields: [{ fieldLabel: "Username", value: "amine123" }],
+  clientFullName: "Amine Client",
+  clientPhone: "0555000000",
+  submittedFields: [{ field: AccountInformation.USERNAME, value: "amine123" }],
   flaggedFields: [{ field: AccountInformation.USERNAME, label: "Username" }],
 });
 
@@ -32,23 +34,26 @@ export const mockKeyNeedsOtp: KeyVerificationDTO = KeyVerificationResponseSchema
   accountUsername: "amine123",
 });
 
-// Same submitted-values shape AccountForm.tsx's SUBMITTED_FIELD_LABELS looks up against.
+// Same field-enum-keyed shape AccountForm.tsx's findByField looks up against.
 const SUBMITTED_FIELDS = [
-  { fieldLabel: "Full Name", value: "Amine Client" },
-  { fieldLabel: "Phone Number", value: "0555000000" },
-  { fieldLabel: "Snapchat Username", value: "amine123" },
-  { fieldLabel: "Snapchat Email", value: "amine@example.com" },
+  { field: AccountInformation.USERNAME, value: "amine123" },
+  { field: AccountInformation.EMAIL, value: "amine@example.com" },
+  { field: AccountInformation.PASSWORD, value: "realpass1" },
 ];
 
 export const mockKeySubmitted: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
   status: ClientActivationStatus.SUBMITTED,
   activationId: "9c1e0000-0000-4000-8000-000000000004",
+  clientFullName: "Amine Client",
+  clientPhone: "0555000000",
   submittedFields: SUBMITTED_FIELDS,
 });
 
 export const mockKeyProcessing: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
   status: ClientActivationStatus.PROCESSING,
   activationId: "9c1e0000-0000-4000-8000-000000000005",
+  clientFullName: "Amine Client",
+  clientPhone: "0555000000",
   submittedFields: SUBMITTED_FIELDS,
 });
 

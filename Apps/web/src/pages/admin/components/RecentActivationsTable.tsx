@@ -43,6 +43,11 @@ export function RecentActivationsTable({ data, isLoading, isError, onRetry }: Pr
       },
       { accessorKey: "keyMasked", header: t("admin.dashboard.frozen.columns.key") },
       {
+        id: "activationEmail",
+        accessorFn: (row) => row.activationEmail ?? "—",
+        header: t("admin.dashboard.recent.columns.activationEmail"),
+      },
+      {
         id: "completedAt",
         accessorFn: (row) => formatDateTime(row.completedAt, language),
         header: t("admin.dashboard.recent.columns.completedAt"),
@@ -56,7 +61,7 @@ export function RecentActivationsTable({ data, isLoading, isError, onRetry }: Pr
     [t, language],
   );
 
-  if (isLoading) return <TableSkeleton rows={5} columns={4} />;
+  if (isLoading) return <TableSkeleton rows={5} columns={5} />;
   if (isError) {
     return (
       <NotFoundState

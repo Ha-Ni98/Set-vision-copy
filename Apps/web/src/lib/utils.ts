@@ -6,11 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// "M:SS" isn't locale-sensitive (unlike a formatted number), so this stays plain.
+// "MM:SS" isn't locale-sensitive (unlike a formatted number), so this stays plain. Round to
+// whole seconds first — the backend avg is a float (totalMs / n / 1000), so an un-rounded
+// `seconds % 60` would render as e.g. "9.327…" instead of a zero-padded "09".
 export function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  const total = Math.max(0, Math.round(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 const LOCALE_TAG: Record<Language, string> = { en: "en-US", fr: "fr-FR", ar: "ar-DZ" };
@@ -24,6 +27,20 @@ export function formatDateTime(iso: string, language: Language = "en"): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+// Browser-only text-file download (Blob + a throwaway anchor) — no server round-trip beyond
+// whatever fetched `content` already, so this is just the local "save as" trigger.
+export function downloadTextFile(filename: string, content: string): void {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // Stats with zero items are omitted from InventorySummaryDTO's arrays (contract comment) —

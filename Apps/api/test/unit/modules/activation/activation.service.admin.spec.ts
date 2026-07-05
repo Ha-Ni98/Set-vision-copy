@@ -320,17 +320,18 @@ describe('ActivationService.getById', () => {
 
 describe('ActivationService.activateByAdmin', () => {
   const id = '11111111-1111-1111-8111-111111111111';
+  const ACTIVATE_CMD = { activationEmail: 'client@example.com' };
 
   it('throws NotFoundError when activation not found', async () => {
     prisma.activation.findUnique.mockResolvedValue(null);
-    await expect(service.activateByAdmin(id)).rejects.toThrow(NotFoundError);
+    await expect(service.activateByAdmin(id, ACTIVATE_CMD)).rejects.toThrow(NotFoundError);
   });
 
   it('throws ConflictError when not FREEZE', async () => {
     prisma.activation.findUnique.mockResolvedValue(
       makeActivationRow({ activationStat: ActivationStat.PROCESSING }),
     );
-    await expect(service.activateByAdmin(id)).rejects.toThrow(ConflictError);
+    await expect(service.activateByAdmin(id, ACTIVATE_CMD)).rejects.toThrow(ConflictError);
   });
 
   it('sets ACTIVATED_BY_ADMIN + card ACTIVATED + credits activator', async () => {
@@ -344,11 +345,14 @@ describe('ActivationService.activateByAdmin', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activateByAdmin(id);
+    await service.activateByAdmin(id, ACTIVATE_CMD);
 
     expect(prisma.activation.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ activationStat: 'ACTIVATED_BY_ADMIN' }),
+        data: expect.objectContaining({
+          activationStat: 'ACTIVATED_BY_ADMIN',
+          activationEmail: 'client@example.com',
+        }),
       }),
     );
     expect(prisma.card.update).toHaveBeenCalledWith(
@@ -378,7 +382,7 @@ describe('ActivationService.activateByAdmin', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activateByAdmin(id);
+    await service.activateByAdmin(id, ACTIVATE_CMD);
 
     expect(eventBus.emit).toHaveBeenCalledWith('activation:resolved', expect.objectContaining({
       activationId: id,
@@ -400,7 +404,7 @@ describe('ActivationService.activateByAdmin', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    const result = await service.activateByAdmin(id);
+    const result = await service.activateByAdmin(id, ACTIVATE_CMD);
 
     expect(result.state).toBe(ActivationStat.ACTIVATED_BY_ADMIN);
     expect(result.key).toBe('A1B2C3D4E5F6');

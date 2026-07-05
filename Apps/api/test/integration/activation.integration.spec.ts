@@ -152,6 +152,57 @@ describe('POST /keys/verify', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('SUBMITTED');
   });
+
+  // Stage-04-fix #4A: the old code read only the base ActivationInformation (the value at
+  // submit time) — a correction made in an earlier step, never touched since, was invisible
+  // on re-check. Verifies the real DB → service → mapper → HTTP path, not just the merge
+  // helper in isolation.
+  it('NEEDS_CORRECTION re-check — submittedFields reflects a value corrected in an earlier step', async () => {
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      clientFullName: 'Jane Doe',
+      clientPhone: '+213555000001',
+      accountFields: [{ field: AccountInformation.USERNAME, value: 'wrongname' }],
+    });
+
+    // An earlier WRONG_INFORMATION round whose correction was already applied in place
+    // (mirrors what ActivationService.update does), predating seedActivation's own PROCESSING
+    // step so the query's `orderBy: createdAt desc` puts it second.
+    const oldStep = await prisma.activationStep.create({
+      data: {
+        activationId: activation.id,
+        activationStat: ActivationStat.WRONG_INFORMATION,
+        createdAt: new Date(Date.now() - 60_000),
+      },
+    });
+    await prisma.wrongInformation.create({
+      data: {
+        activationStepId: oldStep.id,
+        accountInform: AccountInformation.USERNAME,
+        value: 'corrected_name',
+      },
+    });
+
+    const res = await request(app)
+      .post(`${KEY_BASE}${KEY_ROUTES.VERIFY}`)
+      .send({ key: card.key });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.clientFullName).toBe('Jane Doe');
+    expect(res.body.data.clientPhone).toBe('+213555000001');
+    const username = (res.body.data.submittedFields as Array<{ field: string; value: string }>).find(
+      (f) => f.field === AccountInformation.USERNAME,
+    );
+    expect(username?.value).toBe('corrected_name');
+  });
 });
 
 // ─── POST /keys/submit ────────────────────────────────────────────────────────
@@ -243,14 +294,14 @@ describe('GET /activations/pending', () => {
     expect(res.status).toBe(401);
   });
 
-  it('403 — admin role is rejected (activator only)', async () => {
+  it('200 — admin is allowed (admin dashboard reads the global pending pool, Stage-04-fix)', async () => {
     const { user } = await seedAdm();
     const token = mintToken({ id: user.id, role: UserRole.ADMIN });
     const res = await request(app)
       .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_PENDING}`)
       .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   it('200 — activator sees pending activations (key masked)', async () => {
@@ -347,6 +398,130 @@ describe('POST /activations/:id/take', () => {
   });
 });
 
+// ─── POST /activations/:id/activate ──────────────────────────────────────────
+// Stage-04-fix #2: a required, valid activationEmail on the activator's own Activate.
+
+describe('POST /activations/:id/activate', () => {
+  it('200 — activator activates a PROCESSING activation and stores the required activationEmail', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
+
+    expect(res.status).toBe(200);
+    expect(() => ActiveRequestResponseSchema.parse(res.body.data)).not.toThrow();
+
+    const updated = await prisma.activation.findUnique({ where: { id: activation.id } });
+    expect(updated?.activationEmail).toBe('client@example.com');
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is missing', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is not a valid email', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'not-an-email' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
+  });
+});
+
+// ─── GET /activations/recent ──────────────────────────────────────────────────
+// Stage-04-fix #2: activationEmail rides all the way through to the recent feed.
+
+describe('GET /activations/recent', () => {
+  it('200 — includes the activationEmail set on activate', async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.PROCESSING,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'recent@example.com' });
+
+    const res = await request(app)
+      .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_RECENT}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const row = (res.body.data as Array<{ id: string; activationEmail: string | null }>).find(
+      (r) => r.id === activation.id,
+    );
+    expect(row?.activationEmail).toBe('recent@example.com');
+  });
+});
+
 // ─── GET /activations/active ──────────────────────────────────────────────────
 
 describe('GET /activations/active — PASSWORD exposure', () => {
@@ -382,6 +557,35 @@ describe('GET /activations/active — PASSWORD exposure', () => {
     }>;
     const passwordField = item[0]?.accountFields.find((f) => f.value === 'secret123');
     expect(passwordField).toBeDefined();
+  });
+});
+
+// Stage-04-fix #3.1: freezing hands the activation to the admin — it must leave the
+// activator's own Active Requests list (not just visually, via a real GET after the freeze).
+describe('GET /activations/active — FREEZE exclusion', () => {
+  it("a frozen activation does not appear in the activator's own active list", async () => {
+    const { user, activator } = await seedAct();
+    const token = mintToken({ id: user.id, role: UserRole.ACTIVATOR });
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    await seedActivation(prisma, card, {
+      activationStat: ActivationStat.FREEZE,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_ACTIVE}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
   });
 });
 
@@ -503,11 +707,14 @@ describe('GET /activations/:id (admin getById)', () => {
     })();
     const actToken = mintToken({ id: actUser.id, role: UserRole.ACTIVATOR });
 
-    // Admin hitting /pending → 403 (route found, role wrong) not 404
+    // Admin hitting /pending → 200 with the pending list (Stage-04-fix widened this to
+    // admin+activator). This still proves static-before-param resolution: had `/pending`
+    // been caught by `/:id`, getById's uuid param validation would 400, never 200 an array.
     const adminRes = await request(app)
       .get(`${ACT_BASE}${ACTIVATION_ROUTES.GET_PENDING}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(adminRes.status).toBe(403);
+    expect(adminRes.status).toBe(200);
+    expect(Array.isArray(adminRes.body.data)).toBe(true);
 
     // Activator hitting / → 403 (adminOnly GET_ALL is found, role wrong) not 404
     const actRes = await request(app)
@@ -540,10 +747,14 @@ describe('POST /activations/:id/activate-by-admin', () => {
 
     const res = await request(app)
       .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
 
     expect(res.status).toBe(200);
     expect(res.body.data.state).toBe(ActivationStat.ACTIVATED_BY_ADMIN);
+
+    const updated = await prisma.activation.findUnique({ where: { id: activation.id } });
+    expect(updated?.activationEmail).toBe('client@example.com');
   });
 
   it('409 — RESOURCE_CONFLICT when activation is not in FREEZE state', async () => {
@@ -563,10 +774,38 @@ describe('POST /activations/:id/activate-by-admin', () => {
 
     const res = await request(app)
       .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activationEmail: 'client@example.com' });
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
+  });
+
+  it('400 — VALIDATION_ERROR when activationEmail is missing', async () => {
+    const { user } = await seedAdm();
+    const token = mintToken({ id: user.id, role: UserRole.ADMIN });
+    const { activator } = await seedAct();
+    const { distributor } = await seedDist();
+    const { card, set } = await seedCard(prisma, {
+      cardStat: CardStat.AT_DISTRIBUTOR,
+      isActive: true,
+      distributorId: distributor.id,
+    });
+    seededSetIds.push(set.id);
+
+    const { activation } = await seedActivation(prisma, card, {
+      activationStat: ActivationStat.FREEZE,
+      activatorId: activator.id,
+      takenAt: new Date(),
+    });
+
+    const res = await request(app)
+      .post(`${ACT_BASE}/${activation.id}/activate-by-admin`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
   });
 });
 

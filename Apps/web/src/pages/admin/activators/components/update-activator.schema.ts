@@ -19,10 +19,20 @@ export function updateActivatorSchema(t: ReturnType<typeof useTranslation>["t"])
       .regex(USERNAME_PATTERN, t("common.validation.invalidUsername"))
       .optional(),
     phone: z.string().regex(ALGERIAN_PHONE_PATTERN, t("common.validation.invalidPhone")).optional(),
+    // Optional new password (Stage-04-fix): blank passes and is stripped to `undefined` so
+    // the current password is left unchanged; a typed value must be ≥ 8 chars.
+    password: z
+      .string()
+      .refine((v) => v.length === 0 || v.length >= 8, t("common.validation.minLength", { min: 8 }))
+      .transform((v) => (v.length === 0 ? undefined : v))
+      .optional(),
   });
 }
 
 export type UpdateActivatorFormValues = z.infer<ReturnType<typeof updateActivatorSchema>>;
+// Pre-transform shape (the optional password field is a plain string in the form; the schema
+// strips "" to undefined on output). This is what useForm's field-values generic needs.
+export type UpdateActivatorFormInput = z.input<ReturnType<typeof updateActivatorSchema>>;
 
 // Compile-time guard — fails to compile if this schema's output drifts from the contract
 // Command (e.g. a renamed/removed contract field).

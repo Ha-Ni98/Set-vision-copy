@@ -64,7 +64,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("15,000 DZD")).toBeInTheDocument();
     expect(screen.getByText("3,000 DZD")).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText("3:00")).toBeInTheDocument();
+    expect(screen.getByText("03:00")).toBeInTheDocument();
     expect(screen.getByText("activator.dashboard.pacExcellent")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
   });

@@ -24,19 +24,19 @@ import {
 
 const KEY_PLACEHOLDER = "public.landing.verify.placeholder";
 const SUBMIT_BUTTON = "public.landing.verify.submit";
-const VALID_KEY = "ABCD-1234-EFGH-5678";
+// LandingPage's KEY_FORMAT_PATTERN is a flat 12-char [A-Z0-9] string (no hyphens) — this must
+// match that shape or Step 1's client-side validation rejects it before verify() ever mutates.
+const VALID_KEY = "ABCD1234EFGH";
 
-// Matches AccountForm's SUBMITTED_FIELD_LABELS exactly — the shared keys.mock.ts fixture
-// used elsewhere for hook tests doesn't (its labels are the raw AccountInformation names,
-// fine for schema-shape tests, not for this file's prefill/flagged-field assertions).
 const mockKeyNeedsCorrection: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
   status: ClientActivationStatus.NEEDS_CORRECTION,
   activationId: "9c1e0000-0000-4000-8000-00000000000a",
+  clientFullName: "Jane Doe",
+  clientPhone: "0555999888",
   submittedFields: [
-    { fieldLabel: "Full Name", value: "Jane Doe" },
-    { fieldLabel: "Phone Number", value: "0555999888" },
-    { fieldLabel: "Snapchat Username", value: "wrongname" },
-    { fieldLabel: "Snapchat Email", value: "jane@example.com" },
+    { field: AccountInformation.USERNAME, value: "wrongname" },
+    { field: AccountInformation.EMAIL, value: "jane@example.com" },
+    { field: AccountInformation.PASSWORD, value: "realpass1" },
   ],
   flaggedFields: [{ field: AccountInformation.USERNAME, label: "Snapchat Username" }],
 });
@@ -124,11 +124,71 @@ describe("LandingPage — Step 2 account form", () => {
       accountFields: [
         { field: AccountInformation.USERNAME, value: "jane.snap" },
         { field: AccountInformation.EMAIL, value: "jane@example.com" },
-        { field: AccountInformation.PHONE_NUMBER, value: "0555123456" },
+        { field: AccountInformation.PHONE_NUMBER, value: "" },
         { field: AccountInformation.PASSWORD, value: "secret123" },
       ],
     });
     expect(command).not.toHaveProperty("confirmPassword");
+  });
+
+  // Stage-04-fix #3.2: an unset Snapchat phone must stay blank, not silently reuse the
+  // personal `phone` — the activator's card can't otherwise tell "no Snap phone" apart from
+  // "Snap phone happens to equal the personal number".
+  it("Ready: a distinct Snapchat phone is sent as-is, not the personal phone", async () => {
+    const user = userEvent.setup();
+    await seedView(user, mockKeyReady);
+
+    await user.type(screen.getByLabelText("public.landing.form.fullName"), "Jane Doe");
+    await user.type(screen.getByLabelText("public.landing.form.phone"), "0555123456");
+    await user.type(screen.getByLabelText("public.landing.form.username"), "jane.snap");
+    await user.type(screen.getByLabelText("public.landing.form.email"), "jane@example.com");
+    await user.type(screen.getByLabelText("public.landing.form.snapPhone"), "0666111222");
+    await user.type(screen.getByLabelText("public.landing.form.password"), "secret123");
+    await user.type(screen.getByLabelText("public.landing.form.confirmPassword"), "secret123");
+    await user.click(screen.getByText("public.landing.form.saveSubmit"));
+
+    const [command] = submitMutate.mock.calls[0] as [{ accountFields: unknown[] }];
+    expect(command.accountFields).toContainEqual({
+      field: AccountInformation.PHONE_NUMBER,
+      value: "0666111222",
+    });
+  });
+
+  // Stage-04-fix (follow-up): submit's own mutation response is only {activationId, status}
+  // (same contract gap useActivationStatus has) — a bare status swap left the form's very
+  // next render (which remounts on status change, #4B) computing defaultValues from stale/
+  // unset submittedFields, showing blank fields right after the client's own successful save.
+  it("Ready: a successful submit re-verifies (not just swaps status), so the next render isn't blank", async () => {
+    const user = userEvent.setup();
+    await seedView(user, mockKeyReady);
+
+    await user.type(screen.getByLabelText("public.landing.form.fullName"), "Jane Doe");
+    await user.type(screen.getByLabelText("public.landing.form.phone"), "0555123456");
+    await user.type(screen.getByLabelText("public.landing.form.username"), "jane.snap");
+    await user.type(screen.getByLabelText("public.landing.form.email"), "jane@example.com");
+    await user.type(screen.getByLabelText("public.landing.form.password"), "secret123");
+    await user.type(screen.getByLabelText("public.landing.form.confirmPassword"), "secret123");
+
+    submitMutate.mockImplementationOnce(
+      (_vars: unknown, opts?: { onSuccess?: (d: unknown) => void }) =>
+        opts?.onSuccess?.({
+          activationId: mockKeySubmitted.activationId,
+          status: ClientActivationStatus.SUBMITTED,
+        }),
+    );
+    // The mutation's own response carries no field values — the second verify() call (the
+    // re-verify this fix adds) is what must supply them.
+    verifyMutate.mockImplementationOnce(
+      (_vars: unknown, opts?: { onSuccess?: (d: KeyVerificationDTO) => void }) =>
+        opts?.onSuccess?.(mockKeySubmitted),
+    );
+
+    await user.click(screen.getByText("public.landing.form.saveSubmit"));
+
+    expect(await screen.findByText("public.landing.form.pendingBanner")).toBeInTheDocument();
+    expect(verifyMutate).toHaveBeenCalledTimes(2);
+    expect(screen.getByLabelText("public.landing.form.fullName")).toHaveValue("Amine Client");
+    expect(screen.getByLabelText("public.landing.form.username")).toHaveValue("amine123");
   });
 
   it("Ready: a password/confirm-password mismatch blocks submit with an inline error", async () => {
@@ -165,12 +225,13 @@ describe("LandingPage — Step 2 account form", () => {
     expect(screen.getByLabelText("public.landing.form.fullName")).toHaveValue("");
   });
 
-  it("Submitted: read-only with a masked password, and Update Information re-opens it blank", async () => {
+  it("Submitted: read-only with the real prefilled password, and Update Information re-opens it blank", async () => {
     const user = userEvent.setup();
     await seedView(user, mockKeySubmitted);
 
     expect(screen.getByLabelText("public.landing.form.fullName")).toBeDisabled();
-    expect(screen.getByLabelText("public.landing.form.password")).toHaveValue("••••••••");
+    // Stage-04-fix #4A: no more forced masking placeholder — the real saved password prefills.
+    expect(screen.getByLabelText("public.landing.form.password")).toHaveValue("realpass1");
     expect(screen.getByText("public.landing.form.pendingBanner")).toBeInTheDocument();
     expect(screen.getByText("common.actions.contactWhatsapp").closest("a")).toHaveAttribute(
       "target",
@@ -180,6 +241,7 @@ describe("LandingPage — Step 2 account form", () => {
     await user.click(screen.getByText("public.landing.form.updateInfo"));
 
     expect(screen.getByLabelText("public.landing.form.fullName")).toBeEnabled();
+    // Update Information still forces a deliberate re-entry (unchanged, intentional UX).
     expect(screen.getByLabelText("public.landing.form.password")).toHaveValue("");
   });
 
@@ -200,6 +262,9 @@ describe("LandingPage — Step 2 account form", () => {
     expect(screen.getByText("public.landing.form.correctionBanner")).toBeInTheDocument();
     expect(screen.getByLabelText("public.landing.form.fullName")).toHaveValue("Jane Doe");
     expect(screen.getByLabelText("public.landing.form.username")).toHaveValue("wrongname");
+    // Stage-04-fix #4A: the real password is now returned and prefilled (no more forced-blank
+    // masking), so a correction round doesn't require blindly re-entering an untouched field.
+    expect(screen.getByLabelText("public.landing.form.password")).toHaveValue("realpass1");
     expect(screen.getByText("public.landing.form.flagged")).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText("public.landing.form.username"));

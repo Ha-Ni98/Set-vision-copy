@@ -23,6 +23,19 @@ export async function getAll(query: GetCardsQuery, signal?: AbortSignal): Promis
   return res.data.data;
 }
 
+// GetCardsQuery caps `limit` at 100 (contract), so a set with more cards than that needs
+// multiple requests — loops until every page is collected instead of returning a partial list.
+export async function getAllKeysForSet(setNumber: string, signal?: AbortSignal): Promise<string[]> {
+  const limit = 100;
+  const first = await getAll({ setNumber, page: 1, limit }, signal);
+  const keys = first.items.map((c) => c.key);
+  for (let page = 2; page <= first.meta.totalPages; page++) {
+    const next = await getAll({ setNumber, page, limit }, signal);
+    keys.push(...next.items.map((c) => c.key));
+  }
+  return keys;
+}
+
 export async function getAvailableForLot(
   query: GetAvailableCardsQuery,
   signal?: AbortSignal,

@@ -196,6 +196,53 @@ describe('ActivationService.verify', () => {
     expect(result.status).toBe(ClientActivationStatus.ACTIVATED);
     expect(result.accountUsername).toBe('john_doe');
   });
+
+  it('returns clientFullName and clientPhone for prefill', async () => {
+    const activation = makeActivation({
+      activationStat: ActivationStat.PENDING,
+      clientFullName: 'Jane Doe',
+      clientPhone: '+213555000001',
+      steps: [],
+    });
+    prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
+    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    expect(result.clientFullName).toBe('Jane Doe');
+    expect(result.clientPhone).toBe('+213555000001');
+  });
+
+  // Stage-04-fix #4A: a value corrected in an EARLIER step (not the most recent one) must
+  // still surface — the old code read only the base `information` (pre-correction) with no
+  // merge at all, so a client re-checking the key after a correction cycle saw the stale
+  // original value instead of what they'd already fixed.
+  it('surfaces a value corrected in an earlier step, not just the latest step', async () => {
+    const activation = makeActivation({
+      activationStat: ActivationStat.PROCESSING,
+      information: [{ accountInform: AccountInformation.USERNAME, value: 'wrongname' }],
+      steps: [
+        // Newest first, matching the real query's orderBy: createdAt desc.
+        {
+          id: faker.string.uuid(),
+          activationStat: ActivationStat.PROCESSING,
+          createdAt: new Date('2024-06-01T12:00:00.000Z'),
+          wrongInformation: [],
+          additionalInformation: [],
+        },
+        {
+          id: faker.string.uuid(),
+          activationStat: ActivationStat.WRONG_INFORMATION,
+          createdAt: new Date('2024-06-01T11:00:00.000Z'),
+          wrongInformation: [{ accountInform: AccountInformation.USERNAME, value: 'corrected_name' }],
+          additionalInformation: [],
+        },
+      ],
+    });
+    prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
+
+    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+
+    const username = result.submittedFields?.find((f) => f.field === AccountInformation.USERNAME);
+    expect(username?.value).toBe('corrected_name');
+  });
 });
 
 // ─── submit ───────────────────────────────────────────────────────────────────
@@ -395,6 +442,53 @@ describe('ActivationService.getActive', () => {
     const pwd = result[0]!.accountFields.find((f) => f.fieldLabel === 'Password');
     expect(pwd?.value).toBe('secret'); // raw, not masked
   });
+
+  // Stage-04-fix #3.3: the OTP has its own dedicated `otpValue` field — it must not also
+  // appear in `accountFields`, or the card renders it twice.
+  it('surfaces the OTP only via otpValue, not duplicated in accountFields', async () => {
+    prisma.activator.findUnique.mockResolvedValue(activator);
+    prisma.activation.findMany.mockResolvedValue([
+      makeActivation({
+        activationStat: ActivationStat.ADDITIONAL_INFORMATION,
+        activatorId: activator.id,
+        takenAt: new Date('2024-06-01T10:00:00.000Z'),
+        information: [{ accountInform: AccountInformation.USERNAME, value: 'jane_doe' }],
+        steps: [
+          {
+            id: faker.string.uuid(),
+            activationStat: ActivationStat.ADDITIONAL_INFORMATION,
+            createdAt: new Date('2024-06-01T11:00:00.000Z'),
+            wrongInformation: [],
+            additionalInformation: [{ accountInform: AccountInformation.OTP, value: '654321' }],
+          },
+        ],
+      }),
+    ]);
+
+    const result = await service.getActive(userId);
+
+    expect(result[0]!.otpValue).toBe('654321');
+    expect(result[0]!.accountFields.find((f) => f.fieldLabel === 'OTP')).toBeUndefined();
+  });
+
+  // Stage-04-fix #3.1: a frozen activation hands off to the admin — it must disappear from
+  // the activator's own Active Requests list (getActive), not just visually via a stale cache.
+  it('excludes FREEZE from the queried states, so a frozen activation drops off the list', async () => {
+    prisma.activator.findUnique.mockResolvedValue(activator);
+    prisma.activation.findMany.mockResolvedValue([]);
+
+    await service.getActive(userId);
+
+    const call = prisma.activation.findMany.mock.calls[0]?.[0] as {
+      where: { activationStat: { in: string[] } };
+    };
+    const states = call.where.activationStat.in;
+    expect(states).toContain('PROCESSING');
+    expect(states).toContain('WRONG_INFORMATION');
+    expect(states).toContain('ADDITIONAL_INFORMATION');
+    expect(states).not.toContain('FREEZE');
+    expect(states).toHaveLength(3);
+  });
 });
 
 // ─── take ─────────────────────────────────────────────────────────────────────
@@ -413,6 +507,23 @@ describe('ActivationService.take', () => {
     prisma.activator.findUnique.mockResolvedValue(activator);
     prisma.activation.count.mockResolvedValue(3);
     await expect(service.take(id, userId)).rejects.toThrow(ConflictError);
+  });
+
+  // Stage-04-fix #3.1: a frozen activation must not occupy one of the activator's 3 slots —
+  // the cap query excludes FREEZE, same as getActive's list query.
+  it('counts the active-slot cap without FREEZE', async () => {
+    prisma.activator.findUnique.mockResolvedValue(activator);
+    prisma.activation.count.mockResolvedValue(0);
+    prisma.activation.updateMany.mockResolvedValue({ count: 0 });
+
+    await service.take(id, userId).catch(() => undefined);
+
+    const call = prisma.activation.count.mock.calls[0]?.[0] as {
+      where: { activationStat: { in: string[] } };
+    };
+    const states = call.where.activationStat.in;
+    expect(states).not.toContain('FREEZE');
+    expect(states).toHaveLength(3);
   });
 
   it('throws ConflictError when updateMany returns count=0 (already taken)', async () => {
@@ -537,6 +648,7 @@ describe('ActivationService.activate', () => {
   const userId = faker.string.uuid();
   const activator = makeActivator({ userId });
   const id = '11111111-1111-1111-8111-111111111111';
+  const ACTIVATE_CMD = { activationEmail: 'client@example.com' };
 
   function makeActivationWithCommissions(overrides: Record<string, unknown> = {}) {
     return makeActivation({
@@ -572,7 +684,7 @@ describe('ActivationService.activate', () => {
     prisma.activation.findUnique.mockResolvedValue(
       makeActivation({ id, activatorId: activator.id, activationStat: ActivationStat.PENDING }),
     );
-    await expect(service.activate(id, userId)).rejects.toThrow(ConflictError);
+    await expect(service.activate(id, userId, ACTIVATE_CMD)).rejects.toThrow(ConflictError);
   });
 
   it('picks commission tier by duration (within-range tier)', async () => {
@@ -588,7 +700,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     // Verify activationPrice set to tier commission (150)
     expect(prisma.activation.update).toHaveBeenCalledWith(
@@ -611,7 +723,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     expect(prisma.activation.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -630,7 +742,7 @@ describe('ActivationService.activate', () => {
     prisma.distributor.update.mockResolvedValue({});
     prisma.activationStep.create.mockResolvedValue({});
 
-    await service.activate(id, userId);
+    await service.activate(id, userId, ACTIVATE_CMD);
 
     expect(prisma.activator.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -651,6 +763,25 @@ describe('ActivationService.activate', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('activation:status-changed', expect.objectContaining({
       status: ClientActivationStatus.ACTIVATED,
     }));
+  });
+
+  it('stores the required activationEmail (Stage-04-fix #2)', async () => {
+    const activation = makeActivationWithCommissions();
+    prisma.activator.findUnique.mockResolvedValue(activator);
+    prisma.activation.findUnique.mockResolvedValue(activation);
+    prisma.activation.update.mockResolvedValue({});
+    prisma.card.update.mockResolvedValue({});
+    prisma.activator.update.mockResolvedValue({});
+    prisma.distributor.update.mockResolvedValue({});
+    prisma.activationStep.create.mockResolvedValue({});
+
+    await service.activate(id, userId, { activationEmail: 'client@example.com' });
+
+    expect(prisma.activation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ activationEmail: 'client@example.com' }),
+      }),
+    );
   });
 });
 
@@ -827,12 +958,13 @@ describe('ActivationService.getMyHistory', () => {
 // ─── getRecent ────────────────────────────────────────────────────────────────
 
 describe('ActivationService.getRecent', () => {
-  it('returns last 10 completed activations with keyMasked', async () => {
+  it('returns last 10 completed activations with keyMasked and activationEmail (Stage-04-fix #2)', async () => {
     prisma.activation.findMany.mockResolvedValue([
       {
         id: '11111111-1111-1111-8111-111111111111',
         activationStat: ActivationStat.ACTIVATED,
         completedAt: new Date('2024-06-01T10:00:00.000Z'),
+        activationEmail: 'client@example.com',
         card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
       },
     ]);
@@ -840,5 +972,6 @@ describe('ActivationService.getRecent', () => {
     const result = await service.getRecent();
     expect(result).toHaveLength(1);
     expect(result[0]!.keyMasked).toBe('********E5F6');
+    expect(result[0]!.activationEmail).toBe('client@example.com');
   });
 });

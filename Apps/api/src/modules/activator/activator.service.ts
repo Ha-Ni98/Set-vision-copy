@@ -20,6 +20,9 @@ import { hashPassword } from '@common/utils/password.utils';
 import { generateTempPassword } from '@common/utils/password-generator.util';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, ForbiddenError } from '@common/errors';
+import { todayStart, bucketDate } from '@modules/statistics/statistics.time';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const IN_PROGRESS_STATS = [
   ActivationStat.PROCESSING,
@@ -27,6 +30,11 @@ const IN_PROGRESS_STATS = [
   ActivationStat.ADDITIONAL_INFORMATION,
   ActivationStat.FREEZE,
 ] as const;
+
+// FREEZE hands the activation off to the admin — it must stop occupying one of the
+// activator's 3 active slots (Stage-04-fix #3.1), while still blocking deletion of an
+// activator with unresolved frozen work (IN_PROGRESS_STATS, used as-is below).
+const ACTIVE_SLOT_STATS = IN_PROGRESS_STATS.filter((s) => s !== ActivationStat.FREEZE);
 
 function computeAvgSeconds(
   activations: Array<{ takenAt: Date | null; completedAt: Date | null }>,
@@ -96,7 +104,9 @@ export class ActivatorService implements IActivatorService {
     const existing = await this.prisma.user.findUnique({ where: { username: persistence.username } });
     if (existing) throw new ConflictError('Username already taken');
 
-    const tempPassword = generateTempPassword();
+    // Admin may supply a password (Stage-04-fix); otherwise fall back to a generated one.
+    // Either way the chosen value is returned once via toWithCredentialsDTO.
+    const tempPassword = cmd.password ?? generateTempPassword();
     const hashed = await hashPassword(tempPassword);
 
     const [newUser, newActivator] = await this.prisma.$transaction(async (tx) => {
@@ -189,10 +199,18 @@ export class ActivatorService implements IActivatorService {
       if (conflict) throw new ConflictError('Username already taken');
     }
 
+    // Optional new password (Stage-04-fix) — hashed here and folded into the same user
+    // update below. Absent = leave the password untouched.
+    const hashedPassword = cmd.password ? await hashPassword(cmd.password) : undefined;
+    const userData = {
+      ...(username !== undefined && { username }),
+      ...(hashedPassword !== undefined && { password: hashedPassword }),
+    };
+
     const [updatedUser, updatedActivator] = await this.prisma.$transaction(async (tx) => {
       const user =
-        username !== undefined
-          ? await tx.user.update({ where: { id: result.userId }, data: { username } })
+        Object.keys(userData).length > 0
+          ? await tx.user.update({ where: { id: result.userId }, data: userData })
           : result.user;
 
       const activator =
@@ -202,8 +220,12 @@ export class ActivatorService implements IActivatorService {
 
       await tx.log.create({
         data: {
-          actionType: LogActionType.CHANGE_USER_INFORMATION,
-          actionDescription: `Updated activator information: ${user.username}`,
+          actionType: hashedPassword
+            ? LogActionType.CHANGE_USER_PASSWORD
+            : LogActionType.CHANGE_USER_INFORMATION,
+          actionDescription: hashedPassword
+            ? `Updated activator information (incl. password): ${user.username}`
+            : `Updated activator information: ${user.username}`,
           userId: actorId,
         },
       });
@@ -338,16 +360,13 @@ export class ActivatorService implements IActivatorService {
     });
     if (!activator) throw new ForbiddenError('Not an activator');
 
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - 6);
-
-    const thirtyDaysAgo = new Date(todayStart);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const sixtyDaysAgo = new Date(thirtyDaysAgo);
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 30);
+    // Algiers-day boundaries (shared with the statistics module) — a naive local-midnight
+    // Date serialized via toISOString() shifts a day under a non-UTC+1 server offset, which
+    // was silently dropping "today" from the rolling 7-day window (Stage-04-fix #2A).
+    const todayStartDate = todayStart();
+    const weekStartDate = new Date(todayStartDate.getTime() - 6 * DAY_MS);
+    const thirtyDaysAgo = new Date(todayStartDate.getTime() - 30 * DAY_MS);
+    const sixtyDaysAgo = new Date(todayStartDate.getTime() - 60 * DAY_MS);
 
     const [
       activeSlotsUsed,
@@ -358,20 +377,20 @@ export class ActivatorService implements IActivatorService {
       prevPeriodEarnings,
     ] = await Promise.all([
       this.prisma.activation.count({
-        where: { activatorId: activator.id, activationStat: { in: [...IN_PROGRESS_STATS] } },
+        where: { activatorId: activator.id, activationStat: { in: [...ACTIVE_SLOT_STATS] } },
       }),
       this.prisma.activation.count({
         where: {
           activatorId: activator.id,
           activationStat: ActivationStat.ACTIVATED,
-          completedAt: { gte: todayStart },
+          completedAt: { gte: todayStartDate },
         },
       }),
       this.prisma.activation.findMany({
         where: {
           activatorId: activator.id,
           activationStat: ActivationStat.ACTIVATED,
-          completedAt: { gte: weekStart },
+          completedAt: { gte: weekStartDate },
         },
         select: { completedAt: true },
       }),
@@ -402,18 +421,20 @@ export class ActivatorService implements IActivatorService {
       }),
     ]);
 
-    const weeklyMap = new Map<string, number>();
+    // Bucket both the 7 day-slots and each activation's completedAt through the same
+    // Algiers-day boundary (bucketDate) so a late-evening activation still lands in today's
+    // bucket instead of a UTC-shifted neighbor.
+    const weeklyMap = new Map<number, number>();
     for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(d.getDate() + i);
-      weeklyMap.set(d.toISOString().slice(0, 10), 0);
+      const day = bucketDate(new Date(weekStartDate.getTime() + i * DAY_MS), 'day');
+      weeklyMap.set(day.getTime(), 0);
     }
     for (const a of weeklyActivations) {
-      const day = a.completedAt!.toISOString().slice(0, 10);
-      if (weeklyMap.has(day)) weeklyMap.set(day, (weeklyMap.get(day) ?? 0) + 1);
+      const key = bucketDate(a.completedAt!, 'day').getTime();
+      if (weeklyMap.has(key)) weeklyMap.set(key, (weeklyMap.get(key) ?? 0) + 1);
     }
-    const weekly = Array.from(weeklyMap.entries()).map(([day, count]) => ({
-      date: new Date(`${day}T00:00:00.000Z`),
+    const weekly = Array.from(weeklyMap.entries()).map(([time, count]) => ({
+      date: new Date(time),
       count,
     }));
 
