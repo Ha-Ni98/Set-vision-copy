@@ -31,7 +31,7 @@ const DISTRIBUTOR: ActivationDistributorJoin = {
   commune: { frName: 'Bab El Oued' },
 };
 
-const CARD_KEY = 'A1B2C3D4E5F6';
+const CARD_KEY = 'A1B2C3D4';
 const ACTIVATION_ID = '11111111-1111-1111-8111-111111111111';
 
 const TAKEN_AT = new Date('2024-06-01T10:00:00.000Z');
@@ -233,7 +233,7 @@ describe('ActivationMapper.toPendingDTO', () => {
       PLAN,
       CARD_KEY,
     );
-    expect(result.keyMasked).toBe('********E5F6');
+    expect(result.keyMasked).toBe('****C3D4');
   });
 
   it('composes subscriptionLabel', () => {
@@ -391,7 +391,7 @@ describe('ActivationMapper.toRecentDTO', () => {
       PLAN,
       CARD_KEY,
     );
-    expect(result.keyMasked).toBe('********E5F6');
+    expect(result.keyMasked).toBe('****C3D4');
   });
 
   it('emits completedAt as ISO string', () => {

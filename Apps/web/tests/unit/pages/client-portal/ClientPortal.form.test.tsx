@@ -24,9 +24,9 @@ import {
 
 const KEY_PLACEHOLDER = "public.landing.verify.placeholder";
 const SUBMIT_BUTTON = "public.landing.verify.submit";
-// LandingPage's KEY_FORMAT_PATTERN is a flat 12-char [A-Z0-9] string (no hyphens) — this must
+// LandingPage's KEY_FORMAT_PATTERN is a flat 8-char [A-Z0-9] string (no hyphens) — this must
 // match that shape or Step 1's client-side validation rejects it before verify() ever mutates.
-const VALID_KEY = "ABCD1234EFGH";
+const VALID_KEY = "ABCD1234";
 
 const mockKeyNeedsCorrection: KeyVerificationDTO = KeyVerificationResponseSchema.parse({
   status: ClientActivationStatus.NEEDS_CORRECTION,

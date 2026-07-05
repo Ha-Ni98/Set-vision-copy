@@ -610,7 +610,7 @@ describe('ACTIVATION response schemas', () => {
       ActiveRequestResponseSchema.parse({
         id: SAMPLE_UUID,
         subscriptionLabel: 'Snapchat Plus — 01 Month',
-        key: 'A1B2C3D4E5F6',
+        key: 'A1B2C3D4',
         takenAt: '2025-01-10T08:30:00.000Z',
         state: ActivationStat.PROCESSING,
         distributor: { storeName: 'Tech Store', wilayaName: 'Alger', communeName: 'Bab El Oued' },

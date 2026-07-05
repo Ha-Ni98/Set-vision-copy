@@ -22,7 +22,7 @@ import {
 export const mockPendingActivation: PendingActivationDTO = PendingActivationResponseSchema.parse({
   id: "a1000000-0000-4000-8000-000000000001",
   subscriptionLabel: "Snapchat+ — 1 Week",
-  keyMasked: "XXXX-XXXX-1234",
+  keyMasked: "XXXX1234",
   requestedAt: "2026-07-01T10:00:00.000Z",
 });
 
@@ -90,7 +90,7 @@ export const mockHistoryItemInProgress: ActivatorHistoryItemDTO =
 export const mockRecentActivation: RecentActivationDTO = RecentActivationResponseSchema.parse({
   id: "a4000000-0000-4000-8000-000000000001",
   subscriptionLabel: "Snapchat+ — 3 Month",
-  keyMasked: "XXXX-XXXX-5678",
+  keyMasked: "XXXX5678",
   completedAt: "2026-07-01T08:00:00.000Z",
   state: ActivationStat.ACTIVATED,
   activationEmail: "client@example.com",

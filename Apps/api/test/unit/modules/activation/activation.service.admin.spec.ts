@@ -81,7 +81,7 @@ function makeActivationRow(overrides: Record<string, unknown> = {}) {
     }[],
     card: {
       id: faker.string.uuid(),
-      key: 'A1B2C3D4E5F6',
+      key: 'A1B2C3D4',
       subscriptionPlan: { ...PLAN, commissions: COMMISSIONS },
       distributorId: DISTRIBUTOR.id,
       distributor: { ...DISTRIBUTOR, wilaya: WILAYA, commune: COMMUNE },
@@ -133,7 +133,7 @@ describe('ActivationService.getAll', () => {
         completedAt: null,
         activationPrice: null,
         freezReason: 'test',
-        card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN, distributor: { storeName: 'Tech Store' } },
+        card: { key: 'A1B2C3D4', subscriptionPlan: PLAN, distributor: { storeName: 'Tech Store' } },
         activator: { fullName: 'Ali Ben' },
       },
     ]);
@@ -141,7 +141,7 @@ describe('ActivationService.getAll', () => {
 
     const result = await service.getAll({});
     expect(result.items).toHaveLength(1);
-    expect(result.items[0]!.key).toBe('A1B2C3D4E5F6');
+    expect(result.items[0]!.key).toBe('A1B2C3D4');
     expect(result.items[0]!.activatorFullName).toBe('Ali Ben');
     expect(result.items[0]!.distributorStoreName).toBe('Tech Store');
     expect(result.meta.total).toBe(1);
@@ -194,7 +194,7 @@ describe('ActivationService.getById', () => {
       completedAt: null as Date | null,
       card: {
         id: faker.string.uuid(),
-        key: 'A1B2C3D4E5F6',
+        key: 'A1B2C3D4',
         set: { createdAt: new Date('2024-01-01'), printedAt: new Date('2024-01-02') },
         lot: {
           createdAt: new Date('2024-02-01'),
@@ -407,7 +407,7 @@ describe('ActivationService.activateByAdmin', () => {
     const result = await service.activateByAdmin(id, ACTIVATE_CMD);
 
     expect(result.state).toBe(ActivationStat.ACTIVATED_BY_ADMIN);
-    expect(result.key).toBe('A1B2C3D4E5F6');
+    expect(result.key).toBe('A1B2C3D4');
     expect(result.activatorFullName).toBe('Ali Ben');
   });
 });
@@ -504,7 +504,7 @@ describe('ActivationService.setPrice', () => {
       }),
       card: {
         id: faker.string.uuid(),
-        key: 'A1B2C3D4E5F6',
+        key: 'A1B2C3D4',
         subscriptionPlan: PLAN,
         distributor: { storeName: 'Tech Store' },
       },
@@ -595,6 +595,6 @@ describe('ActivationService.setPrice', () => {
     const result = await service.setPrice(id, { amount: 200 }, actorId);
 
     expect(result.activationPrice).toBe(200);
-    expect(result.key).toBe('A1B2C3D4E5F6');
+    expect(result.key).toBe('A1B2C3D4');
   });
 });

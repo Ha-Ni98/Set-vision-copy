@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { SetStat } from './set.enums';
 
-// Card key format: 12 uppercase hex characters (e.g. "A1B2C3D4E5F6") — matches the server's
-// generator (randomBytes(6).toString('hex').toUpperCase()). Shared so the client generator,
-// the client form schema, and this command all validate the same shape (Stage-04-fix).
-export const CARD_KEY_PATTERN = /^[0-9A-F]{12}$/;
+// Card key format: 8 uppercase alphanumeric characters, A-Z and 0-9 (e.g. "A1B2C3D4") —
+// matches the server's and client's generators (8 random bytes mapped onto the 36-symbol
+// alphabet). Shared so the client generator, the client form schema, and this command all
+// validate the same shape (Stage-04-fix).
+export const CARD_KEY_PATTERN = /^[A-Z0-9]{8}$/;
 export const MAX_KEYS_PER_SET = 1000;
 
 // A set is now created from an explicit, admin-editable list of keys (Stage-04-fix) rather
