@@ -72,7 +72,7 @@ describe('POST /sets', () => {
     });
     seededPlanIds.push(plan.id);
 
-    const keys = ['A1A1A1A1A1A1', 'B2B2B2B2B2B2', 'C3C3C3C3C3C3'];
+    const keys = ['A1A1A1A1', 'B2B2B2B2', 'C3C3C3C3'];
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
@@ -106,7 +106,7 @@ describe('POST /sets', () => {
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ keys: ['D4D4D4D4D4D4', card.key], subscriptionPlanId: plan.id });
+      .send({ keys: ['D4D4D4D4', card.key], subscriptionPlanId: plan.id });
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe(ErrorCode.RESOURCE_CONFLICT);
@@ -144,7 +144,7 @@ describe('POST /sets', () => {
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ keys: ['E5E5E5E5E5E5', 'F6F6F6F6F6F6'], subscriptionPlanId: plan.id });
+      .send({ keys: ['E5E5E5E5', 'F6F6F6F6'], subscriptionPlanId: plan.id });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe(ErrorCode.VALIDATION_ERROR);
@@ -162,7 +162,7 @@ describe('POST /sets', () => {
     const res = await request(app)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ keys: ['0A0A0A0A0A0A'], subscriptionPlanId: plan.id });
+      .send({ keys: ['0A0A0A0A'], subscriptionPlanId: plan.id });
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN);

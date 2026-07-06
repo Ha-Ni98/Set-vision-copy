@@ -18,6 +18,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "cycles": "madge --circular --extensions ts src",
     "load_wilaya": "tsx --require dotenv/config scripts/load-wilayas.ts",
+    "load_commission_durations": "tsx --require dotenv/config scripts/load-commission-durations.ts",
     "create_admin_account": "tsx --require dotenv/config scripts/create-admin.ts",
     "load_mock_data": "tsx --require dotenv/config scripts/load-mock-data.ts"
   },

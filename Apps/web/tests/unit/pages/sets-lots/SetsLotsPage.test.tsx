@@ -233,7 +233,7 @@ describe("SetsLotsPage", () => {
     expect(createMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         subscriptionPlanId: "plan1",
-        keys: expect.arrayContaining([expect.stringMatching(/^[0-9A-F]{12}$/)]),
+        keys: expect.arrayContaining([expect.stringMatching(/^[A-Z0-9]{8}$/)]),
       }),
       expect.anything(),
     );

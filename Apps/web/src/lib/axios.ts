@@ -51,6 +51,15 @@ const TOKEN_ENDPOINTS = new Set(
 const PUBLIC_PATH_PREFIX = apiPath(KEY_ROUTES.BASE);
 const isPublicEndpoint = (url: string): boolean => url.startsWith(PUBLIC_PATH_PREFIX);
 
+// AuthProvider's useSession() calls this on every page load, public routes included (e.g. the
+// client-activation landing page at "/") — a 401 here just means "no session," which is the
+// normal case for an anonymous visitor, not an expired-session signal to bounce them to /login.
+// The refresh attempt below still runs as normal (silently restores a session from a stale
+// access token + valid refresh token); only the *redirect* on ultimate failure is skipped for
+// this one endpoint. Actually-protected routes still redirect correctly on their own, via
+// ProtectedRoute/AdminGuard reacting to isAuthenticated — this endpoint just stops forcing it.
+const SESSION_ENDPOINT = apiPath(AUTH_ROUTES.BASE, AUTH_ROUTES.ME);
+
 type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
 // Single-flight: concurrent 401s across independent requests share one refresh call
@@ -105,11 +114,13 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    const isSessionCheck = requestUrl === SESSION_ENDPOINT;
+
     // 4. No request to replay, or already retried once (refresh succeeded but the replay
     // still 401'd) — treat as failure, no second refresh attempt.
     if (!config || config._retried) {
       tokenStore.clear();
-      redirectToLogin();
+      if (!isSessionCheck) redirectToLogin();
       return Promise.reject(error);
     }
 
@@ -119,7 +130,7 @@ api.interceptors.response.use(
     } catch {
       // 4. Refresh failed / no refresh token.
       tokenStore.clear();
-      redirectToLogin();
+      if (!isSessionCheck) redirectToLogin();
       return Promise.reject(error);
     }
 

@@ -17,14 +17,14 @@ describe("sets.service", () => {
   });
 
   it("create returns the unwrapped DTO (201)", async () => {
-    const result = await setsService.create({ keys: ["A1A1A1A1A1A1"], subscriptionPlanId: "id" });
+    const result = await setsService.create({ keys: ["A1A1A1A1"], subscriptionPlanId: "id" });
     expect(result).toEqual(mockSetPrinted);
   });
 
   it("create throws on a 400 validation error", async () => {
     server.use(setErrorHandlers.createValidationError());
     await expect(
-      setsService.create({ keys: ["A1A1A1A1A1A1"], subscriptionPlanId: "id" }),
+      setsService.create({ keys: ["A1A1A1A1"], subscriptionPlanId: "id" }),
     ).rejects.toMatchObject({
       response: { status: 400 },
     });
