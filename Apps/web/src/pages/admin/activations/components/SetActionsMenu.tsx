@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CreditCard,
   Download,
+  FileText,
   Trash2,
 } from "lucide-react";
 import { SetStat, type SetDTO } from "@my-app/contract";
@@ -19,7 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/hooks/useTranslation";
-import { downloadTextFile } from "@/lib/utils";
+import { downloadTextFile, downloadBlob } from "@/lib/utils";
+import { generateCardsPdf } from "@/lib/card-pdf";
 import * as cardsService from "@/services/cards.service";
 
 interface Props {
@@ -61,6 +63,24 @@ export function SetActionsMenu({
     }
   };
 
+  const [isPrinting, setIsPrinting] = useState(false);
+  const onPrintPdf = async () => {
+    setIsPrinting(true);
+    try {
+      const keys = await cardsService.getAllKeysForSet(set.setNumber);
+      if (keys.length === 0) {
+        toast.error(t("admin.setsLots.sets.actions.downloadKeysEmptyToast"));
+        return;
+      }
+      const pdfBytes = await generateCardsPdf(keys);
+      downloadBlob(`set-${set.setNumber}-cards.pdf`, new Blob([pdfBytes], { type: "application/pdf" }));
+    } catch {
+      toast.error(t("admin.setsLots.sets.actions.printPdfErrorToast"));
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -80,6 +100,14 @@ export function SetActionsMenu({
             isDownloading
               ? "admin.setsLots.sets.actions.downloadingKeys"
               : "admin.setsLots.sets.actions.downloadKeys",
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={isPrinting} onClick={onPrintPdf}>
+          <FileText className="mr-2 h-4 w-4" />
+          {t(
+            isPrinting
+              ? "admin.setsLots.sets.actions.printingPdf"
+              : "admin.setsLots.sets.actions.printPdf",
           )}
         </DropdownMenuItem>
         {canSendToPrint && (

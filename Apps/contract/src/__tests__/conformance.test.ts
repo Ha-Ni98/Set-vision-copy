@@ -141,7 +141,7 @@ describe('PendingActivationResponseSchema', () => {
     const dto = PendingActivationResponseSchema.parse({
       id: UUID1,
       subscriptionLabel: 'Snapchat+ 1 Month',
-      keyMasked: 'XXXX-XXXX-1234',
+      keyMasked: 'XXXX1234',
       requestedAt: '2026-06-28T10:00:00.000Z',
     });
     assert.equal(dto.subscriptionLabel, 'Snapchat+ 1 Month');

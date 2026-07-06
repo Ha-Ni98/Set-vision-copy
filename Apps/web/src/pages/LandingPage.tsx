@@ -19,11 +19,11 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { SOCIAL_LINKS } from "@/config/social-links";
 
-// Matches the Step 1 input's own placeholder shape (spec: "XXXX-XXXX-XXXX-XXXX") — the
-// contract has no fixed key-generation format to validate against, so this is only a soft
-// client-side shape check; the backend's verify response (INVALID) is the real authority.
- //const KEY_FORMAT_PATTERN = /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/;
-const KEY_FORMAT_PATTERN = /^[A-Z0-9]{12}$/;
+// Matches the Step 1 input's own placeholder shape (spec: "XXXX-XXXX") — the contract has no
+// fixed key-generation format to validate against, so this is only a soft client-side shape
+// check; the backend's verify response (INVALID) is the real authority.
+ //const KEY_FORMAT_PATTERN = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+const KEY_FORMAT_PATTERN = /^[A-Z0-9]{8}$/;
 
 type StepView = "keyEntry" | "form" | "otp" | "review" | "activated" | "failed";
 

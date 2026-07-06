@@ -93,7 +93,7 @@ function makeActivation(overrides: Record<string, unknown> = {}) {
     }[],
     card: {
       id: faker.string.uuid(),
-      key: 'A1B2C3D4E5F6',
+      key: 'A1B2C3D4',
       subscriptionPlan: PLAN,
       distributorId: DISTRIBUTOR_ROW.id,
       distributor: DISTRIBUTOR_ROW,
@@ -119,7 +119,7 @@ function makeActivator(overrides: Record<string, unknown> = {}) {
 function makeCard(overrides: Record<string, unknown> = {}) {
   return {
     id: faker.string.uuid(),
-    key: 'A1B2C3D4E5F6',
+    key: 'A1B2C3D4',
     isActive: true,
     cardStat: 'AT_DISTRIBUTOR',
     deletedAt: null,
@@ -149,13 +149,13 @@ describe('ActivationService.verify', () => {
 
   it('returns INVALID when card isActive=false', async () => {
     prisma.card.findFirst.mockResolvedValue(makeCard({ isActive: false, activations: [] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.status).toBe(ClientActivationStatus.INVALID);
   });
 
   it('returns READY when card has no live activation', async () => {
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.status).toBe(ClientActivationStatus.READY);
     expect(result.subscriptionLabel).toBe('Snapchat Plus — 01 Month');
   });
@@ -163,7 +163,7 @@ describe('ActivationService.verify', () => {
   it('maps PENDING activation → SUBMITTED', async () => {
     const activation = makeActivation({ activationStat: ActivationStat.PENDING, steps: [] });
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.status).toBe(ClientActivationStatus.SUBMITTED);
   });
 
@@ -179,7 +179,7 @@ describe('ActivationService.verify', () => {
       }],
     });
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.status).toBe(ClientActivationStatus.NEEDS_CORRECTION);
     expect(result.flaggedFields).toHaveLength(1);
     expect(result.flaggedFields![0]!.label).toBe('Username');
@@ -192,7 +192,7 @@ describe('ActivationService.verify', () => {
       steps: [],
     });
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.status).toBe(ClientActivationStatus.ACTIVATED);
     expect(result.accountUsername).toBe('john_doe');
   });
@@ -205,7 +205,7 @@ describe('ActivationService.verify', () => {
       steps: [],
     });
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
     expect(result.clientFullName).toBe('Jane Doe');
     expect(result.clientPhone).toBe('+213555000001');
   });
@@ -238,7 +238,7 @@ describe('ActivationService.verify', () => {
     });
     prisma.card.findFirst.mockResolvedValue(makeCard({ activations: [activation] }));
 
-    const result = await service.verify({ key: 'A1B2C3D4E5F6' });
+    const result = await service.verify({ key: 'A1B2C3D4' });
 
     const username = result.submittedFields?.find((f) => f.field === AccountInformation.USERNAME);
     expect(username?.value).toBe('corrected_name');
@@ -249,7 +249,7 @@ describe('ActivationService.verify', () => {
 
 describe('ActivationService.submit', () => {
   const cmd = {
-    key: 'A1B2C3D4E5F6',
+    key: 'A1B2C3D4',
     fullName: 'Jane Doe',
     phone: '+213555000001',
     accountFields: [{ field: AccountInformation.USERNAME, value: 'jane_doe' }],
@@ -406,12 +406,12 @@ describe('ActivationService.getPending', () => {
       {
         id: '11111111-1111-1111-8111-111111111111',
         requestedAt: new Date('2024-06-01T10:00:00.000Z'),
-        card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+        card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
       },
     ]);
     const result = await service.getPending();
     expect(result).toHaveLength(1);
-    expect(result[0]!.keyMasked).toBe('********E5F6');
+    expect(result[0]!.keyMasked).toBe('****C3D4');
   });
 });
 
@@ -549,7 +549,7 @@ describe('ActivationService.take', () => {
     const result = await service.take(id, userId);
 
     expect(result.id).toBe(id);
-    expect(result.key).toBe('A1B2C3D4E5F6');
+    expect(result.key).toBe('A1B2C3D4');
     expect(eventBus.emit).toHaveBeenCalledWith('activation:taken', expect.objectContaining({
       activationId: id,
       activatorId: activator.id,
@@ -658,7 +658,7 @@ describe('ActivationService.activate', () => {
       takenAt: new Date('2024-06-01T10:00:00.000Z'),
       card: {
         id: faker.string.uuid(),
-        key: 'A1B2C3D4E5F6',
+        key: 'A1B2C3D4',
         distributorId: DISTRIBUTOR_ROW.id,
         distributor: DISTRIBUTOR_ROW,
         subscriptionPlan: {
@@ -805,7 +805,7 @@ describe('ActivationService.cancel', () => {
     const newActivation = {
       id: newId,
       requestedAt: new Date(),
-      card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+      card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
     };
     prisma.activator.findUnique.mockResolvedValue(activator);
     prisma.activation.findUnique.mockResolvedValue(
@@ -848,7 +848,7 @@ describe('ActivationService.release', () => {
     const newActivation = {
       id: '22222222-2222-2222-8222-222222222222',
       requestedAt: new Date(),
-      card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+      card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
     };
     prisma.activator.findUnique.mockResolvedValue(activator);
     prisma.activation.findUnique.mockResolvedValue(
@@ -873,7 +873,7 @@ describe('ActivationService.release', () => {
     const newActivation = {
       id: '22222222-2222-2222-8222-222222222222',
       requestedAt: new Date(),
-      card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+      card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
     };
     prisma.activator.findUnique.mockResolvedValue(activator);
     prisma.activation.findUnique.mockResolvedValue(
@@ -941,7 +941,7 @@ describe('ActivationService.getMyHistory', () => {
         activationPrice: new Prisma.Decimal(150),
         clientFullName: 'Jane Doe',
         clientPhone: '+213555000001',
-        card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+        card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
       },
     ]);
     prisma.activation.count.mockResolvedValue(1);
@@ -949,7 +949,7 @@ describe('ActivationService.getMyHistory', () => {
     const result = await service.getMyHistory(userId, {});
 
     expect(result.items).toHaveLength(1);
-    expect(result.items[0]!.key).toBe('A1B2C3D4E5F6');
+    expect(result.items[0]!.key).toBe('A1B2C3D4');
     expect(result.items[0]!.durationSeconds).toBe(300); // 5 min
     expect(result.meta.total).toBe(1);
   });
@@ -965,13 +965,13 @@ describe('ActivationService.getRecent', () => {
         activationStat: ActivationStat.ACTIVATED,
         completedAt: new Date('2024-06-01T10:00:00.000Z'),
         activationEmail: 'client@example.com',
-        card: { key: 'A1B2C3D4E5F6', subscriptionPlan: PLAN },
+        card: { key: 'A1B2C3D4', subscriptionPlan: PLAN },
       },
     ]);
 
     const result = await service.getRecent();
     expect(result).toHaveLength(1);
-    expect(result[0]!.keyMasked).toBe('********E5F6');
+    expect(result[0]!.keyMasked).toBe('****C3D4');
     expect(result[0]!.activationEmail).toBe('client@example.com');
   });
 });

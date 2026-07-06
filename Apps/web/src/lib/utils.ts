@@ -29,10 +29,9 @@ export function formatDateTime(iso: string, language: Language = "en"): string {
   }).format(new Date(iso));
 }
 
-// Browser-only text-file download (Blob + a throwaway anchor) — no server round-trip beyond
-// whatever fetched `content` already, so this is just the local "save as" trigger.
-export function downloadTextFile(filename: string, content: string): void {
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+// Browser-only file download (Blob + a throwaway anchor) — no server round-trip beyond
+// whatever produced `blob` already, so this is just the local "save as" trigger.
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -41,6 +40,10 @@ export function downloadTextFile(filename: string, content: string): void {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function downloadTextFile(filename: string, content: string): void {
+  downloadBlob(filename, new Blob([content], { type: "text/plain;charset=utf-8" }));
 }
 
 // Stats with zero items are omitted from InventorySummaryDTO's arrays (contract comment) —

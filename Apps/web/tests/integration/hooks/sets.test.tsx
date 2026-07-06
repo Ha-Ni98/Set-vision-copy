@@ -58,7 +58,7 @@ describe("set mutations invalidate both sets and cards (plan.md §3.2 — set li
     const { result } = renderHook(() => useCreateSet(), { wrapper });
     await expectSetsAndCardsInvalidated(
       wrapper,
-      () => result.current.mutate({ keys: ["A1A1A1A1A1A1"], subscriptionPlanId: "id" }),
+      () => result.current.mutate({ keys: ["A1A1A1A1"], subscriptionPlanId: "id" }),
       () => result.current.isSuccess,
     );
   });
