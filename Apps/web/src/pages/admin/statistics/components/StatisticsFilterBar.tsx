@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 
 // StatisticsPeriod is a z.enum of string literals (no runtime TS enum object exists on the
 // contract), so the closed set is declared locally — plan.md §D3 period reconciliation.
@@ -117,7 +118,7 @@ export function StatisticsFilterBar({
           <SelectItem value={ALL}>{t("admin.statistics.filters.wilayaPlaceholder")}</SelectItem>
           {(wilayas ?? []).map((w) => (
             <SelectItem key={w.id} value={w.id}>
-              {w.frName}
+              {formatWilayaLabel(w)}
             </SelectItem>
           ))}
         </SelectContent>

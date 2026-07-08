@@ -110,7 +110,7 @@
   "public.landing.form.fullName": { "en": "Full Name", "fr": "Nom complet", "ar": "" },
   "public.landing.form.phone": { "en": "Phone Number", "fr": "Numéro de téléphone", "ar": "" },
   "public.landing.form.username": { "en": "Snapchat Username", "fr": "Nom d'utilisateur Snapchat", "ar": "" },
-  "public.landing.form.email": { "en": "Snapchat Email", "fr": "E-mail Snapchat", "ar": "" },
+  "public.landing.form.email": { "en": "Snapchat Email (optional)", "fr": "E-mail Snapchat (optionnel)", "ar": "" },
   "public.landing.form.snapPhone": { "en": "Snapchat Phone (optional)", "fr": "Téléphone Snapchat (optionnel)", "ar": "" },
   "public.landing.form.password": { "en": "Password", "fr": "Mot de passe", "ar": "" },
   "public.landing.form.confirmPassword": { "en": "Confirm Password", "fr": "Confirmer le mot de passe", "ar": "" },

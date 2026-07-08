@@ -83,6 +83,7 @@ export type RawOverview = {
 export type RawWilayaHeatmapRow = {
   wilayaId: string;
   wilayaName: string;
+  wilayaCode: string;
   distributorsCount: number;
   activationsCount: number;
   cancellationsCount: number;
@@ -182,6 +183,7 @@ export class StatisticsMapper {
       raw.map((r) => ({
         wilayaId: r.wilayaId,
         wilayaName: r.wilayaName,
+        wilayaCode: r.wilayaCode,
         distributorsCount: r.distributorsCount,
         activationsCount: r.activationsCount,
         cancellationsCount: r.cancellationsCount,

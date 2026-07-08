@@ -25,6 +25,7 @@ const HEATMAP_DATA = [
   {
     wilayaId: "w-alger",
     wilayaName: "Alger",
+    wilayaCode: "16",
     distributorsCount: 5,
     activationsCount: 20,
     cancellationsCount: 1,

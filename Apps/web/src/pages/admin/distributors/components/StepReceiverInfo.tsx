@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 import type { CreateOrderFormInput } from "./create-order.schema";
 
 interface Props {
@@ -87,7 +88,7 @@ export function StepReceiverInfo({
           <SelectContent>
             {(wilayas ?? []).map((w) => (
               <SelectItem key={w.id} value={w.id}>
-                {w.frName}
+                {formatWilayaLabel(w)}
               </SelectItem>
             ))}
           </SelectContent>
