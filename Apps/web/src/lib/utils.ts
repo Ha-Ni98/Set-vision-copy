@@ -1,9 +1,14 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { Language } from "@/lib/i18n";
+import type { WilayaDTO } from "@my-app/contract";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function formatWilayaLabel(wilaya: Pick<WilayaDTO, "wilayaCode" | "frName">): string {
+  return `${wilaya.wilayaCode}-${wilaya.frName}`;
 }
 
 // "MM:SS" isn't locale-sensitive (unlike a formatted number), so this stays plain. Round to
