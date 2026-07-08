@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 import type { WilayaDTO, CommuneDTO } from "@my-app/contract";
 import {
   createDistributorSchema,
@@ -136,7 +137,7 @@ export function CreateDistributorModal({
                   <SelectContent>
                     {(wilayas ?? []).map((w) => (
                       <SelectItem key={w.id} value={w.id}>
-                        {w.frName}
+                        {formatWilayaLabel(w)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -121,6 +121,7 @@ export const mockWilayaHeatmap: WilayaHeatmapDTO = WilayaHeatmapResponseSchema.p
   {
     wilayaId: "f1000000-0000-4000-8000-000000000001",
     wilayaName: "Alger",
+    wilayaCode: "16",
     distributorsCount: 12,
     activationsCount: 400,
     cancellationsCount: 8,
@@ -130,6 +131,7 @@ export const mockWilayaHeatmap: WilayaHeatmapDTO = WilayaHeatmapResponseSchema.p
   {
     wilayaId: "f1000000-0000-4000-8000-000000000002",
     wilayaName: "Oran",
+    wilayaCode: "31",
     distributorsCount: 3,
     activationsCount: 0,
     cancellationsCount: 0,

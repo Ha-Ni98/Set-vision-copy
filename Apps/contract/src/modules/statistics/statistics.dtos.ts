@@ -103,6 +103,7 @@ export const WilayaHeatmapResponseSchema = z.array(
   z.object({
     wilayaId: z.uuid(),
     wilayaName: z.string(),
+    wilayaCode: z.string(),
     distributorsCount: z.number().int(),
     activationsCount: z.number().int(),
     cancellationsCount: z.number().int(),

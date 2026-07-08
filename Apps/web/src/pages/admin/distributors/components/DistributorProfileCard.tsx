@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { EnabledBadge } from "@/components/shared/StatusBadge";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 import type { DistributorDetailDTO, WilayaDTO, CommuneDTO } from "@my-app/contract";
 import {
   updateDistributorSchema,
@@ -190,7 +191,7 @@ export function DistributorProfileCard({
                 <SelectContent>
                   {(wilayas ?? []).map((w) => (
                     <SelectItem key={w.id} value={w.id}>
-                      {w.frName}
+                      {formatWilayaLabel(w)}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 
 const ALL = "__all__";
 
@@ -192,7 +193,7 @@ export function ActivationsFilters({
           <SelectItem value={ALL}>{t("admin.activations.filters.wilayaPlaceholder")}</SelectItem>
           {(wilayas ?? []).map((w) => (
             <SelectItem key={w.id} value={w.id}>
-              {w.frName}
+              {formatWilayaLabel(w)}
             </SelectItem>
           ))}
         </SelectContent>

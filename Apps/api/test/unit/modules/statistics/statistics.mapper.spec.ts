@@ -258,6 +258,7 @@ describe('StatisticsMapper.toWilayaHeatmapDTO', () => {
     {
       wilayaId: WILAYA_ID,
       wilayaName: 'Alger',
+      wilayaCode: '16',
       distributorsCount: 5,
       activationsCount: 100,
       cancellationsCount: 3,
@@ -275,17 +276,18 @@ describe('StatisticsMapper.toWilayaHeatmapDTO', () => {
     expect(dto[0]!.avgActivationTimeSeconds).toBeNull();
   });
 
-  it('handles all 58 wilayas (empty zeroed rows)', () => {
-    const rows = Array.from({ length: 58 }, (_, i) => ({
+  it('handles all 69 wilayas (empty zeroed rows)', () => {
+    const rows = Array.from({ length: 69 }, (_, i) => ({
       wilayaId: `${WILAYA_ID.slice(0, -2)}${String(i).padStart(2, '0')}`,
       wilayaName: `Wilaya ${i + 1}`,
+      wilayaCode: String(i + 1).padStart(2, '0'),
       distributorsCount: 0,
       activationsCount: 0,
       cancellationsCount: 0,
       avgActivationTimeSeconds: null,
     }));
     const dto = StatisticsMapper.toWilayaHeatmapDTO(rows);
-    expect(dto).toHaveLength(58);
+    expect(dto).toHaveLength(69);
   });
 });
 

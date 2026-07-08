@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 import type { WilayaDTO, CommuneDTO } from "@my-app/contract";
 
 // Radix Select reserves "" for "no selection" internally, so "all wilayas/communes" is
@@ -79,7 +80,7 @@ export function DistributorsFilters({
           <SelectItem value={ALL}>{t("admin.distributors.filters.wilayaPlaceholder")}</SelectItem>
           {(wilayas ?? []).map((w) => (
             <SelectItem key={w.id} value={w.id}>
-              {w.frName}
+              {formatWilayaLabel(w)}
             </SelectItem>
           ))}
         </SelectContent>

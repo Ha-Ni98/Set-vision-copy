@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatWilayaLabel } from "@/lib/utils";
 
 // Radix Select reserves "" for "no selection" internally, so "all" is represented by this
 // sentinel and translated back to "" for the caller (mirrors DistributorsFilters).
@@ -86,7 +87,7 @@ export function OrdersFilters({
           <SelectItem value={ALL}>{t("admin.orders.filters.wilayaPlaceholder")}</SelectItem>
           {(wilayas ?? []).map((w) => (
             <SelectItem key={w.id} value={w.id}>
-              {w.frName}
+              {formatWilayaLabel(w)}
             </SelectItem>
           ))}
         </SelectContent>
