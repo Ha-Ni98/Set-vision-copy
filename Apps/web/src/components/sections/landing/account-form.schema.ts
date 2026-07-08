@@ -28,7 +28,15 @@ export function createAccountFormSchema(t: ReturnType<typeof useTranslation>["t"
         .regex(FULL_NAME_PATTERN, t("common.validation.invalidName")),
       phone: z.string().regex(ALGERIAN_PHONE_PATTERN, t("common.validation.invalidPhone")),
       username: z.string().min(1, required),
-      email: z.string().min(1, required).email(t("common.validation.invalidEmail")),
+      // Optional — left blank if the client never sets a distinct Snapchat email. If set,
+      // validated as a real email; an empty string skips the check entirely (mirrors
+      // snapchatPhone just below).
+      email: z
+        .string()
+        .optional()
+        .refine((v) => !v || z.string().email().safeParse(v).success, {
+          message: t("common.validation.invalidEmail"),
+        }),
       // Optional — left blank if the client never sets a distinct Snapchat phone (Stage-04-fix
       // #3.2: must NOT fall back to the personal `phone`, which previously leaked into the
       // activator's card as a false "Snapchat phone"). If set, validated as a real phone number;
@@ -59,7 +67,7 @@ export type AccountFormValues = z.infer<ReturnType<typeof createAccountFormSchem
 export function toAccountFields(values: AccountFormValues): AccountField[] {
   return [
     { field: AccountInformation.USERNAME, value: values.username },
-    { field: AccountInformation.EMAIL, value: values.email },
+    { field: AccountInformation.EMAIL, value: values.email?.trim() ?? "" },
     { field: AccountInformation.PHONE_NUMBER, value: values.snapchatPhone?.trim() ?? "" },
     { field: AccountInformation.PASSWORD, value: values.password },
   ];
