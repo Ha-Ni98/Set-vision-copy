@@ -139,7 +139,7 @@ describe('StatisticsService.overview', () => {
 describe('StatisticsService.wilayaHeatmap', () => {
   it('returns all wilayas — including those with no activations (zeroed)', async () => {
     const prisma = buildPrisma();
-    const wilayas = Array.from({ length: 58 }, (_, i) => ({
+    const wilayas = Array.from({ length: 69 }, (_, i) => ({
       id: `cccccccc-cccc-4ccc-8ccc-${String(i).padStart(12, '0')}`,
       wilayaCode: String(i + 1).padStart(2, '0'),
       frName: `Wilaya ${i + 1}`,
@@ -148,7 +148,7 @@ describe('StatisticsService.wilayaHeatmap', () => {
     (prisma.wilaya.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(wilayas);
     const svc = new StatisticsService(prisma);
     const dto = await svc.wilayaHeatmap({});
-    expect(dto).toHaveLength(58);
+    expect(dto).toHaveLength(69);
     expect(dto[0]!.activationsCount).toBe(0);
     expect(dto[0]!.cancellationsCount).toBe(0);
     expect(dto[0]!.avgActivationTimeSeconds).toBeNull();

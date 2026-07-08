@@ -396,6 +396,7 @@ export class StatisticsService implements IStatisticsService {
       return {
         wilayaId: w.id,
         wilayaName: w.frName,
+        wilayaCode: w.wilayaCode,
         distributorsCount: s.distributorsCount,
         activationsCount: s.activationsCount,
         cancellationsCount: s.cancellationsCount,
