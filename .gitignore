@@ -43,5 +43,7 @@ dist-ssr
 
 Docs/Stage-00-Conception/react-algeria-map
 
+# Ignore the template folder
+template/
 
 
