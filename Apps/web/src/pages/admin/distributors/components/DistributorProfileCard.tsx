@@ -117,6 +117,12 @@ export function DistributorProfileCard({
                 <dt className="text-muted-foreground">{t("admin.distributors.create.commune")}</dt>
                 <dd className="font-medium text-foreground">{distributor.communeName}</dd>
               </div>
+              <div>
+                <dt className="text-muted-foreground">{t("admin.distributors.account.label")}</dt>
+                <dd className="font-medium text-foreground">
+                  {distributor.username ?? t("admin.distributors.account.none")}
+                </dd>
+              </div>
             </dl>
           </div>
           <div className="flex flex-wrap gap-2">

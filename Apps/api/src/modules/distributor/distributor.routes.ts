@@ -5,6 +5,7 @@ import {
   GetDistributorsQuerySchema,
   CreateDistributorSchema,
   UpdateDistributorSchema,
+  CreateDistributorAccountSchema,
   DistributorIdParamsSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
@@ -53,6 +54,20 @@ distributorRouter.post(
   adminOnly,
   validateRequest({ params: DistributorIdParamsSchema }),
   controller.toggle,
+);
+
+distributorRouter.post(
+  DISTRIBUTOR_ROUTES.CREATE_ACCOUNT,
+  adminOnly,
+  validateRequest({ params: DistributorIdParamsSchema, body: CreateDistributorAccountSchema }),
+  controller.createAccount,
+);
+
+distributorRouter.delete(
+  DISTRIBUTOR_ROUTES.UNLINK_ACCOUNT,
+  adminOnly,
+  validateRequest({ params: DistributorIdParamsSchema }),
+  controller.unlinkAccount,
 );
 
 distributorRouter.delete(

@@ -1227,7 +1227,7 @@ Produce Docs/Stage-04-fix/plan/set-13-plan.md with four inventories, each a tabl
    creation and status propagation, revocations, status changes, role assignment, Telegram
    link/unlink, admin actions. Columns: action, logged yes/no, LogActionType used, where, fix.
 
-Also list every inline string still in JSX and every translation key missing en, fr, or ar.
+Also list every inline string still in JSX and every translation key missing en or fr.
 
 Order the combined fix list by risk and mark anything that would change an API contract — I decide
 separately whether those are in scope.

@@ -17,7 +17,17 @@ const NS = {
   CLIENT: "/client",
   ACTIVATORS: "/activators",
   ADMIN: "/admin",
+  DISTRIBUTORS: "/distributors",
 } as const;
+
+// Record<UserRole, string>, so a fourth role fails to compile here rather than silently
+// falling back to /activators (v2-decisions.md R1 — the bug this namespace map exists to
+// prevent for good).
+const ROLE_NAMESPACE: Record<UserRole, string> = {
+  [UserRole.ADMIN]: NS.ADMIN,
+  [UserRole.ACTIVATOR]: NS.ACTIVATORS,
+  [UserRole.DISTRIBUTOR]: NS.DISTRIBUTORS,
+};
 
 interface ClientToServerEvents {
   subscribe: (activationId: string) => void;
@@ -145,6 +155,12 @@ function attachAdminNamespaceListeners(socket: AppSocket): void {
   });
 }
 
+// No events flow to /distributors yet (Set 1 plan.md §6.4) — attachStatusTracking (applied
+// to every role socket below) is the whole listener surface until a later set adds events.
+function attachDistributorNamespaceListeners(_socket: AppSocket): void {
+  // Intentionally empty.
+}
+
 function attachClientNamespaceListeners(socket: AppSocket): void {
   // Shell reconnect UX (client-portal plan.md §D5): unlike the role sockets, this one is
   // never intentionally disconnected (there's no sign-out equivalent for a public page), so
@@ -174,15 +190,20 @@ let roleSocket: AppSocket | null = null;
 
 export function connectRoleSocket(role: UserRole): void {
   disconnectRoleSocket();
-  const namespace = role === UserRole.ADMIN ? NS.ADMIN : NS.ACTIVATORS;
-  const socket = io(wsUrl(namespace), { auth: authCallback }) as AppSocket;
+  const socket = io(wsUrl(ROLE_NAMESPACE[role]), { auth: authCallback }) as AppSocket;
 
   attachAuthErrorHandling(socket);
   attachStatusTracking(socket);
-  if (role === UserRole.ADMIN) {
-    attachAdminNamespaceListeners(socket);
-  } else {
-    attachActivatorNamespaceListeners(socket);
+  switch (role) {
+    case UserRole.ADMIN:
+      attachAdminNamespaceListeners(socket);
+      break;
+    case UserRole.ACTIVATOR:
+      attachActivatorNamespaceListeners(socket);
+      break;
+    case UserRole.DISTRIBUTOR:
+      attachDistributorNamespaceListeners(socket);
+      break;
   }
 
   roleSocket = socket;

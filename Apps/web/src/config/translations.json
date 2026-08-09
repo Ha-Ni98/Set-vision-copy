@@ -182,6 +182,15 @@
   "activator.shell.connectionLost": { "en": "Connection lost. Reconnecting…", "fr": "Connexion perdue. Reconnexion…", "ar": "" },
   "activator.shell.sessionExpired": { "en": "Session expired. Please log in again.", "fr": "Session expirée. Veuillez vous reconnecter.", "ar": "" },
 
+  "distributor.nav.portal": { "en": "Portal", "fr": "Portail", "ar": "" },
+  "distributor.portal.title": { "en": "Distributor Portal", "fr": "Portail distributeur", "ar": "" },
+  "distributor.portal.emptyTitle": { "en": "Nothing here yet", "fr": "Rien ici pour l'instant", "ar": "" },
+  "distributor.portal.emptyBody": { "en": "Your orders and requests will appear here.", "fr": "Vos commandes et demandes apparaîtront ici.", "ar": "" },
+  "distributor.shell.openMenu": { "en": "Open menu", "fr": "Ouvrir le menu", "ar": "" },
+  "distributor.shell.signOut": { "en": "Sign Out", "fr": "Se déconnecter", "ar": "" },
+  "distributor.shell.signOutTitle": { "en": "Sign out?", "fr": "Se déconnecter ?", "ar": "" },
+  "distributor.shell.signOutBody": { "en": "You'll need to log in again to access the distributor portal.", "fr": "Vous devrez vous reconnecter pour accéder au portail distributeur.", "ar": "" },
+
   "activator.dashboard.title": { "en": "Dashboard", "fr": "Tableau de bord", "ar": "" },
   "activator.dashboard.subtitle": { "en": "Your activator performance at a glance.", "fr": "Vos performances d'activateur en un coup d'œil.", "ar": "" },
   "activator.dashboard.totalEarnings": { "en": "Total Earnings", "fr": "Gains totaux", "ar": "" },
@@ -433,6 +442,18 @@
   "admin.distributors.detail.cards.columns.status": { "en": "Status", "fr": "Statut", "ar": "" },
   "admin.distributors.detail.notFound.title": { "en": "Distributor not found.", "fr": "Distributeur introuvable.", "ar": "" },
   "admin.distributors.detail.notFound.backLink": { "en": "Back to Distributors", "fr": "Retour aux distributeurs", "ar": "" },
+  "admin.distributors.account.label": { "en": "Login account", "fr": "Compte de connexion", "ar": "" },
+  "admin.distributors.account.none": { "en": "No account", "fr": "Aucun compte", "ar": "" },
+  "admin.distributors.account.create": { "en": "Create login", "fr": "Créer un identifiant", "ar": "" },
+  "admin.distributors.account.createTitle": { "en": "Create a login for this distributor", "fr": "Créer un identifiant pour ce distributeur", "ar": "" },
+  "admin.distributors.account.username": { "en": "Username", "fr": "Nom d'utilisateur", "ar": "" },
+  "admin.distributors.account.password": { "en": "Password (optional)", "fr": "Mot de passe (facultatif)", "ar": "" },
+  "admin.distributors.account.passwordHelper": { "en": "Leave blank to auto-generate a password.", "fr": "Laissez vide pour générer automatiquement un mot de passe.", "ar": "" },
+  "admin.distributors.account.successTitle": { "en": "Login created.", "fr": "Identifiant créé.", "ar": "" },
+  "admin.distributors.account.successBody": { "en": "Share this password securely — it won't be shown again.", "fr": "Partagez ce mot de passe en toute sécurité — il ne sera plus affiché.", "ar": "" },
+  "admin.distributors.account.unlink": { "en": "Unlink login", "fr": "Dissocier l'identifiant", "ar": "" },
+  "admin.distributors.account.unlinkTitle": { "en": "Unlink this login?", "fr": "Dissocier cet identifiant ?", "ar": "" },
+  "admin.distributors.account.unlinkBody": { "en": "The distributor will be signed out and can no longer sign in. Their orders, cards and statistics are unaffected.", "fr": "Le distributeur sera déconnecté et ne pourra plus se connecter. Ses commandes, cartes et statistiques ne sont pas affectées.", "ar": "" },
 
   "admin.orders.stats.total.title": { "en": "Total Orders", "fr": "Total des commandes", "ar": "" },
   "admin.orders.stats.total.subLabel": { "en": "{month} this month · {week} this week", "fr": "{month} ce mois-ci · {week} cette semaine", "ar": "" },
@@ -816,5 +837,7 @@
   "enums.logActionType.REMOVE_LOT": { "en": "Removed Lot", "fr": "Lot supprimé", "ar": "" },
   "enums.logActionType.REMOVE_SET": { "en": "Removed Set", "fr": "Set supprimé", "ar": "" },
   "enums.logActionType.REMOVE_CARD": { "en": "Removed Card", "fr": "Carte supprimée", "ar": "" },
-  "enums.logActionType.REVOKE_CARD": { "en": "Revoked Card", "fr": "Carte révoquée", "ar": "" }
+  "enums.logActionType.REVOKE_CARD": { "en": "Revoked Card", "fr": "Carte révoquée", "ar": "" },
+  "enums.logActionType.LINK_USER_ACCOUNT": { "en": "Linked Login Account", "fr": "Identifiant associé", "ar": "" },
+  "enums.logActionType.UNLINK_USER_ACCOUNT": { "en": "Unlinked Login Account", "fr": "Identifiant dissocié", "ar": "" }
 }

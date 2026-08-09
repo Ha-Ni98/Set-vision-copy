@@ -14,6 +14,7 @@ generator client {
 enum UserRole {
   ADMIN
   ACTIVATOR
+  DISTRIBUTOR
 }
 
 enum SubscriptionType {
@@ -103,6 +104,8 @@ enum LogActionType {
   REMOVE_SET
   REMOVE_CARD
   REVOKE_CARD
+  LINK_USER_ACCOUNT
+  UNLINK_USER_ACCOUNT
 }
 
 // ============================================================
@@ -122,6 +125,7 @@ model User {
 
   admin         Admin?
   activator     Activator?
+  distributor   Distributor?
   refreshTokens RefreshToken[]
   logs          Log[]
 
@@ -477,6 +481,7 @@ model DeliveryCompany {
 
 model Distributor {
   id              String    @id @default(uuid())
+  userId          String?   @unique // nullable: inventory-only distributors have no login
   fullName        String
   storeName       String
   phone           String?
@@ -489,6 +494,7 @@ model Distributor {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   wilaya  Wilaya  @relation(fields: [wilayaId], references: [id])
   commune Commune @relation(fields: [communeId], references: [id])
   cards   Card[]

@@ -127,6 +127,8 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.REMOVE_SET]: "destructive",
   [LogActionType.REMOVE_CARD]: "destructive",
   [LogActionType.REVOKE_CARD]: "destructive",
+  [LogActionType.LINK_USER_ACCOUNT]: "success",
+  [LogActionType.UNLINK_USER_ACCOUNT]: "warning",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {

@@ -14,6 +14,7 @@ const io = createSocketServer(httpServer);
 
 io.of(NS.ACTIVATORS).use(authNamespace([UserRole.ACTIVATOR]));
 io.of(NS.ADMIN).use(authNamespace([UserRole.ADMIN]));
+io.of(NS.DISTRIBUTORS).use(authNamespace([UserRole.DISTRIBUTOR]));
 
 initRealtimeGateway(io, prisma);
 

@@ -1,19 +1,27 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import type { IDistributorService } from './distributor.interface';
 import { DistributorMapper } from './distributor.mapper';
-import { NotFoundError, BadRequestError } from '@common/errors';
-import { LogActionType, CardStat, OrderStat } from '@my-app/contract';
+import { NotFoundError, BadRequestError, ConflictError } from '@common/errors';
+import { LogActionType, CardStat, OrderStat, UserRole } from '@my-app/contract';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
+import { hashPassword } from '@common/utils/password.utils';
+import { generateTempPassword } from '@common/utils/password-generator.util';
 import type {
   DistributorDTO,
   DistributorDetailDTO,
+  DistributorWithCredentialsDTO,
   PaginatedDistributors,
   GetDistributorsQuery,
   CreateDistributorCommand,
   UpdateDistributorCommand,
+  CreateDistributorAccountCommand,
 } from '@my-app/contract';
 
-const GEO_INCLUDE = { wilaya: true, commune: true } as const;
+const GEO_INCLUDE = {
+  wilaya: true,
+  commune: true,
+  user: { select: { username: true } },
+} as const;
 
 export class DistributorService implements IDistributorService {
   constructor(private prisma: PrismaClient) {}
@@ -27,6 +35,7 @@ export class DistributorService implements IDistributorService {
           { fullName: { contains: query.search, mode: 'insensitive' } },
           { storeName: { contains: query.search, mode: 'insensitive' } },
           { phone: { contains: query.search, mode: 'insensitive' } },
+          { user: { username: { contains: query.search, mode: 'insensitive' } } },
         ],
       });
     }
@@ -159,12 +168,23 @@ export class DistributorService implements IDistributorService {
     });
     if (!existing) throw new NotFoundError('Distributor not found');
 
+    const nextEnabled = !existing.isEnabled;
+
     const distributor = await this.prisma.$transaction(async (tx) => {
       const d = await tx.distributor.update({
         where: { id },
-        data: { isEnabled: !existing.isEnabled },
+        data: { isEnabled: nextEnabled },
         include: GEO_INCLUDE,
       });
+
+      // A distributor and its login are two independent `isEnabled` flags today — keep them
+      // in lockstep so disabling a distributor doesn't leave its login live (Set 1 Q2).
+      if (existing.userId) {
+        await tx.user.update({
+          where: { id: existing.userId },
+          data: { isEnabled: nextEnabled },
+        });
+      }
 
       await tx.log.create({
         data: {
@@ -184,16 +204,120 @@ export class DistributorService implements IDistributorService {
     return DistributorMapper.toDTO(distributor, deliveredCount);
   }
 
-  async delete(id: string, _actorId: string): Promise<void> {
+  async delete(id: string, actorId: string): Promise<void> {
     const existing = await this.prisma.distributor.findFirst({
       where: { id, deletedAt: null },
     });
     if (!existing) throw new NotFoundError('Distributor not found');
 
-    await this.prisma.distributor.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      // Deleting a distributor with a linked login must not leave that login able to sign
+      // in (Set 1 Q5) — unlink it the same way unlinkAccount() does, in the same transaction.
+      if (existing.userId) {
+        await tx.refreshToken.deleteMany({ where: { userId: existing.userId } });
+        await tx.user.update({
+          where: { id: existing.userId },
+          data: { deletedAt: new Date(), isEnabled: false },
+        });
+        await tx.log.create({
+          data: {
+            actionType: LogActionType.UNLINK_USER_ACCOUNT,
+            actionDescription: `Unlinked login from distributor ${existing.fullName} (deleted)`,
+            userId: actorId,
+          },
+        });
+      }
+
+      await tx.distributor.update({
+        where: { id },
+        data: { deletedAt: new Date(), ...(existing.userId && { userId: null }) },
+      });
     });
+  }
+
+  async createAccount(
+    id: string,
+    cmd: CreateDistributorAccountCommand,
+    actorId: string,
+  ): Promise<DistributorWithCredentialsDTO> {
+    const existing = await this.prisma.distributor.findFirst({
+      where: { id, deletedAt: null },
+      include: GEO_INCLUDE,
+    });
+    if (!existing) throw new NotFoundError('Distributor not found');
+    if (existing.userId) throw new ConflictError('Distributor already has an account');
+
+    const username = cmd.username.trim();
+    const usernameConflict = await this.prisma.user.findUnique({ where: { username } });
+    if (usernameConflict) throw new ConflictError('Username already taken');
+
+    const tempPassword = cmd.password ?? generateTempPassword();
+    const hashed = await hashPassword(tempPassword);
+
+    const distributor = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { username, password: hashed, role: UserRole.DISTRIBUTOR, isEnabled: true },
+      });
+      const d = await tx.distributor.update({
+        where: { id },
+        data: { userId: user.id },
+        include: GEO_INCLUDE,
+      });
+      await tx.log.create({
+        data: {
+          actionType: LogActionType.LINK_USER_ACCOUNT,
+          actionDescription: `Linked login ${user.username} to distributor ${d.fullName}`,
+          userId: actorId,
+        },
+      });
+      return d;
+    });
+
+    const deliveredCount = await this.prisma.order.count({
+      where: { distributorId: id, orderStat: OrderStat.DELIVERED },
+    });
+
+    return DistributorMapper.toWithCredentialsDTO(distributor, deliveredCount, tempPassword);
+  }
+
+  async unlinkAccount(id: string, actorId: string): Promise<DistributorDTO> {
+    const existing = await this.prisma.distributor.findFirst({
+      where: { id, deletedAt: null },
+      include: GEO_INCLUDE,
+    });
+    if (!existing) throw new NotFoundError('Distributor not found');
+    if (!existing.userId) throw new NotFoundError('Distributor has no account');
+
+    const userId = existing.userId;
+
+    const distributor = await this.prisma.$transaction(async (tx) => {
+      // Kills live sessions immediately — refresh is dead now, and the access token expires
+      // on its own short TTL (Set 1 plan §3.10).
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date(), isEnabled: false },
+      });
+      const d = await tx.distributor.update({
+        where: { id },
+        data: { userId: null },
+        include: GEO_INCLUDE,
+      });
+      await tx.log.create({
+        data: {
+          actionType: LogActionType.UNLINK_USER_ACCOUNT,
+          actionDescription: `Unlinked login from distributor ${d.fullName}`,
+          userId: actorId,
+        },
+      });
+      return d;
+    });
+
+    const deliveredCount = await this.prisma.order.count({
+      where: { distributorId: id, orderStat: OrderStat.DELIVERED },
+    });
+
+    return DistributorMapper.toDTO(distributor, deliveredCount);
   }
 
   private async validateCommuneBelongsToWilaya(communeId: string, wilayaId: string): Promise<void> {

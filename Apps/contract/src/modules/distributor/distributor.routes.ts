@@ -6,4 +6,6 @@ export const DISTRIBUTOR_ROUTES = {
   UPDATE: '/:id',
   TOGGLE: '/:id/toggle',
   DELETE: '/:id',
+  CREATE_ACCOUNT: '/:id/account',
+  UNLINK_ACCOUNT: '/:id/account',
 } as const;

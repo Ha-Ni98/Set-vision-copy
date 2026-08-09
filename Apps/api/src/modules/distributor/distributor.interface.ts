@@ -1,10 +1,12 @@
 import type {
   DistributorDTO,
   DistributorDetailDTO,
+  DistributorWithCredentialsDTO,
   PaginatedDistributors,
   GetDistributorsQuery,
   CreateDistributorCommand,
   UpdateDistributorCommand,
+  CreateDistributorAccountCommand,
 } from '@my-app/contract';
 
 export interface IDistributorService {
@@ -14,4 +16,10 @@ export interface IDistributorService {
   update(id: string, cmd: UpdateDistributorCommand, actorId: string): Promise<DistributorDTO>;
   toggle(id: string, actorId: string): Promise<DistributorDTO>;
   delete(id: string, actorId: string): Promise<void>;
+  createAccount(
+    id: string,
+    cmd: CreateDistributorAccountCommand,
+    actorId: string,
+  ): Promise<DistributorWithCredentialsDTO>;
+  unlinkAccount(id: string, actorId: string): Promise<DistributorDTO>;
 }

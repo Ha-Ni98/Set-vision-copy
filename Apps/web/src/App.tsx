@@ -1,15 +1,19 @@
 import { lazy, Suspense, useEffect, type LazyExoticComponent, type JSX } from "react";
 import { createBrowserRouter, Link, RouterProvider } from "react-router-dom";
+import { UserRole } from "@my-app/contract";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { ActivatorLayout } from "@/components/layout/ActivatorLayout";
+import { DistributorLayout } from "@/components/layout/DistributorLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminGuard } from "@/components/layout/AdminGuard";
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/layout/ProtectedRoute";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { RouteErrorBoundary } from "@/components/shared/RouteErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useSession } from "@/hooks/useSession";
 import { ActivationProvider } from "@/components/providers/ActivationProvider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { setRedirect } from "@/lib/axios";
@@ -19,6 +23,7 @@ const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DashboardPage = lazy(() => import("@/pages/activator/DashboardPage"));
 const RequestsPage = lazy(() => import("@/pages/activator/RequestsPage"));
 const HistoryPage = lazy(() => import("@/pages/activator/HistoryPage"));
+const PortalPage = lazy(() => import("@/pages/distributor/PortalPage"));
 
 const AdminDashboardPage = lazy(() => import("@/pages/admin/DashboardPage"));
 const AdminActivatorsPage = lazy(() => import("@/pages/admin/activators/ActivatorsPage"));
@@ -45,9 +50,10 @@ const withSuspense = (Component: LazyExoticComponent<() => JSX.Element>) => (
 );
 
 // Not a matched child route, so it can't rely on <Outlet/> resolving to a page — it picks
-// the layout that matches the current session and passes 404 content in as children.
+// the layout that matches the current session's role and passes 404 content in as children.
 function CatchAllRoute() {
   const { isAuthenticated } = useAuth();
+  const { data: session } = useSession();
   const { t } = useTranslation();
   const content = (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
@@ -63,16 +69,26 @@ function CatchAllRoute() {
       />
     </div>
   );
-  return isAuthenticated ? (
-    <ActivatorLayout>{content}</ActivatorLayout>
-  ) : (
+
+  if (!isAuthenticated) {
     // PublicHeader reads useActivation() for its logo's reset-on-click — this standalone
     // (non-nested-route) PublicLayout usage needs the same provider the router's own
     // PublicLayout route gets, or that hook throws.
-    <ActivationProvider>
-      <PublicLayout>{content}</PublicLayout>
-    </ActivationProvider>
-  );
+    return (
+      <ActivationProvider>
+        <PublicLayout>{content}</PublicLayout>
+      </ActivationProvider>
+    );
+  }
+
+  switch (session?.role) {
+    case UserRole.ADMIN:
+      return <AdminLayout>{content}</AdminLayout>;
+    case UserRole.DISTRIBUTOR:
+      return <DistributorLayout>{content}</DistributorLayout>;
+    default:
+      return <ActivatorLayout>{content}</ActivatorLayout>;
+  }
 }
 
 const router = createBrowserRouter([
@@ -109,22 +125,42 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        element: <ActivatorLayout />,
+        element: <RoleGuard allow={[UserRole.ACTIVATOR]} />,
         children: [
           {
-            path: "/dashboard",
-            element: withSuspense(DashboardPage),
-            errorElement: <RouteErrorBoundary />,
+            element: <ActivatorLayout />,
+            children: [
+              {
+                path: "/dashboard",
+                element: withSuspense(DashboardPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/requests",
+                element: withSuspense(RequestsPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/history",
+                element: withSuspense(HistoryPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+            ],
           },
+        ],
+      },
+      {
+        element: <RoleGuard allow={[UserRole.DISTRIBUTOR]} />,
+        children: [
           {
-            path: "/requests",
-            element: withSuspense(RequestsPage),
-            errorElement: <RouteErrorBoundary />,
-          },
-          {
-            path: "/history",
-            element: withSuspense(HistoryPage),
-            errorElement: <RouteErrorBoundary />,
+            element: <DistributorLayout />,
+            children: [
+              {
+                path: "/portal",
+                element: withSuspense(PortalPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+            ],
           },
         ],
       },

@@ -17,3 +17,11 @@ export const UpdateDistributorSchema = z.object({
   communeId: z.uuid().optional(),
 });
 export type UpdateDistributorCommand = z.infer<typeof UpdateDistributorSchema>;
+
+export const CreateDistributorAccountSchema = z.object({
+  username: z.string(),
+  // Optional admin-chosen password, exactly as CreateActivatorSchema:
+  // omit it to let the server generate one and return it once.
+  password: z.string().min(8).optional(),
+});
+export type CreateDistributorAccountCommand = z.infer<typeof CreateDistributorAccountSchema>;

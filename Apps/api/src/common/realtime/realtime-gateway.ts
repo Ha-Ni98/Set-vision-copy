@@ -19,6 +19,7 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
   const clientNs = io.of(NS.CLIENT);
   const activatorNs = io.of(NS.ACTIVATORS);
   const adminNs = io.of(NS.ADMIN);
+  const distributorNs = io.of(NS.DISTRIBUTORS);
 
   activatorNs.on('connection', (socket) => {
     const userId = socket.data.user?.id;
@@ -36,6 +37,20 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
 
   adminNs.on('connection', (socket) => {
     void socket.join(rooms.ADMIN_BELL);
+  });
+
+  distributorNs.on('connection', (socket) => {
+    const userId = socket.data.user?.id;
+    if (!userId) return;
+    // Same rule as the activator join above: room keyed by Distributor.id, not User.id.
+    // deletedAt: null is the one intentional difference — Distributor is soft-deleted,
+    // unlike Activator.
+    prisma.distributor
+      .findFirst({ where: { userId, deletedAt: null }, select: { id: true } })
+      .then((distributor) => {
+        if (distributor) void socket.join(rooms.distributor(distributor.id));
+      })
+      .catch((err) => logger.error({ err, userId }, 'Failed to resolve distributor for realtime join'));
   });
 
   clientNs.on('connection', (socket) => {

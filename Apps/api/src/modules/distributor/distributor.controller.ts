@@ -5,6 +5,7 @@ import type {
   GetDistributorsQuery,
   CreateDistributorCommand,
   UpdateDistributorCommand,
+  CreateDistributorAccountCommand,
   DistributorIdParams,
 } from '@my-app/contract';
 
@@ -71,6 +72,29 @@ export class DistributorController {
       const actorId = req.user!.id;
       await this.service.delete(id, actorId);
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  createAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.validated.params as DistributorIdParams;
+      const cmd = req.validated.body as CreateDistributorAccountCommand;
+      const actorId = req.user!.id;
+      const result = await this.service.createAccount(id, cmd, actorId);
+      sendSuccess(res, result, 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  unlinkAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.validated.params as DistributorIdParams;
+      const actorId = req.user!.id;
+      const result = await this.service.unlinkAccount(id, actorId);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }

@@ -3,6 +3,9 @@ import { paginated } from '../../common/types';
 
 export const DistributorResponseSchema = z.object({
   id: z.uuid(),
+  // Account fields: null/false for inventory-only distributors (D2).
+  hasAccount: z.boolean(),
+  username: z.string().nullable(),
   fullName: z.string(),
   storeName: z.string(),
   phone: z.string(),
@@ -26,3 +29,11 @@ export type DistributorDetailDTO = z.infer<typeof DistributorDetailResponseSchem
 
 export const PaginatedDistributorsSchema = paginated(DistributorResponseSchema);
 export type PaginatedDistributors = z.infer<typeof PaginatedDistributorsSchema>;
+
+// Sanctioned §0.1.1 exception: one-time create-account response.
+// Byte-for-byte the shape of ActivatorWithCredentialsResponseSchema.
+export const DistributorWithCredentialsResponseSchema = z.object({
+  distributor: DistributorResponseSchema,
+  generatedPassword: z.string(),
+});
+export type DistributorWithCredentialsDTO = z.infer<typeof DistributorWithCredentialsResponseSchema>;
