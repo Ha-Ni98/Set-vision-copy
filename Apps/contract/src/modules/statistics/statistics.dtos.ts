@@ -63,7 +63,7 @@ export const ActivationsSummaryResponseSchema = z.object({
     month: z.number().int(),
   }),
   byState: z.array(z.object({ state: z.enum(ActivationStat), count: z.number().int() })),
-  avgDurationSeconds: z.number().nullable(),
+  avgDurationSeconds: z.number().int().nullable(),
   totalRevenue: z.number(),
 });
 export type ActivationsSummaryDTO = z.infer<typeof ActivationsSummaryResponseSchema>;
@@ -91,7 +91,7 @@ export const StatisticsOverviewResponseSchema = z.object({
     }),
   ),
   avgTimeTrend: z.array(
-    z.object({ date: z.iso.datetime(), avgSeconds: z.number() }),
+    z.object({ date: z.iso.datetime(), avgSeconds: z.number().int() }),
   ),
   revenueOverTime: z.array(
     z.object({ date: z.iso.datetime(), revenue: z.number() }),
@@ -107,7 +107,7 @@ export const WilayaHeatmapResponseSchema = z.array(
     distributorsCount: z.number().int(),
     activationsCount: z.number().int(),
     cancellationsCount: z.number().int(),
-    avgActivationTimeSeconds: z.number().nullable(),
+    avgActivationTimeSeconds: z.number().int().nullable(),
   }),
 );
 export type WilayaHeatmapDTO = z.infer<typeof WilayaHeatmapResponseSchema>;

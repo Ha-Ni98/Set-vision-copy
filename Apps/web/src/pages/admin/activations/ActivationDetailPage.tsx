@@ -5,11 +5,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useActivationDetail, useSetActivationPrice } from "@/hooks/useAdminActivations";
 import { ClientBlock } from "./components/ClientBlock";
 import { DistributorBlock } from "./components/DistributorBlock";
 import { ActivatorBlock } from "./components/ActivatorBlock";
+import { CardChainBlock } from "./components/CardChainBlock";
+import { TimingBlock } from "./components/TimingBlock";
 import { SubmittedInformationList } from "./components/SubmittedInformationList";
 import { ActivationTimeline } from "./components/ActivationTimeline";
 import { CardHistoryTimeline } from "./components/CardHistoryTimeline";
@@ -36,7 +39,7 @@ export default function ActivationDetailPage() {
       <div className="flex flex-col gap-6">
         <PageHeader title={t("admin.activationDetail.title")} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {Array.from({ length: 4 }, (_, i) => (
+          {Array.from({ length: 6 }, (_, i) => (
             <Skeleton key={i} className="h-32 w-full rounded-2xl" />
           ))}
         </div>
@@ -62,21 +65,23 @@ export default function ActivationDetailPage() {
   }
 
   const detail = detailQuery.data;
-  // No top-level `state` on ActivationDetailDTO — the last timeline entry's stat is the
-  // current status, same as the list's gating (§E-2 note: derive, don't fabricate a field).
-  const currentState = detail.timeline.at(-1)?.stat;
   // Any completed activation can be (re-)priced, not just an unpriced one (Stage-04-fix #1) —
   // the backend's setPrice already adjusts the activator's earning/credits by the delta.
-  const canSetPrice = !!currentState && COMPLETED_STATES.has(currentState);
+  const canSetPrice = COMPLETED_STATES.has(detail.state);
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("admin.activationDetail.title")} />
+      <div className="flex items-center gap-3">
+        <PageHeader title={t("admin.activationDetail.title")} />
+        <StatusBadge status={detail.state} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ClientBlock client={detail.client} />
         <DistributorBlock distributor={detail.distributor} />
         <ActivatorBlock activator={detail.activator} />
+        <CardChainBlock card={detail.card} />
+        <TimingBlock timing={detail.timing} activationEmail={detail.activationEmail} />
         <FinancialBlock
           financial={detail.financial}
           canSetPrice={canSetPrice}

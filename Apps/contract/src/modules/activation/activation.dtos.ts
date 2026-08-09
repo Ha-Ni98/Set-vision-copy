@@ -143,11 +143,39 @@ export const AdminActivationResponseSchema = z.object({
 });
 export type AdminActivationDTO = z.infer<typeof AdminActivationResponseSchema>;
 
+export const CardChainSchema = z.object({
+  key: z.string(),
+  setNumber: z.string(),
+  lotNumber: z.string().nullable(),
+  subscriptionLabel: z.string(),
+});
+export type CardChain = z.infer<typeof CardChainSchema>;
+
+export const ActivationTimingSchema = z.object({
+  requestedAt: z.iso.datetime(),
+  takenAt: z.iso.datetime().nullable(),
+  completedAt: z.iso.datetime().nullable(),
+  durationSeconds: z.number().int().nullable(),
+});
+export type ActivationTiming = z.infer<typeof ActivationTimingSchema>;
+
+// PASSWORD and OTP values appear here in the clear, and that is deliberate — do not "fix" it.
+// These are the client's own Snapchat credentials, which the client changes after activation;
+// they are NOT system secrets. They already reach the public client (KeyVerificationDTO
+// .submittedFields, key-gated) and the assigned activator (ActiveRequestDTO.accountFields)
+// unmasked, so masking them here made the admin the least-privileged reader of data the client
+// typed. Decision D3, v2-decisions.md §D3 + R3 — an explicit, informed override of the
+// schema.prisma "activator-only exposure" comments. contract-rules.md §3.5/§6.5 still applies in
+// full to User.password, RefreshToken.tokenHash and JWTs; none of those appear in any DTO.
 export const ActivationDetailResponseSchema = z.object({
   id: z.uuid(),
+  state: z.enum(ActivationStat),
   client: ClientBlockSchema,
   distributor: DistributorBlockSchema,
   activator: z.object({ id: z.uuid(), fullName: z.string() }).nullable(),
+  card: CardChainSchema,
+  timing: ActivationTimingSchema,
+  activationEmail: z.string().nullable(),
   submittedInformation: z.array(AccountFieldValueSchema),
   timeline: z.array(TimelineEntrySchema),
   cardHistory: z.array(CardHistoryEntrySchema),

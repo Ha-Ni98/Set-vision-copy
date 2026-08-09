@@ -35,11 +35,6 @@ const FIELD_LABEL: Record<AccountInformation, string> = {
   [AccountInformation.PASSWORD]: 'Password',
 };
 
-const SENSITIVE_FIELDS = new Set<AccountInformation>([
-  AccountInformation.PASSWORD,
-  AccountInformation.OTP,
-]);
-
 const STAT_TO_CLIENT_STATUS: Partial<Record<ActivationStat, ClientActivationStatus>> = {
   [ActivationStat.PENDING]: ClientActivationStatus.SUBMITTED,
   [ActivationStat.PROCESSING]: ClientActivationStatus.PROCESSING,
@@ -72,6 +67,13 @@ export type ActivationStepEntry = {
   additionalInformation: Array<{ accountInform: string; value: string | null }>;
 };
 
+export type ActivationCardChainJoin = {
+  key: string;
+  set: { setNumber: string };
+  lot: { lotNumber: string } | null;
+  subscriptionPlan: ActivationPlanJoin;
+};
+
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 function toLabel(field: string): string {
@@ -80,11 +82,6 @@ function toLabel(field: string): string {
 
 function maskKey(key: string): string {
   return key.length <= 4 ? key : '*'.repeat(key.length - 4) + key.slice(-4);
-}
-
-function maskValue(field: string, value: string | null): string {
-  if (value === null) return '';
-  return SENSITIVE_FIELDS.has(field as AccountInformation) ? '****' : value;
 }
 
 function decimalToNumber(d: Decimal | null | undefined): number | null {
@@ -317,21 +314,29 @@ export class ActivationMapper {
   static toActivationDetailDTO(
     activation: {
       id: string;
+      activationStat: string;
       clientFullName: string;
       clientPhone: string;
       activationPrice: Decimal | null;
       freezReason: string | null;
+      requestedAt: Date;
+      takenAt: Date | null;
+      completedAt: Date | null;
+      activationEmail: string | null;
     },
     distributor: ActivationDistributorJoin,
     activator: { id: string; fullName: string } | null,
+    card: ActivationCardChainJoin,
     information: ActivationInfoEntry[],
     steps: ActivationStepEntry[],
     cardHistory: Array<{ stat: CardStat; at: Date }>,
     commissionTierLabel: string | null,
   ): ActivationDetailDTO {
+    // Values below are RAW — see the file-level note above ActivationDetailResponseSchema
+    // (D3): the admin detail path no longer masks PASSWORD/OTP.
     const submittedInformation = information.map((i) => ({
       fieldLabel: toLabel(i.accountInform),
-      value: maskValue(i.accountInform, i.value),
+      value: i.value ?? '',
     }));
 
     const timeline = steps.map((step) => ({
@@ -339,17 +344,18 @@ export class ActivationMapper {
       createdAt: step.createdAt.toISOString(),
       wrongFields: step.wrongInformation.map((w) => ({
         fieldLabel: toLabel(w.accountInform),
-        value: maskValue(w.accountInform, w.value),
+        value: w.value ?? '',
       })),
       additionalFields: step.additionalInformation.map((a) => ({
         fieldLabel: toLabel(a.accountInform),
-        value: maskValue(a.accountInform, a.value),
+        value: a.value ?? '',
       })),
       freezeReason: step.activationStat === ActivationStat.FREEZE ? activation.freezReason : null,
     }));
 
     const dto: ActivationDetailDTO = {
       id: activation.id,
+      state: activation.activationStat as unknown as ActivationStat,
       client: {
         fullName: activation.clientFullName,
         phone: activation.clientPhone,
@@ -360,6 +366,19 @@ export class ActivationMapper {
         communeName: distributor.commune.frName,
       },
       activator: activator ? { id: activator.id, fullName: activator.fullName } : null,
+      card: {
+        key: card.key,
+        setNumber: card.set.setNumber,
+        lotNumber: card.lot ? card.lot.lotNumber : null,
+        subscriptionLabel: composeSubscriptionLabel(card.subscriptionPlan),
+      },
+      timing: {
+        requestedAt: activation.requestedAt.toISOString(),
+        takenAt: activation.takenAt ? activation.takenAt.toISOString() : null,
+        completedAt: activation.completedAt ? activation.completedAt.toISOString() : null,
+        durationSeconds: durationSeconds(activation.takenAt, activation.completedAt),
+      },
+      activationEmail: activation.activationEmail,
       submittedInformation,
       timeline,
       cardHistory: cardHistory.map((h) => ({

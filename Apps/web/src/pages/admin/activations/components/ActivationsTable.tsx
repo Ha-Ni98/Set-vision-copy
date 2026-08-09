@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
-import { formatTime, formatDateTime, formatDZD } from "@/lib/utils";
+import { formatDateTime, formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { ActivationActionsMenu } from "./ActivationActionsMenu";
 import { ResolveFreezeDialog } from "../../components/ResolveFreezeDialog";
 import { SetActivatorPriceModal } from "./SetActivatorPriceModal";
@@ -71,7 +72,7 @@ export function ActivationsTable({
         header: t("admin.activations.table.duration"),
         cell: ({ row }) => {
           const activation = row.original;
-          if (activation.durationSeconds != null) return formatTime(activation.durationSeconds);
+          if (activation.durationSeconds != null) return formatDuration(activation.durationSeconds);
           if (activation.takenAt) return <LiveTimer since={activation.takenAt} mode="elapsed" />;
           return "—";
         },

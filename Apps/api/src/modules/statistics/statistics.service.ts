@@ -38,7 +38,7 @@ function avgSeconds(rows: { takenAt: Date | null; completedAt: Date | null }[]):
     (sum, r) => sum + (r.completedAt!.getTime() - r.takenAt!.getTime()),
     0,
   );
-  return total / valid.length / 1000;
+  return Math.round(total / valid.length / 1000);
 }
 
 export class StatisticsService implements IStatisticsService {
@@ -297,7 +297,7 @@ export class StatisticsService implements IStatisticsService {
 
     const avgTimeTrend = sortedKeys(avgTrendMap).map((k) => {
       const { total, count } = avgTrendMap.get(k)!;
-      return { date: new Date(k), avgSeconds: total / count };
+      return { date: new Date(k), avgSeconds: Math.round(total / count) };
     });
 
     const topActivators = Array.from(activatorMap.entries())
@@ -392,7 +392,10 @@ export class StatisticsService implements IStatisticsService {
 
     const raw = wilayas.map((w) => {
       const s = statsMap.get(w.id)!;
-      const avg = s.durations.length > 0 ? s.durations.reduce((a, b) => a + b, 0) / s.durations.length : null;
+      const avg =
+        s.durations.length > 0
+          ? Math.round(s.durations.reduce((a, b) => a + b, 0) / s.durations.length)
+          : null;
       return {
         wilayaId: w.id,
         wilayaName: w.frName,

@@ -114,16 +114,20 @@ export class ActivationService implements IActivationService {
     }
   }
 
-  private resolveLatestWinsInfo(
+  // ActivationInformation now holds the CURRENT value of every field (kept up to date by
+  // update()'s upsert on a client correction). WrongInformation holds an immutable snapshot of
+  // a value that was REJECTED and must never be overlaid back on top of the current value —
+  // doing so would resurrect a rejected value over its own correction. Only
+  // additionalInformation (OTP) is still step-stored and still overlaid, newest-last, including
+  // overwriting with null so a re-requested OTP invalidates the stale one (Stage-04-fix set 3).
+  private resolveEffectiveInfo(
     base: Array<{ accountInform: string; value: string | null }>,
     steps: Array<{
-      wrongInformation: Array<{ accountInform: string; value: string | null }>;
       additionalInformation: Array<{ accountInform: string; value: string | null }>;
     }>,
   ): ActivationInfoEntry[] {
     const map = new Map<string, string | null>(base.map((i) => [i.accountInform, i.value]));
     for (const step of [...steps].reverse()) {
-      for (const w of step.wrongInformation) map.set(w.accountInform, w.value);
       for (const a of step.additionalInformation) map.set(a.accountInform, a.value);
     }
     return Array.from(map.entries()).map(([accountInform, value]) => ({
@@ -195,9 +199,9 @@ export class ActivationService implements IActivationService {
     const distributor = this.buildDistributorJoin(activation.card.distributor!);
     // OTP gets its own dedicated `otpValue` field below — drop it from the general fields
     // list so the activator's card doesn't show it twice (Stage-04-fix #3.3). Scoped to this
-    // DTO only: resolveLatestWinsInfo stays untouched since the admin detail view's
+    // DTO only: resolveEffectiveInfo stays untouched since the admin detail view's
     // submittedInformation (a separate DTO) reuses it and has no equivalent dedicated field.
-    const info = this.resolveLatestWinsInfo(activation.information, activation.steps).filter(
+    const info = this.resolveEffectiveInfo(activation.information, activation.steps).filter(
       (i) => i.accountInform !== AccountInformation.OTP,
     );
     const otpValue = this.extractOtpValue(activation.steps);
@@ -280,11 +284,10 @@ export class ActivationService implements IActivationService {
       activationStat: live.activationStat,
     }).status;
 
-    // Latest-wins across the FULL step history (not just the latest step) — a field can be
-    // corrected in an early round and never touched again, so only merging every step's
-    // values (the same helper buildActiveRequestDTO uses for the activator's card) surfaces
-    // the true current value for the client's own Step-2 prefill (Stage-04-fix #4A).
-    const submittedInfo = this.resolveLatestWinsInfo(live.information, live.steps);
+    // Current value of every field (the same helper buildActiveRequestDTO uses for the
+    // activator's card) — surfaces the true current value for the client's own Step-2
+    // prefill (Stage-04-fix #4A).
+    const submittedInfo = this.resolveEffectiveInfo(live.information, live.steps);
     const latestStep = live.steps[0] ?? null;
 
     return ActivationMapper.toKeyVerificationDTO(status, plan, {
@@ -380,57 +383,87 @@ export class ActivationService implements IActivationService {
           where: { activationStat: PrismaActivationStat.WRONG_INFORMATION },
           orderBy: { createdAt: 'desc' },
           take: 1,
+          include: { wrongInformation: { select: { accountInform: true } } },
         },
       },
     });
 
     if (!activation) throw new NotFoundError('Activation not found');
-    if (activation.activationStat !== PrismaActivationStat.WRONG_INFORMATION) {
+
+    // Two windows a client may write into: the pre-pickup PENDING window (no activator has
+    // taken it yet, nothing is flagged, the client owns the whole form) and a post-flag
+    // WRONG_INFORMATION correction (only the fields the activator actually flagged).
+    const isCorrection = activation.activationStat === PrismaActivationStat.WRONG_INFORMATION;
+    const isPreDispatchEdit = activation.activationStat === PrismaActivationStat.PENDING;
+    if (!isCorrection && !isPreDispatchEdit) {
       throw new ConflictError('Activation is not awaiting correction');
     }
 
-    const latestWrongStep = activation.steps[0];
-    if (!latestWrongStep) throw new ConflictError('No wrong information step found');
+    // The client posts every field, not just the flagged ones. Guarding to `flagged` is what
+    // keeps a correction from silently rewriting a field nobody flagged — the same protection
+    // the old updateMany's no-op-on-unflagged behaviour gave for free.
+    let applicable = cmd.accountFields;
+    if (isCorrection) {
+      const latestWrongStep = activation.steps[0];
+      if (!latestWrongStep) throw new ConflictError('No wrong information step found');
+      const flagged = new Set(
+        latestWrongStep.wrongInformation.map((w) => w.accountInform as string),
+      );
+      applicable = cmd.accountFields.filter((f) => flagged.has(f.field as string));
+    }
 
     const now = new Date();
 
     await this.prisma.$transaction(async (tx) => {
-      await Promise.all(
-        cmd.accountFields.map((f) =>
-          tx.wrongInformation.updateMany({
-            where: {
-              activationStepId: latestWrongStep.id,
+      // Sequential, not Promise.all — concurrent upserts on the same [activationId,
+      // accountInform] compound unique can race into P2002 inside one transaction.
+      for (const f of applicable) {
+        await tx.activationInformation.upsert({
+          where: {
+            activationId_accountInform: {
+              activationId,
               accountInform: f.field as unknown as PrismaAccountInformation,
             },
-            data: { value: f.value },
-          }),
-        ),
-      );
+          },
+          update: { value: f.value },
+          create: {
+            activationId,
+            accountInform: f.field as unknown as PrismaAccountInformation,
+            value: f.value,
+          },
+        });
+      }
 
-      await tx.activationStep.create({
-        data: { activationId, activationStat: PrismaActivationStat.PROCESSING },
+      if (isCorrection) {
+        await tx.activationStep.create({
+          data: { activationId, activationStat: PrismaActivationStat.PROCESSING },
+        });
+
+        await tx.activation.update({
+          where: { id: activationId },
+          data: { activationStat: PrismaActivationStat.PROCESSING },
+        });
+      }
+    });
+
+    if (isCorrection) {
+      eventBus.emit('activation:client-updated', {
+        activationId,
+        activatorId: activation.activatorId!,
+        timestamp: now.toISOString(),
       });
-
-      await tx.activation.update({
-        where: { id: activationId },
-        data: { activationStat: PrismaActivationStat.PROCESSING },
+      eventBus.emit('activation:status-changed', {
+        activationId,
+        status: ClientActivationStatus.PROCESSING,
+        timestamp: now.toISOString(),
       });
-    });
-
-    eventBus.emit('activation:client-updated', {
-      activationId,
-      activatorId: activation.activatorId!,
-      timestamp: now.toISOString(),
-    });
-    eventBus.emit('activation:status-changed', {
-      activationId,
-      status: ClientActivationStatus.PROCESSING,
-      timestamp: now.toISOString(),
-    });
+    }
+    // A PENDING pre-dispatch edit changes no status and has no activator to notify yet — the
+    // pending pool feed carries no account fields, so no other party needs a push for it.
 
     return ActivationMapper.toClientStatusDTO({
       id: activationId,
-      activationStat: PrismaActivationStat.PROCESSING,
+      activationStat: isCorrection ? PrismaActivationStat.PROCESSING : activation.activationStat,
     });
   }
 
@@ -602,6 +635,16 @@ export class ActivationService implements IActivationService {
 
     const now = new Date();
 
+    // Snapshot the CURRENT value of each flagged field before it's overwritten by a
+    // correction — WrongInformation becomes an immutable record of what was rejected, read
+    // from data already in memory (no extra query). See resolveEffectiveInfo above.
+    const effective = new Map(
+      this.resolveEffectiveInfo(activation.information, activation.steps).map((i) => [
+        i.accountInform,
+        i.value,
+      ]),
+    );
+
     await this.prisma.$transaction(async (tx) => {
       const step = await tx.activationStep.create({
         data: { activationId: id, activationStat: PrismaActivationStat.WRONG_INFORMATION },
@@ -611,7 +654,7 @@ export class ActivationService implements IActivationService {
         data: cmd.fields.map((f) => ({
           activationStepId: step.id,
           accountInform: f as unknown as PrismaAccountInformation,
-          value: null,
+          value: effective.get(f) ?? null,
         })),
       });
 
@@ -1096,12 +1139,14 @@ export class ActivationService implements IActivationService {
       include: {
         card: {
           include: {
-            set: true,
+            set: { select: { setNumber: true, createdAt: true, printedAt: true } },
             lot: {
-              include: {
+              select: {
+                lotNumber: true,
+                createdAt: true,
                 orderLots: {
                   take: 1,
-                  include: { order: { select: { completedAt: true } } },
+                  select: { order: { select: { completedAt: true } } },
                 },
               },
             },
@@ -1122,9 +1167,8 @@ export class ActivationService implements IActivationService {
 
     if (!activation) throw new NotFoundError('Activation not found');
 
-    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
     const dist = this.buildDistributorJoin(activation.card.distributor!);
-    const latestWinsInfo = this.resolveLatestWinsInfo(activation.information, activation.steps);
+    const effectiveInfo = this.resolveEffectiveInfo(activation.information, activation.steps);
     const cardHistory = this.buildCardHistory(
       activation.card,
       activation.requestedAt,
@@ -1145,7 +1189,13 @@ export class ActivationService implements IActivationService {
       activation,
       dist,
       activation.activator,
-      latestWinsInfo,
+      {
+        key: activation.card.key,
+        set: activation.card.set,
+        lot: activation.card.lot,
+        subscriptionPlan: activation.card.subscriptionPlan as unknown as ActivationPlanJoin,
+      },
+      effectiveInfo,
       activation.steps,
       cardHistory,
       commissionTierLabel,

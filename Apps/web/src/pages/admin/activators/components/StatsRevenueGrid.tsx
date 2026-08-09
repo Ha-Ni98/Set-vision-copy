@@ -1,6 +1,7 @@
 import { Zap, Clock, Wallet, HandCoins, Coins, Percent } from "lucide-react";
 import { StatCard } from "@/components/shared/StatCard";
-import { formatDZD, formatTime } from "@/lib/utils";
+import { formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import type { ActivatorDetailDTO } from "@my-app/contract";
@@ -24,11 +25,7 @@ export function StatsRevenueGrid({ activator }: Props) {
       <StatCard
         icon={<Clock className="h-5 w-5" />}
         label={t("admin.activators.detail.stats.avgTime")}
-        value={
-          activator.avgActivationTimeSeconds !== null
-            ? formatTime(activator.avgActivationTimeSeconds)
-            : "—"
-        }
+        value={formatDuration(activator.avgActivationTimeSeconds)}
       />
       <StatCard
         icon={<Wallet className="h-5 w-5" />}

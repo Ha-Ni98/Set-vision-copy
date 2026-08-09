@@ -394,7 +394,9 @@ model ActivationInformation {
   id            String             @id @default(uuid())
   activationId  String
   accountInform AccountInformation
-  value         String? // SENSITIVE: may hold password/OTP — activator-only exposure
+  value         String? // SENSITIVE: may hold password/OTP. THE CURRENT value of the field —
+                        // updated by ActivationService.update() on every client correction.
+                        // Exposure: activator, client (key-gated), admin (D3).
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
 
@@ -419,7 +421,11 @@ model WrongInformation {
   id               String             @id @default(uuid())
   activationStepId String
   accountInform    AccountInformation
-  value            String? // SENSITIVE: may hold a corrected password — activator-only exposure
+  value            String? // SENSITIVE: may hold a password. The value that was REJECTED,
+                           // snapshotted at flagWrong() time. Immutable history — never
+                           // overlaid onto the current value, which lives in
+                           // ActivationInformation. Exposure: activator, client (key-gated),
+                           // admin (D3).
 
   activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
 
@@ -430,7 +436,8 @@ model AdditionalInformation {
   id               String             @id @default(uuid())
   activationStepId String
   accountInform    AccountInformation
-  value            String? // SENSITIVE: may hold an OTP — activator-only exposure
+  value            String? // SENSITIVE: may hold an OTP. Exposure: activator, client
+                           // (key-gated), admin (D3).
 
   activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
 
