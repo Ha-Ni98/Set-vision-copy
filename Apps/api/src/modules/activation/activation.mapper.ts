@@ -290,6 +290,7 @@ export class ActivationMapper {
       takenAt: Date | null;
       completedAt: Date | null;
       activationPrice: Decimal | null;
+      activationCost: Decimal | null;
       freezReason: string | null;
     },
     plan: ActivationPlanJoin,
@@ -311,6 +312,7 @@ export class ActivationMapper {
       completedAt: activation.completedAt ? activation.completedAt.toISOString() : null,
       durationSeconds: durationSeconds(activation.takenAt, activation.completedAt),
       activationPrice: decimalToNumber(activation.activationPrice),
+      activationCost: decimalToNumber(activation.activationCost),
       freezeReason: activation.freezReason,
     };
     return AdminActivationResponseSchema.parse(dto);
@@ -323,6 +325,7 @@ export class ActivationMapper {
       clientFullName: string;
       clientPhone: string;
       activationPrice: Decimal | null;
+      activationCost: Decimal | null;
       freezReason: string | null;
       requestedAt: Date;
       takenAt: Date | null;
@@ -392,6 +395,7 @@ export class ActivationMapper {
       })),
       financial: {
         activationPrice: decimalToNumber(activation.activationPrice),
+        activationCost: decimalToNumber(activation.activationCost),
         commissionTierLabel,
       },
     };

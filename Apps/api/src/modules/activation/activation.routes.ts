@@ -13,6 +13,7 @@ import {
   RequestAdditionalInfoSchema,
   FreezeRequestSchema,
   SetActivatorPriceSchema,
+  SetActivationCostSchema,
   GetActivationsQuerySchema,
   GetActivatorHistoryQuerySchema,
   GetDistributorActivationsQuerySchema,
@@ -188,4 +189,11 @@ activationRouter.post(
   adminOnly,
   validateRequest({ params: ActivationActionParamsSchema, body: SetActivatorPriceSchema }),
   controller.setPrice,
+);
+
+activationRouter.post(
+  ACTIVATION_ROUTES.SET_COST,
+  adminOnly,
+  validateRequest({ params: ActivationActionParamsSchema, body: SetActivationCostSchema }),
+  controller.setCost,
 );

@@ -6,6 +6,7 @@ import {
   CreateSubscriptionPlanSchema,
   SubscriptionPlanIdParamsSchema,
   UpdateCommissionSchema,
+  UpdateSubscriptionPlanCostSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
@@ -39,6 +40,13 @@ subscriptionPlanRouter.patch(
   adminOnly,
   validateRequest({ body: UpdateCommissionSchema }),
   controller.updateCommission,
+);
+subscriptionPlanRouter.get(SUBSCRIPTION_PLAN_ROUTES.GET_COSTS, adminOnly, controller.getCosts);
+subscriptionPlanRouter.patch(
+  SUBSCRIPTION_PLAN_ROUTES.UPDATE_COST,
+  adminOnly,
+  validateRequest({ body: UpdateSubscriptionPlanCostSchema }),
+  controller.updateCost,
 );
 
 // Collection routes

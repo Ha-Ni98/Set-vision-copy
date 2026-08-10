@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   GetActivationsQuery,
   SetActivatorPriceCommand,
+  SetActivationCostCommand,
   ActivateActivationCommand,
 } from "@my-app/contract";
 import * as activationsService from "@/services/activations.service";
@@ -58,6 +59,19 @@ export function useSetActivationPrice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.activations.all() });
       queryClient.invalidateQueries({ queryKey: qk.activators.all() });
+    },
+  });
+}
+
+// Set 9 (D10): cost touches no activator earnings/credits (unlike price), so it invalidates
+// activations only — invalidating activators here would be a false signal.
+export function useSetActivationCost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, command }: { id: string; command: SetActivationCostCommand }) =>
+      activationsService.setCost(id, command),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.activations.all() });
     },
   });
 }

@@ -18,6 +18,7 @@ import type {
   RequestAdditionalInfoCommand,
   FreezeRequestCommand,
   SetActivatorPriceCommand,
+  SetActivationCostCommand,
   GetActivationsQuery,
   GetActivatorHistoryQuery,
   GetDistributorActivationsQuery,
@@ -51,6 +52,7 @@ export interface IActivationService {
   activateByAdmin(id: string, cmd: ActivateActivationCommand): Promise<AdminActivationDTO>;
   cancelByAdmin(id: string): Promise<AdminActivationDTO>;
   setPrice(id: string, cmd: SetActivatorPriceCommand, actorId: string): Promise<AdminActivationDTO>;
+  setCost(id: string, cmd: SetActivationCostCommand, actorId: string): Promise<AdminActivationDTO>;
 
   // Distributor (principalUserId → resolves Distributor by userId)
   getOnMyCards(

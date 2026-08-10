@@ -132,6 +132,8 @@ enum LogActionType {
   CHANGE_REVOCATION_REQUEST_STAT
   GENERATE_TELEGRAM_TOKEN
   UNLINK_TELEGRAM
+  SET_SUBSCRIPTION_PLAN_COST
+  CHANGE_ACTIVATION_COST
 }
 
 // Set 6: the delivery channel. Only TELEGRAM has a real provider; EMAIL/WHATSAPP exist so the
@@ -292,8 +294,25 @@ model SubscriptionPlan {
   lots              Lot[]
   cards             Card[]
   cardOrderRequests CardOrderRequest[]
+  cost              SubscriptionPlanCost?
 
   @@unique([subscriptionType, subscriptionDuration])
+}
+
+// Set 9 (D10). NOT the same thing as SubscriptionPlanCommission above, despite the similar
+// name: `commission` is what the business PAYS THE ACTIVATOR for an activation (a function of
+// plan × elapsed-time tier); `cost` here is what the subscription itself COSTS THE BUSINESS
+// per activation on this plan. One row per plan, one nullable cost, no tier axis.
+// Activation.activationCost is a SNAPSHOT of this value taken at completion — editing a row
+// here never rewrites a completed activation.
+model SubscriptionPlanCost {
+  id                 String   @id @default(uuid())
+  subscriptionPlanId String   @unique
+  cost               Decimal? @db.Decimal(12, 2) // null = never configured (renders "—")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
 }
 
 model CommissionDuration {
@@ -472,6 +491,10 @@ model Activation {
   clientEmail     String?
   activationEmail String?
   activationPrice Decimal?       @db.Decimal(12, 2)
+  // Set 9 (D10): the plan's cost STAMPED at completion. Written unconditionally by both
+  // completion paths (never the `...(x && {})` spread that leaves activationPrice null) and
+  // thereafter changed only by an explicit admin edit. Not recomputed, ever.
+  activationCost  Decimal?       @default(0) @db.Decimal(12, 2)
   freezReason     String?
   requestedAt     DateTime       @default(now())
   takenAt         DateTime?

@@ -62,3 +62,10 @@ export const SetActivatorPriceSchema = z.object({
   amount: z.number().nonnegative().multipleOf(0.01),
 });
 export type SetActivatorPriceCommand = z.infer<typeof SetActivatorPriceSchema>;
+
+// A separate schema from SetActivatorPriceSchema even though the shape is identical — price
+// and cost are different commands on different money (Set 9, D10).
+export const SetActivationCostSchema = z.object({
+  amount: z.number().nonnegative().multipleOf(0.01),
+});
+export type SetActivationCostCommand = z.infer<typeof SetActivationCostSchema>;

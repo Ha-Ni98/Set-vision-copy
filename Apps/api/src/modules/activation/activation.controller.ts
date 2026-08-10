@@ -12,6 +12,7 @@ import type {
   RequestAdditionalInfoCommand,
   FreezeRequestCommand,
   SetActivatorPriceCommand,
+  SetActivationCostCommand,
   GetActivatorHistoryQuery,
   GetActivationsQuery,
   GetDistributorActivationsQuery,
@@ -237,6 +238,18 @@ export class ActivationController {
       sendSuccess(
         res,
         await this.service.setPrice(id, req.validated.body as SetActivatorPriceCommand, req.user!.id),
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  setCost = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.validated.params as ActivationActionParams;
+      sendSuccess(
+        res,
+        await this.service.setCost(id, req.validated.body as SetActivationCostCommand, req.user!.id),
       );
     } catch (err) {
       next(err);

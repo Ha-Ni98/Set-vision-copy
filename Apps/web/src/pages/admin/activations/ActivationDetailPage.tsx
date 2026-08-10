@@ -7,7 +7,11 @@ import { NotFoundState } from "@/components/shared/NotFoundState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useActivationDetail, useSetActivationPrice } from "@/hooks/useAdminActivations";
+import {
+  useActivationDetail,
+  useSetActivationPrice,
+  useSetActivationCost,
+} from "@/hooks/useAdminActivations";
 import { ClientBlock } from "./components/ClientBlock";
 import { DistributorBlock } from "./components/DistributorBlock";
 import { ActivatorBlock } from "./components/ActivatorBlock";
@@ -18,6 +22,7 @@ import { ActivationTimeline } from "./components/ActivationTimeline";
 import { CardHistoryTimeline } from "./components/CardHistoryTimeline";
 import { FinancialBlock } from "./components/FinancialBlock";
 import { SetActivatorPriceModal } from "./components/SetActivatorPriceModal";
+import { SetActivationCostModal } from "./components/SetActivationCostModal";
 
 const COMPLETED_STATES = new Set<ActivationStat>([
   ActivationStat.ACTIVATED,
@@ -30,9 +35,11 @@ export default function ActivationDetailPage() {
   const { t } = useTranslation();
   const { id = "" } = useParams();
   const [priceModalOpen, setPriceModalOpen] = useState(false);
+  const [costModalOpen, setCostModalOpen] = useState(false);
 
   const detailQuery = useActivationDetail(id);
   const setActivationPrice = useSetActivationPrice();
+  const setActivationCost = useSetActivationCost();
 
   if (detailQuery.isLoading) {
     return (
@@ -68,6 +75,8 @@ export default function ActivationDetailPage() {
   // Any completed activation can be (re-)priced, not just an unpriced one (Stage-04-fix #1) —
   // the backend's setPrice already adjusts the activator's earning/credits by the delta.
   const canSetPrice = COMPLETED_STATES.has(detail.state);
+  // Set 9 (D10): same completed-only gate, enforced server-side by setCost too.
+  const canSetCost = COMPLETED_STATES.has(detail.state);
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,6 +95,8 @@ export default function ActivationDetailPage() {
           financial={detail.financial}
           canSetPrice={canSetPrice}
           onRequestSetPrice={() => setPriceModalOpen(true)}
+          canSetCost={canSetCost}
+          onRequestSetCost={() => setCostModalOpen(true)}
         />
       </div>
 
@@ -102,6 +113,19 @@ export default function ActivationDetailPage() {
           setActivationPrice.mutate(
             { id, command: { amount: values.amount } },
             { onSuccess: () => setPriceModalOpen(false) },
+          )
+        }
+      />
+
+      <SetActivationCostModal
+        open={costModalOpen}
+        onOpenChange={setCostModalOpen}
+        isPending={setActivationCost.isPending}
+        currentAmount={detail.financial.activationCost}
+        onSubmit={(values) =>
+          setActivationCost.mutate(
+            { id, command: { amount: values.amount } },
+            { onSuccess: () => setCostModalOpen(false) },
           )
         }
       />

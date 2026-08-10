@@ -139,6 +139,9 @@ export const AdminActivationResponseSchema = z.object({
   completedAt: z.iso.datetime().nullable(),
   durationSeconds: z.number().int().nullable(),
   activationPrice: z.number().nullable(),
+  // Set 9 (D10): a snapshot of the plan's cost, stamped at completion. null only if the
+  // activation predates completion logic entirely; otherwise defaults to 0.
+  activationCost: z.number().nullable(),
   freezeReason: z.string().nullable(),
 });
 export type AdminActivationDTO = z.infer<typeof AdminActivationResponseSchema>;
@@ -181,6 +184,7 @@ export const ActivationDetailResponseSchema = z.object({
   cardHistory: z.array(CardHistoryEntrySchema),
   financial: z.object({
     activationPrice: z.number().nullable(),
+    activationCost: z.number().nullable(),
     commissionTierLabel: z.string().nullable(),
   }),
 });

@@ -27,4 +27,5 @@ export const ACTIVATION_ROUTES = {
   ACTIVATE_BY_ADMIN: '/:id/activate-by-admin',
   CANCEL_BY_ADMIN: '/:id/cancel-by-admin',
   SET_PRICE: '/:id/set-price',
+  SET_COST: '/:id/set-cost',
 } as const;

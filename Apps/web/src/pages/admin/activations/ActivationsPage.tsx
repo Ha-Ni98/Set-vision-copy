@@ -13,6 +13,7 @@ import {
   useActivateByAdmin,
   useCancelByAdmin,
   useSetActivationPrice,
+  useSetActivationCost,
 } from "@/hooks/useAdminActivations";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useActivators } from "@/hooks/useActivators";
@@ -71,8 +72,12 @@ export default function ActivationsPage() {
   const activateByAdmin = useActivateByAdmin();
   const cancelByAdmin = useCancelByAdmin();
   const setActivationPrice = useSetActivationPrice();
+  const setActivationCost = useSetActivationCost();
   const isMutating =
-    activateByAdmin.isPending || cancelByAdmin.isPending || setActivationPrice.isPending;
+    activateByAdmin.isPending ||
+    cancelByAdmin.isPending ||
+    setActivationPrice.isPending ||
+    setActivationCost.isPending;
 
   const hasFilters =
     search.length > 0 ||
@@ -226,6 +231,9 @@ export default function ActivationsPage() {
         onCancel={(activation) => cancelByAdmin.mutate(activation.id)}
         onSetPrice={(activation, amount) =>
           setActivationPrice.mutate({ id: activation.id, command: { amount } })
+        }
+        onSetCost={(activation, amount) =>
+          setActivationCost.mutate({ id: activation.id, command: { amount } })
         }
         isMutating={isMutating}
       />

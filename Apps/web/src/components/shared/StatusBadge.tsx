@@ -171,6 +171,8 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.CHANGE_REVOCATION_REQUEST_STAT]: "neutral",
   [LogActionType.GENERATE_TELEGRAM_TOKEN]: "neutral",
   [LogActionType.UNLINK_TELEGRAM]: "warning",
+  [LogActionType.SET_SUBSCRIPTION_PLAN_COST]: "warning",
+  [LogActionType.CHANGE_ACTIVATION_COST]: "warning",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {

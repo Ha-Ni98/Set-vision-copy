@@ -13,6 +13,7 @@ import {
   type ActivationDetailDTO,
   type AdminActivationDTO,
   type SetActivatorPriceCommand,
+  type SetActivationCostCommand,
   type GetActivationsQuery,
   type ActivateActivationCommand,
   type PaginatedDistributorActivations,
@@ -176,6 +177,18 @@ export async function setPrice(
 ): Promise<AdminActivationDTO> {
   const res = await api.post<ApiResponse<AdminActivationDTO>>(
     withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.SET_PRICE), { id }),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function setCost(
+  id: string,
+  command: SetActivationCostCommand,
+): Promise<AdminActivationDTO> {
+  const res = await api.post<ApiResponse<AdminActivationDTO>>(
+    withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.SET_COST), { id }),
     command,
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive

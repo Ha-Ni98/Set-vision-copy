@@ -89,6 +89,7 @@ export const qk = {
     list: (query: GetSubscriptionPlansQuery) => ["subscription-plans", "list", query] as const,
     commissionDurations: () => ["subscription-plans", "commission-durations"] as const,
     commissions: () => ["subscription-plans", "commissions"] as const,
+    costs: () => ["subscription-plans", "costs"] as const,
   },
   geography: {
     all: () => ["geography"] as const,

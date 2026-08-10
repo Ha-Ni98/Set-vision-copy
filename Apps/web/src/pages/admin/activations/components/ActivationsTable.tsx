@@ -16,6 +16,7 @@ import { formatDuration } from "@/lib/duration";
 import { ActivationActionsMenu } from "./ActivationActionsMenu";
 import { ResolveFreezeDialog } from "../../components/ResolveFreezeDialog";
 import { SetActivatorPriceModal } from "./SetActivatorPriceModal";
+import { SetActivationCostModal } from "./SetActivationCostModal";
 
 interface Props {
   data?: AdminActivationDTO[];
@@ -27,6 +28,7 @@ interface Props {
   onActivate: (activation: AdminActivationDTO, command: ActivateActivationCommand) => void;
   onCancel: (activation: AdminActivationDTO) => void;
   onSetPrice: (activation: AdminActivationDTO, amount: number) => void;
+  onSetCost: (activation: AdminActivationDTO, amount: number) => void;
   isMutating?: boolean;
 }
 
@@ -41,6 +43,7 @@ export function ActivationsTable({
   onActivate,
   onCancel,
   onSetPrice,
+  onSetCost,
   isMutating,
 }: Props) {
   const { t } = useTranslation();
@@ -50,6 +53,7 @@ export function ActivationsTable({
     action: "activate" | "cancel";
   } | null>(null);
   const [priceRow, setPriceRow] = useState<AdminActivationDTO | null>(null);
+  const [costRow, setCostRow] = useState<AdminActivationDTO | null>(null);
 
   const columns = useMemo<ColumnDef<AdminActivationDTO>[]>(
     () => [
@@ -84,6 +88,12 @@ export function ActivationsTable({
           row.activationPrice != null ? formatDZD(row.activationPrice, language) : "—",
       },
       {
+        id: "cost",
+        header: t("admin.activations.table.cost"),
+        accessorFn: (row) =>
+          row.activationCost != null ? formatDZD(row.activationCost, language) : "—",
+      },
+      {
         id: "createdAt",
         header: t("admin.activations.table.createdAt"),
         accessorFn: (row) => formatDateTime(row.requestedAt, language),
@@ -96,6 +106,7 @@ export function ActivationsTable({
             activation={row.original}
             onRequestResolve={(activation, action) => setResolveRow({ row: activation, action })}
             onRequestSetPrice={setPriceRow}
+            onRequestSetCost={setCostRow}
           />
         ),
       },
@@ -103,7 +114,7 @@ export function ActivationsTable({
     [t, language],
   );
 
-  if (isLoading) return <TableSkeleton rows={5} columns={9} />;
+  if (isLoading) return <TableSkeleton rows={5} columns={10} />;
   if (isError) {
     return (
       <NotFoundState
@@ -174,6 +185,17 @@ export function ActivationsTable({
         onSubmit={(values) => {
           if (priceRow) onSetPrice(priceRow, values.amount);
           setPriceRow(null);
+        }}
+      />
+
+      <SetActivationCostModal
+        open={costRow !== null}
+        onOpenChange={(open) => !open && setCostRow(null)}
+        isPending={isMutating}
+        currentAmount={costRow?.activationCost}
+        onSubmit={(values) => {
+          if (costRow) onSetCost(costRow, values.amount);
+          setCostRow(null);
         }}
       />
     </>

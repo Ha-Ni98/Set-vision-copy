@@ -33,6 +33,7 @@ import {
   type RequestAdditionalInfoCommand,
   type FreezeRequestCommand,
   type SetActivatorPriceCommand,
+  type SetActivationCostCommand,
   type GetActivationsQuery,
   type GetActivatorHistoryQuery,
   type GetDistributorActivationsQuery,
@@ -74,11 +75,14 @@ const CANCELLED_STATS: PrismaActivationStat[] = [
   PrismaActivationStat.CANCELLED_BY_ADMIN,
 ];
 
-const TERMINAL_STATS: PrismaActivationStat[] = [
+// Set 9: the two completion paths (activate/activateByAdmin). setCost() and setPrice() both
+// gate on this same list rather than each declaring their own copy.
+const COMPLETED_STATS: PrismaActivationStat[] = [
   PrismaActivationStat.ACTIVATED,
   PrismaActivationStat.ACTIVATED_BY_ADMIN,
-  ...CANCELLED_STATS,
 ];
+
+const TERMINAL_STATS: PrismaActivationStat[] = [...COMPLETED_STATS, ...CANCELLED_STATS];
 
 // ─── Full-join include shapes ─────────────────────────────────────────────────
 
@@ -169,6 +173,15 @@ export class ActivationService implements IActivationService {
     return tier
       ? { price: tier.commission, tierLabel: tier.commissionDuration.label }
       : { price: null, tierLabel: null };
+  }
+
+  // Set 9 (D10): read INSIDE the completion transaction, not from a pre-transaction include,
+  // so "the cost stamped is the plan cost at the moment of completion" is literally true.
+  // Null plan cost (never configured) resolves to Decimal(0) — never a skipped write, unlike
+  // activationPrice's `...(price && {})` pattern (R10), which must not be copied here.
+  private async resolvePlanCost(tx: Prisma.TransactionClient, subscriptionPlanId: string): Promise<Decimal> {
+    const row = await tx.subscriptionPlanCost.findUnique({ where: { subscriptionPlanId } });
+    return row?.cost ?? new Prisma.Decimal(0);
   }
 
   private buildDistributorJoin(dist: {
@@ -766,12 +779,15 @@ export class ActivationService implements IActivationService {
     );
 
     await this.prisma.$transaction(async (tx) => {
+      const cost = await this.resolvePlanCost(tx, activation.card.subscriptionPlanId);
+
       await tx.activation.update({
         where: { id },
         data: {
           activationStat: PrismaActivationStat.ACTIVATED,
           completedAt: now,
           activationEmail: cmd.activationEmail,
+          activationCost: cost,
           ...(price && { activationPrice: price }),
         },
       });
@@ -1345,13 +1361,18 @@ export class ActivationService implements IActivationService {
       ? this.computeCommission(activation.card.subscriptionPlan.commissions, activation.takenAt, now)
       : { price: null, tierLabel: null };
 
+    let cost: Decimal = new Prisma.Decimal(0);
+
     await this.prisma.$transaction(async (tx) => {
+      cost = await this.resolvePlanCost(tx, activation.card.subscriptionPlanId);
+
       await tx.activation.update({
         where: { id },
         data: {
           activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
           completedAt: now,
           activationEmail: cmd.activationEmail,
+          activationCost: cost,
           ...(price && { activationPrice: price }),
         },
       });
@@ -1397,7 +1418,13 @@ export class ActivationService implements IActivationService {
     });
 
     return ActivationMapper.toAdminActivationDTO(
-      { ...activation, activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN, completedAt: now, activationPrice: price },
+      {
+        ...activation,
+        activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
+        completedAt: now,
+        activationPrice: price,
+        activationCost: cost,
+      },
       plan,
       activation.card.key,
       activation.activator?.fullName ?? null,
@@ -1478,11 +1505,7 @@ export class ActivationService implements IActivationService {
 
     if (!activation) throw new NotFoundError('Activation not found');
 
-    const completedStats: PrismaActivationStat[] = [
-      PrismaActivationStat.ACTIVATED,
-      PrismaActivationStat.ACTIVATED_BY_ADMIN,
-    ];
-    if (!completedStats.includes(activation.activationStat as PrismaActivationStat)) {
+    if (!COMPLETED_STATS.includes(activation.activationStat as PrismaActivationStat)) {
       throw new ConflictError('Activation is not completed');
     }
 
@@ -1515,6 +1538,53 @@ export class ActivationService implements IActivationService {
 
     return ActivationMapper.toAdminActivationDTO(
       { ...activation, activationPrice: new Prisma.Decimal(cmd.amount) },
+      plan,
+      activation.card.key,
+      activation.activator?.fullName ?? null,
+      activation.card.distributor?.storeName ?? '',
+    );
+  }
+
+  // Set 9 (D10): admin edit of a completed activation's stamped cost. Touches ONLY
+  // activationCost + its Log row — no activator earnings/credits delta (cost is a business
+  // expense, not money owed to anyone), no plan-cost write-back, no recomputation, no event.
+  async setCost(id: string, cmd: SetActivationCostCommand, actorId: string): Promise<AdminActivationDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: { include: { subscriptionPlan: true, distributor: { select: { storeName: true } } } },
+        activator: { select: { id: true, fullName: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    if (!COMPLETED_STATS.includes(activation.activationStat as PrismaActivationStat)) {
+      throw new ConflictError('Activation is not completed');
+    }
+
+    const oldCost = activation.activationCost ?? new Prisma.Decimal(0);
+    const newCost = new Prisma.Decimal(cmd.amount);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activation.update({
+        where: { id },
+        data: { activationCost: newCost },
+      });
+
+      await tx.log.create({
+        data: {
+          actionType: LogActionType.CHANGE_ACTIVATION_COST,
+          actionDescription: `Set activation cost to ${cmd.amount} (was ${oldCost.toFixed(2)}) for activation ${id}`,
+          userId: actorId,
+        },
+      });
+    });
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+
+    return ActivationMapper.toAdminActivationDTO(
+      { ...activation, activationCost: newCost },
       plan,
       activation.card.key,
       activation.activator?.fullName ?? null,
