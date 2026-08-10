@@ -8,5 +8,9 @@ export const STATISTICS_ROUTES = {
   ACTIVATIONS_SUMMARY: '/activations',
   OVERVIEW: '/overview',
   WILAYA_HEATMAP: '/wilaya-heatmap',
+  // Statics must be registered before the param route below.
+  REVENUE_SUMMARY: '/revenue/summary',
+  REVENUE_SERIES: '/revenue/series',
+  REVENUE_BREAKDOWN: '/revenue/breakdown',
   WILAYA_DRILLDOWN: '/wilaya/:wilayaId',
 } as const;

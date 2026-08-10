@@ -17,6 +17,12 @@ export function formatDZD(amount: number, language: Language = "en"): string {
   return `${new Intl.NumberFormat(LOCALE_TAG[language]).format(amount)} DZD`;
 }
 
+// Chart axis/tick label variant — "19 k DZD" instead of "18 848 DZD". Full formatDZD is kept for
+// tooltips and KPI values, where precision matters more than density (set-11-plan.md §5).
+export function formatDZDCompact(amount: number, language: Language = "en"): string {
+  return `${new Intl.NumberFormat(LOCALE_TAG[language], { notation: "compact" }).format(amount)} DZD`;
+}
+
 export function formatDateTime(iso: string, language: Language = "en"): string {
   return new Intl.DateTimeFormat(LOCALE_TAG[language], {
     dateStyle: "medium",

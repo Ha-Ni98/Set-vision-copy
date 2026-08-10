@@ -431,6 +431,9 @@ model Order {
   @@index([wilayaId])
   @@index([deliveryCompanyId])
   @@index([createdAt])
+  // Set 11 (D9): the cash-in predicate is `orderStat = DELIVERED AND completedAt BETWEEN …`.
+  // Equality column first, range column second — the only ordering a btree can serve as a range scan.
+  @@index([orderStat, completedAt])
 }
 
 // Distributor-submitted, admin-managed request for a batch of cards. The FK to Order lives
@@ -536,6 +539,10 @@ model Activation {
   @@index([activationStat])
   @@index([requestedAt])
   @@index([completedAt])
+  // Set 11 (D9): the cash-out predicate is `activationStat IN (2) AND completedAt BETWEEN …`.
+  // Also covers the existing COMPLETED_STATS + completedAt reads in dashboard() /
+  // activationsSummary() / overview().
+  @@index([activationStat, completedAt])
 }
 
 // Distributor-submitted, admin-managed request to revoke one of the distributor's own

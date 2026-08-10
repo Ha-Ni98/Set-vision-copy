@@ -3,10 +3,23 @@ import { Decimal } from '@prisma/client/runtime/library';
 import type { IStatisticsService } from './statistics.interface';
 import { StatisticsMapper } from './statistics.mapper';
 import { todayStart, weekStart, monthStart, resolvePeriod, bucketDate } from './statistics.time';
-import { NotFoundError } from '@common/errors';
+import {
+  buildRevenueTotalsSql,
+  buildRevenueSeriesSql,
+  buildRevenueBreakdownSql,
+  type RevenueFilters,
+  type RevenueSummaryRawRow,
+  type RevenueSeriesRawRow,
+  type RevenueBreakdownRawRow,
+} from './statistics.revenue.sql';
+import { NotFoundError, BadRequestError } from '@common/errors';
+import { composeSubscriptionLabel } from '@modules/set/set.mapper';
 import {
   ActivationStat,
   OrderStat,
+  RevenueDimension,
+  RevenueGranularity,
+  REVENUE_UNATTRIBUTED_KEY,
   type DashboardStatsDTO,
   type ActivatorsSummaryDTO,
   type DistributorsSummaryDTO,
@@ -19,6 +32,12 @@ import {
   type WilayaHeatmapQuery,
   type WilayaDrilldownDTO,
   type WilayaDrilldownQuery,
+  type RevenueSummaryDTO,
+  type RevenueSummaryQuery,
+  type RevenueSeriesDTO,
+  type RevenueSeriesQuery,
+  type RevenueBreakdownDTO,
+  type RevenueBreakdownQuery,
 } from '@my-app/contract';
 
 const COMPLETED_STATS = [ActivationStat.ACTIVATED, ActivationStat.ACTIVATED_BY_ADMIN];
@@ -30,6 +49,33 @@ const CANCELLED_STATS = [
 ];
 
 const ZERO_DECIMAL = new Decimal(0);
+
+// Set 11 (D9) §4.1 — a custom range at Day granularity over a decade would generate thousands
+// of zero-filled points. 400 covers a full year of days and a decade of months.
+const MAX_REVENUE_BUCKETS = 400;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function estimateBucketCount(from: Date, to: Date, granularity: RevenueGranularity): number {
+  const spanDays = Math.max(to.getTime() - from.getTime(), 0) / MS_PER_DAY;
+  switch (granularity) {
+    case RevenueGranularity.DAY:
+      return Math.ceil(spanDays) + 1;
+    case RevenueGranularity.WEEK:
+      return Math.ceil(spanDays / 7) + 1;
+    case RevenueGranularity.MONTH:
+      return Math.ceil(spanDays / 28) + 1; // conservative: shortest possible month
+  }
+}
+
+function toRevenueFilters(query: {
+  subscriptionPlanId?: string | undefined;
+  wilayaId?: string | undefined;
+}): RevenueFilters {
+  return {
+    subscriptionPlanId: query.subscriptionPlanId ?? null,
+    wilayaId: query.wilayaId ?? null,
+  };
+}
 
 function avgSeconds(rows: { takenAt: Date | null; completedAt: Date | null }[]): number | null {
   const valid = rows.filter((r) => r.takenAt && r.completedAt);
@@ -478,6 +524,106 @@ export class StatisticsService implements IStatisticsService {
       topDistributors,
       activationsByPlan,
       activationsOverTime,
+    });
+  }
+
+  async revenueSummary(query: RevenueSummaryQuery): Promise<RevenueSummaryDTO> {
+    const { from, to } = resolvePeriod(query.period, query.dateFrom, query.dateTo);
+    const filters = toRevenueFilters(query);
+
+    // Same-length window ending at `from`, half-open at the top so a boundary row is never
+    // counted twice (set-11-plan.md §4.3).
+    const previousFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
+    const previousTo = from;
+
+    const [currentRows, previousRows] = await Promise.all([
+      this.prisma.$queryRaw<RevenueSummaryRawRow[]>(buildRevenueTotalsSql(from, to, filters)),
+      this.prisma.$queryRaw<RevenueSummaryRawRow[]>(
+        buildRevenueTotalsSql(previousFrom, previousTo, filters),
+      ),
+    ]);
+    // Guaranteed exactly one row: the query is a cross join of two single-row aggregates, each
+    // COALESCE-guarded so an empty result set still produces one zeroed row.
+    const current = currentRows[0]!;
+    const previous = previousRows[0]!;
+
+    return StatisticsMapper.toRevenueSummaryDTO({
+      from,
+      to,
+      current: { cashIn: current.cash_in, cashOut: current.cash_out, net: current.net },
+      previous: { cashIn: previous.cash_in, cashOut: previous.cash_out, net: previous.net },
+      cashOutSplit: {
+        activationCost: current.activation_cost,
+        activationPrice: current.activation_price,
+      },
+      deliveredOrders: current.delivered_orders,
+      completedActivations: current.completed_activations,
+    });
+  }
+
+  async revenueSeries(query: RevenueSeriesQuery): Promise<RevenueSeriesDTO> {
+    const { from, to } = resolvePeriod(query.period, query.dateFrom, query.dateTo);
+    const filters = toRevenueFilters(query);
+
+    if (estimateBucketCount(from, to, query.granularity) > MAX_REVENUE_BUCKETS) {
+      throw new BadRequestError(
+        'Date range too wide for this granularity — choose a coarser granularity',
+      );
+    }
+
+    const rows = await this.prisma.$queryRaw<RevenueSeriesRawRow[]>(
+      buildRevenueSeriesSql(from, to, query.granularity, filters),
+    );
+
+    return StatisticsMapper.toRevenueSeriesDTO({
+      granularity: query.granularity,
+      points: rows.map((r) => ({
+        bucketStart: r.bucket_start,
+        cashIn: r.cash_in,
+        cashOut: r.cash_out,
+        net: r.net,
+      })),
+    });
+  }
+
+  async revenueBreakdown(query: RevenueBreakdownQuery): Promise<RevenueBreakdownDTO> {
+    const { from, to } = resolvePeriod(query.period, query.dateFrom, query.dateTo);
+    const filters = toRevenueFilters(query);
+
+    const rawRows = await this.prisma.$queryRaw<RevenueBreakdownRawRow[]>(
+      buildRevenueBreakdownSql(from, to, query.dimension, query.sort, query.limit, filters),
+    );
+
+    const rows = rawRows.filter((r) => r.row_type === 'row');
+    // Guaranteed present: the SQL always returns one 'others' and one 'totals' row, each an
+    // aggregate over a (possibly empty) set, COALESCE-guarded to 0.
+    const othersRow = rawRows.find((r) => r.row_type === 'others')!;
+    const totalsRow = rawRows.find((r) => r.row_type === 'totals')!;
+
+    // Plan dimension carries no label from SQL (composeSubscriptionLabel is a TS function) — a
+    // small supplementary lookup fills it in, mirroring toWilayaDrilldownDTO's existing pattern.
+    let planLabelById: Map<string, string> | null = null;
+    if (query.dimension === RevenueDimension.PLAN) {
+      const planIds = rows
+        .map((r) => r.key)
+        .filter((k): k is string => !!k && k !== REVENUE_UNATTRIBUTED_KEY);
+      const plans =
+        planIds.length > 0
+          ? await this.prisma.subscriptionPlan.findMany({ where: { id: { in: planIds } } })
+          : [];
+      planLabelById = new Map(plans.map((p) => [p.id, composeSubscriptionLabel(p)]));
+    }
+
+    return StatisticsMapper.toRevenueBreakdownDTO({
+      dimension: query.dimension,
+      rows: rows.map((r) => {
+        const key = r.key ?? REVENUE_UNATTRIBUTED_KEY;
+        const label =
+          key === REVENUE_UNATTRIBUTED_KEY ? '' : (planLabelById?.get(key) ?? r.label ?? '');
+        return { key, label, cashIn: r.cash_in, cashOut: r.cash_out, net: r.net };
+      }),
+      others: { cashIn: othersRow.cash_in, cashOut: othersRow.cash_out, net: othersRow.net },
+      totals: { cashIn: totalsRow.cash_in, cashOut: totalsRow.cash_out, net: totalsRow.net },
     });
   }
 }

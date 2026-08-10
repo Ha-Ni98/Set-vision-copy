@@ -13,6 +13,12 @@ import {
   type WilayaHeatmapQuery,
   type WilayaDrilldownDTO,
   type WilayaDrilldownQuery,
+  type RevenueSummaryDTO,
+  type RevenueSummaryQuery,
+  type RevenueSeriesDTO,
+  type RevenueSeriesQuery,
+  type RevenueBreakdownDTO,
+  type RevenueBreakdownQuery,
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
@@ -104,6 +110,42 @@ export async function wilayaDrilldown(
 ): Promise<WilayaDrilldownDTO> {
   const res = await api.get<ApiResponse<WilayaDrilldownDTO>>(
     withParams(apiPath(STATISTICS_ROUTES.BASE, STATISTICS_ROUTES.WILAYA_DRILLDOWN), { wilayaId }),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function revenueSummary(
+  query: RevenueSummaryQuery,
+  signal?: AbortSignal,
+): Promise<RevenueSummaryDTO> {
+  const res = await api.get<ApiResponse<RevenueSummaryDTO>>(
+    apiPath(STATISTICS_ROUTES.BASE, STATISTICS_ROUTES.REVENUE_SUMMARY),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function revenueSeries(
+  query: RevenueSeriesQuery,
+  signal?: AbortSignal,
+): Promise<RevenueSeriesDTO> {
+  const res = await api.get<ApiResponse<RevenueSeriesDTO>>(
+    apiPath(STATISTICS_ROUTES.BASE, STATISTICS_ROUTES.REVENUE_SERIES),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function revenueBreakdown(
+  query: RevenueBreakdownQuery,
+  signal?: AbortSignal,
+): Promise<RevenueBreakdownDTO> {
+  const res = await api.get<ApiResponse<RevenueBreakdownDTO>>(
+    apiPath(STATISTICS_ROUTES.BASE, STATISTICS_ROUTES.REVENUE_BREAKDOWN),
     { params: query, signal },
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive

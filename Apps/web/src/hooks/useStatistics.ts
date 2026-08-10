@@ -3,6 +3,9 @@ import type {
   StatisticsOverviewQuery,
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
+  RevenueSummaryQuery,
+  RevenueSeriesQuery,
+  RevenueBreakdownQuery,
 } from "@my-app/contract";
 import * as statisticsService from "@/services/statistics.service";
 import { qk } from "@/lib/query-keys";
@@ -71,5 +74,26 @@ export function useWilayaDrilldown(wilayaId: string, query: WilayaDrilldownQuery
     queryKey: qk.statistics.wilayaDrilldown(wilayaId, query),
     queryFn: ({ signal }) => statisticsService.wilayaDrilldown(wilayaId, query, signal),
     enabled: !!wilayaId,
+  });
+}
+
+export function useRevenueSummary(query: RevenueSummaryQuery) {
+  return useQuery({
+    queryKey: qk.statistics.revenueSummary(query),
+    queryFn: ({ signal }) => statisticsService.revenueSummary(query, signal),
+  });
+}
+
+export function useRevenueSeries(query: RevenueSeriesQuery) {
+  return useQuery({
+    queryKey: qk.statistics.revenueSeries(query),
+    queryFn: ({ signal }) => statisticsService.revenueSeries(query, signal),
+  });
+}
+
+export function useRevenueBreakdown(query: RevenueBreakdownQuery) {
+  return useQuery({
+    queryKey: qk.statistics.revenueBreakdown(query),
+    queryFn: ({ signal }) => statisticsService.revenueBreakdown(query, signal),
   });
 }

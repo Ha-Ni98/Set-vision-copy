@@ -11,6 +11,12 @@ import type {
   WilayaHeatmapQuery,
   WilayaDrilldownDTO,
   WilayaDrilldownQuery,
+  RevenueSummaryDTO,
+  RevenueSummaryQuery,
+  RevenueSeriesDTO,
+  RevenueSeriesQuery,
+  RevenueBreakdownDTO,
+  RevenueBreakdownQuery,
 } from '@my-app/contract';
 
 export interface IStatisticsService {
@@ -23,4 +29,7 @@ export interface IStatisticsService {
   overview(query: StatisticsOverviewQuery): Promise<StatisticsOverviewDTO>;
   wilayaHeatmap(query: WilayaHeatmapQuery): Promise<WilayaHeatmapDTO>;
   wilayaDrilldown(wilayaId: string, query: WilayaDrilldownQuery): Promise<WilayaDrilldownDTO>;
+  revenueSummary(query: RevenueSummaryQuery): Promise<RevenueSummaryDTO>;
+  revenueSeries(query: RevenueSeriesQuery): Promise<RevenueSeriesDTO>;
+  revenueBreakdown(query: RevenueBreakdownQuery): Promise<RevenueBreakdownDTO>;
 }

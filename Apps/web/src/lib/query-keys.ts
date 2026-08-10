@@ -25,6 +25,9 @@ import type {
   StatisticsOverviewQuery,
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
+  RevenueSummaryQuery,
+  RevenueSeriesQuery,
+  RevenueBreakdownQuery,
   GetNotificationsQuery,
   GetActivationEmailsQuery,
   UserRole,
@@ -174,6 +177,12 @@ export const qk = {
     wilayaHeatmap: (query: WilayaHeatmapQuery) => ["statistics", "wilaya-heatmap", query] as const,
     wilayaDrilldown: (wilayaId: string, query: WilayaDrilldownQuery) =>
       ["statistics", "wilaya-drilldown", wilayaId, query] as const,
+    revenueSummary: (query: RevenueSummaryQuery) =>
+      ["statistics", "revenue", "summary", query] as const,
+    revenueSeries: (query: RevenueSeriesQuery) =>
+      ["statistics", "revenue", "series", query] as const,
+    revenueBreakdown: (query: RevenueBreakdownQuery) =>
+      ["statistics", "revenue", "breakdown", query] as const,
   },
   notifications: {
     all: () => ["notifications"] as const,
