@@ -51,6 +51,7 @@ import { resolveDistributorScope } from '@common/auth/distributor-scope';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, ForbiddenError } from '@common/errors';
 import { eventBus } from '@common/events/event-bus';
+import { consumeActivationEmailWithin } from '@modules/activation-email/activation-email.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -792,6 +793,12 @@ export class ActivationService implements IActivationService {
         },
       });
 
+      await consumeActivationEmailWithin(tx, {
+        subscriptionPlanId: activation.card.subscriptionPlanId,
+        email: cmd.activationEmail,
+        now,
+      });
+
       await tx.card.update({
         where: { id: activation.cardId },
         data: { cardStat: PrismaCardStat.ACTIVATED },
@@ -1375,6 +1382,12 @@ export class ActivationService implements IActivationService {
           activationCost: cost,
           ...(price && { activationPrice: price }),
         },
+      });
+
+      await consumeActivationEmailWithin(tx, {
+        subscriptionPlanId: activation.card.subscriptionPlanId,
+        email: cmd.activationEmail,
+        now,
       });
 
       await tx.card.update({

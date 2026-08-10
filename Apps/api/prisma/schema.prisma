@@ -134,6 +134,8 @@ enum LogActionType {
   UNLINK_TELEGRAM
   SET_SUBSCRIPTION_PLAN_COST
   CHANGE_ACTIVATION_COST
+  ADD_ACTIVATION_EMAIL
+  DELETE_ACTIVATION_EMAIL
 }
 
 // Set 6: the delivery channel. Only TELEGRAM has a real provider; EMAIL/WHATSAPP exist so the
@@ -295,8 +297,31 @@ model SubscriptionPlan {
   cards             Card[]
   cardOrderRequests CardOrderRequest[]
   cost              SubscriptionPlanCost?
+  activationEmails  ActivationEmail[]
 
   @@unique([subscriptionType, subscriptionDuration])
+}
+
+// Set 10 (D13). A pool of addresses the activator/admin picks from when completing an
+// activation. Scoped PER PLAN: the same address may serve several plans, each with its own
+// counter — hence the compound unique, not a unique on `email`.
+// Activation.activationEmail stays a PLAIN STRING with no FK to this table: an activation
+// records the address that was actually used, which may be free-typed and may later be
+// soft-deleted here. This table counts usage; it does not own the historical value.
+model ActivationEmail {
+  id                 String    @id @default(uuid())
+  subscriptionPlanId String
+  email              String // stored normalized: trimmed + lowercased (see the match rule)
+  nbOfActivation     Int       @default(0)
+  lastUsedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionPlanId, email])
+  @@index([subscriptionPlanId, isDeleted, lastUsedAt])
 }
 
 // Set 9 (D10). NOT the same thing as SubscriptionPlanCommission above, despite the similar

@@ -6,12 +6,13 @@ import { CommissionMatrixTab } from "./components/CommissionMatrixTab";
 import { SubscriptionPlansTab } from "./components/SubscriptionPlansTab";
 import { DeliveryCompaniesTab } from "./components/DeliveryCompaniesTab";
 import { PlanCostsTab } from "./components/PlanCostsTab";
+import { ActivationEmailsTab } from "./components/ActivationEmailsTab";
 
-// 5 tabs (was 4 — Set 9 added Plan Costs; Timeout/Active-Hours are still omitted from the
-// tab bar entirely, §E-1, user decision). Each tab component is self-contained (owns its own
-// hooks), so Radix's default unmount-when-inactive behavior on TabsContent is what actually
-// gives each tab's queries "enabled on first activation, no upfront fan-out" — no manual
-// `enabled` flags needed here.
+// 6 tabs (was 5 — Set 10 added Activation Emails; Timeout/Active-Hours are still omitted
+// from the tab bar entirely, §E-1, user decision). Each tab component is self-contained (owns
+// its own hooks), so Radix's default unmount-when-inactive behavior on TabsContent is what
+// actually gives each tab's queries "enabled on first activation, no upfront fan-out" — no
+// manual `enabled` flags needed here.
 export default function SettingsPage() {
   const { t } = useTranslation();
 
@@ -24,6 +25,9 @@ export default function SettingsPage() {
           <TabsTrigger value="admins">{t("admin.settings.tabs.adminAccounts")}</TabsTrigger>
           <TabsTrigger value="commission">{t("admin.settings.tabs.commission")}</TabsTrigger>
           <TabsTrigger value="planCosts">{t("admin.settings.tabs.planCosts")}</TabsTrigger>
+          <TabsTrigger value="activationEmails">
+            {t("admin.settings.tabs.activationEmails")}
+          </TabsTrigger>
           <TabsTrigger value="plans">{t("admin.settings.tabs.subscriptionPlans")}</TabsTrigger>
           <TabsTrigger value="companies">{t("admin.settings.tabs.deliveryCompanies")}</TabsTrigger>
         </TabsList>
@@ -38,6 +42,10 @@ export default function SettingsPage() {
 
         <TabsContent value="planCosts">
           <PlanCostsTab />
+        </TabsContent>
+
+        <TabsContent value="activationEmails">
+          <ActivationEmailsTab />
         </TabsContent>
 
         <TabsContent value="plans">

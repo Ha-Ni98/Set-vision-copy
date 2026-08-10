@@ -26,6 +26,7 @@ import type {
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
   GetNotificationsQuery,
+  GetActivationEmailsQuery,
   UserRole,
 } from "@my-app/contract";
 
@@ -90,6 +91,15 @@ export const qk = {
     commissionDurations: () => ["subscription-plans", "commission-durations"] as const,
     commissions: () => ["subscription-plans", "commissions"] as const,
     costs: () => ["subscription-plans", "costs"] as const,
+  },
+  // `all()` sweeps both the settings-list cache and every cached pool — a delete must vanish
+  // from the picker too, so both mutations invalidate this root (Set 10 plan §7.1).
+  activationEmails: {
+    all: () => ["activation-emails"] as const,
+    listAll: () => ["activation-emails", "list"] as const,
+    list: (query: GetActivationEmailsQuery) => ["activation-emails", "list", query] as const,
+    pool: (subscriptionPlanId: string) =>
+      ["activation-emails", "pool", subscriptionPlanId] as const,
   },
   geography: {
     all: () => ["geography"] as const,

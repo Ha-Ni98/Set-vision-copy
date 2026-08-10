@@ -168,6 +168,7 @@ export function ActivationsTable({
         open={resolveRow !== null}
         action={resolveRow?.action ?? "activate"}
         reason={resolveRow?.row.freezeReason}
+        subscriptionPlanId={resolveRow?.row.subscriptionPlanId ?? ""}
         onOpenChange={(open) => !open && setResolveRow(null)}
         onConfirm={(command) => {
           if (!resolveRow) return;

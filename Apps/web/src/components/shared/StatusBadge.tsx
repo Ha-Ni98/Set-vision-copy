@@ -173,6 +173,8 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.UNLINK_TELEGRAM]: "warning",
   [LogActionType.SET_SUBSCRIPTION_PLAN_COST]: "warning",
   [LogActionType.CHANGE_ACTIVATION_COST]: "warning",
+  [LogActionType.ADD_ACTIVATION_EMAIL]: "success",
+  [LogActionType.DELETE_ACTIVATION_EMAIL]: "destructive",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {

@@ -13,6 +13,7 @@ import {
   CARD_REVOCATION_REQUEST_ROUTES,
   TELEGRAM_ROUTES,
   NOTIFICATION_ROUTES,
+  ACTIVATION_EMAIL_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -33,6 +34,7 @@ import { cardOrderRequestRouter } from './card-order-request/card-order-request.
 import { cardRevocationRequestRouter } from './card-revocation-request/card-revocation-request.routes';
 import { telegramRouter } from './telegram/telegram.routes';
 import { notificationRouter } from './notification/notification.routes';
+import { activationEmailRouter } from './activation-email/activation-email.routes';
 
 export const moduleRouter = Router();
 
@@ -56,3 +58,4 @@ moduleRouter.use(CARD_ORDER_REQUEST_ROUTES.BASE, cardOrderRequestRouter);
 moduleRouter.use(CARD_REVOCATION_REQUEST_ROUTES.BASE, cardRevocationRequestRouter);
 moduleRouter.use(TELEGRAM_ROUTES.BASE, telegramRouter);
 moduleRouter.use(NOTIFICATION_ROUTES.BASE, notificationRouter);
+moduleRouter.use(ACTIVATION_EMAIL_ROUTES.BASE, activationEmailRouter);

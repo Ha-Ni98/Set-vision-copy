@@ -52,7 +52,9 @@ const STAT_TO_CLIENT_STATUS: Partial<Record<ActivationStat, ClientActivationStat
 
 // ─── Join types (shapes the service must supply) ─────────────────────────────
 
-export type ActivationPlanJoin = Pick<SubscriptionPlan, 'subscriptionType' | 'subscriptionDuration'>;
+// Set 10 (D13, U1): widened to include 'id' — the activation-email picker is scoped to the
+// activation's plan, and the composed subscriptionLabel string cannot be used as a key.
+export type ActivationPlanJoin = Pick<SubscriptionPlan, 'id' | 'subscriptionType' | 'subscriptionDuration'>;
 
 export type ActivationDistributorJoin = {
   storeName: string;
@@ -205,6 +207,7 @@ export class ActivationMapper {
     const dto: ActiveRequestDTO = {
       id: activation.id,
       subscriptionLabel: composeSubscriptionLabel(plan),
+      subscriptionPlanId: plan.id,
       key: cardKey,
       takenAt: activation.takenAt.toISOString(),
       state: activation.activationStat as unknown as ActivationStat,
@@ -302,6 +305,7 @@ export class ActivationMapper {
       id: activation.id,
       key: cardKey,
       subscriptionLabel: composeSubscriptionLabel(plan),
+      subscriptionPlanId: plan.id,
       activatorFullName,
       distributorStoreName,
       clientName: activation.clientFullName,

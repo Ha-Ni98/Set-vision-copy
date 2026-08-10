@@ -18,6 +18,7 @@ export * from './modules/card-order-request';
 export * from './modules/card-revocation-request';
 export * from './modules/card';
 export * from './modules/activation';
+export * from './modules/activation-email';
 export * from './modules/statistics';
 export * from './modules/telegram';
 export * from './modules/notification';

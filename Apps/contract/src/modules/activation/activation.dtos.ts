@@ -88,6 +88,9 @@ export type PendingActivationDTO = z.infer<typeof PendingActivationResponseSchem
 export const ActiveRequestResponseSchema = z.object({
   id: z.uuid(),
   subscriptionLabel: z.string(),
+  // Set 10 (D13, U1): the activation-email picker is scoped to the activation's plan, and the
+  // composed `subscriptionLabel` string cannot be used as a key.
+  subscriptionPlanId: z.uuid(),
   key: z.string(),
   takenAt: z.iso.datetime(),
   state: z.enum(ActivationStat),
@@ -129,6 +132,9 @@ export const AdminActivationResponseSchema = z.object({
   id: z.uuid(),
   key: z.string(),
   subscriptionLabel: z.string(),
+  // Set 10 (D13, U1): the activation-email picker is scoped to the activation's plan, and the
+  // composed `subscriptionLabel` string cannot be used as a key.
+  subscriptionPlanId: z.uuid(),
   activatorFullName: z.string().nullable(),
   distributorStoreName: z.string(),
   clientName: z.string(),
