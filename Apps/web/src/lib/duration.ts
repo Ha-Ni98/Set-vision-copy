@@ -1,3 +1,6 @@
+// Backend twin: Apps/api/src/common/utils/duration.utils.ts (Set 6 §6.3) — byte-for-byte port
+// for use in Telegram message bodies. Keep both in sync; neither may drift from the other.
+
 // U+2014 EM DASH — punctuation, not copy. Not a translation key.
 export const DURATION_EMPTY = "—";
 

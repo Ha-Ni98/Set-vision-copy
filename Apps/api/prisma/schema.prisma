@@ -522,7 +522,9 @@ model ActivationInformation {
   accountInform AccountInformation
   value         String? // SENSITIVE: may hold password/OTP. THE CURRENT value of the field —
   // updated by ActivationService.update() on every client correction.
-  // Exposure: activator, client (key-gated), admin (D3).
+  // Exposure: activator, client (key-gated), admin (D3), and — since Set 6 — the assigned
+  // activator's Telegram chat via notification.subscribers.ts's ACTIVATION_INFORMATION_UPDATED
+  // template, unmasked, same reasoning as D3 (Set 6 plan §6.5).
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
 
@@ -563,7 +565,8 @@ model AdditionalInformation {
   activationStepId String
   accountInform    AccountInformation
   value            String? // SENSITIVE: may hold an OTP. Exposure: activator, client
-  // (key-gated), admin (D3).
+  // (key-gated), admin (D3), and — since Set 6 — the assigned activator's Telegram chat via
+  // notification.subscribers.ts's ACTIVATION_OTP_RECEIVED template, unmasked (Set 6 plan §6.5).
 
   activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
 

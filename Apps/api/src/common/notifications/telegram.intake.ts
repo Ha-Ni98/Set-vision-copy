@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { NotificationChannel, NotificationType } from '@my-app/contract';
 import { TelegramUpdateSchema } from './telegram.api';
 import { consumeLinkToken } from './telegram.link';
-import { renderTelegramLinked } from './notification.templates';
+import { render } from './notification.templates';
 import type { NotificationService } from './notification.service';
 import { logger } from '../config/logger';
 
@@ -63,7 +63,10 @@ export async function handleTelegramUpdate(
     channel: NotificationChannel.TELEGRAM,
     type: NotificationType.TELEGRAM_LINKED,
     recipient: outcome.recipient,
-    body: renderTelegramLinked({ name: outcome.recipient.name, role: outcome.recipient.role }),
+    body: render(NotificationType.TELEGRAM_LINKED, {
+      name: outcome.recipient.name,
+      role: outcome.recipient.role,
+    }),
   });
 
   return update.update_id;

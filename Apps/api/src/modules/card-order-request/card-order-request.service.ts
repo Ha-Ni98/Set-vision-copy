@@ -14,6 +14,7 @@ import type { ICardOrderRequestService } from './card-order-request.interface';
 import { CardOrderRequestMapper, type CardOrderRequestJoins } from './card-order-request.mapper';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, ForbiddenError, BadRequestError } from '@common/errors';
+import { eventBus } from '@common/events/event-bus';
 
 const DETAIL_INCLUDE = {
   distributor: { select: { storeName: true } },
@@ -200,7 +201,9 @@ export class CardOrderRequestService implements ICardOrderRequestService {
       include: DETAIL_INCLUDE,
     });
 
-    return CardOrderRequestMapper.toDTO(created, created);
+    const dto = CardOrderRequestMapper.toDTO(created, created);
+    this.emitCreated(dto);
+    return dto;
   }
 
   async approve(id: string, cmd: ReviewCardOrderRequestCommand, actorId: string): Promise<CardOrderRequestDTO> {
@@ -229,7 +232,9 @@ export class CardOrderRequestService implements ICardOrderRequestService {
       });
     });
 
-    return this.getById(id);
+    const dto = await this.getById(id);
+    this.emitStatusChanged(dto, OrderRequestStat.PENDING);
+    return dto;
   }
 
   async reject(id: string, cmd: ReviewCardOrderRequestCommand, actorId: string): Promise<CardOrderRequestDTO> {
@@ -258,7 +263,9 @@ export class CardOrderRequestService implements ICardOrderRequestService {
       });
     });
 
-    return this.getById(id);
+    const dto = await this.getById(id);
+    this.emitStatusChanged(dto, OrderRequestStat.PENDING);
+    return dto;
   }
 
   async cancel(id: string, userId: string): Promise<CardOrderRequestDTO> {
@@ -270,6 +277,8 @@ export class CardOrderRequestService implements ICardOrderRequestService {
     if (!CANCELLABLE_STATS.includes(request.stat)) {
       throw new ConflictError(`Cannot cancel an order request in state ${request.stat}`);
     }
+    // Set 4 Q3 allows cancelling from PENDING or APPROVED — read off the row, not hard-coded.
+    const previousStat = request.stat as OrderRequestStat;
 
     await this.prisma.$transaction(async (tx) => {
       await tx.cardOrderRequest.update({ where: { id }, data: { stat: PrismaOrderRequestStat.CANCELLED } });
@@ -282,7 +291,9 @@ export class CardOrderRequestService implements ICardOrderRequestService {
       });
     });
 
-    return this.getById(id);
+    const dto = await this.getById(id);
+    this.emitStatusChanged(dto, previousStat);
+    return dto;
   }
 
   async unlink(id: string, actorId: string): Promise<CardOrderRequestDTO> {
@@ -306,7 +317,31 @@ export class CardOrderRequestService implements ICardOrderRequestService {
       });
     });
 
-    return this.getById(id);
+    const dto = await this.getById(id);
+    this.emitStatusChanged(dto, OrderRequestStat.PENDING_DELIVERY);
+    return dto;
+  }
+
+  private emitCreated(dto: CardOrderRequestDTO): void {
+    eventBus.emit('order-request:created', {
+      requestId: dto.id,
+      distributorId: dto.distributorId,
+      distributorName: dto.distributorName,
+      subscriptionLabel: dto.subscriptionLabel,
+      nbOfCards: dto.nbOfCards,
+      timestamp: dto.createdAt,
+    });
+  }
+
+  private emitStatusChanged(dto: CardOrderRequestDTO, previousStat: OrderRequestStat): void {
+    eventBus.emit('order-request:status-changed', {
+      requestId: dto.id,
+      distributorId: dto.distributorId,
+      stat: dto.stat,
+      previousStat,
+      orderId: dto.orderId,
+      timestamp: dto.reviewedAt ?? new Date().toISOString(),
+    });
   }
 
   private async resolveDistributor(userId: string) {

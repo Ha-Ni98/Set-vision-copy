@@ -4,6 +4,7 @@ import { prisma } from '../db/prisma';
 import { logger } from '../config/logger';
 import { buildProviderRegistry } from './providers/registry';
 import { NotificationService } from './notification.service';
+import { initNotificationSubscribers } from './notification.subscribers';
 import type { TelegramPollerDeps } from './telegram.poller';
 
 const registry = buildProviderRegistry(
@@ -17,21 +18,16 @@ export const notificationService = new NotificationService(prisma, registry);
 /**
  * Called once from server.ts, before httpServer.listen. A no-op when
  * NOTIFICATIONS_ENABLED=false: no bus listener is registered, so the subsystem is inert.
- *
- * Set 6a scope only: the bus subscriber wiring (notification.subscribers.ts, the event →
- * recipients → template matrix) is Set 6b. This function currently only reports the
- * subsystem's armed/disabled state — linking and the delivery pipe (this file's other
- * exports) are fully functional in 6a regardless.
+ * Registers the notification subscribers — a second, independent bus consumer alongside the
+ * realtime gateway (Set 6 plan §0.4) — when enabled.
  */
 export const initNotifications = (): void => {
   if (!env.NOTIFICATIONS_ENABLED) {
     logger.info('Notifications disabled — subscribers and poller not started');
     return;
   }
-  logger.info(
-    { mode: env.TELEGRAM_MODE },
-    'Notifications enabled (Set 6a: linking + delivery pipe only — event subscribers land in Set 6b)',
-  );
+  initNotificationSubscribers(notificationService, prisma);
+  logger.info({ mode: env.TELEGRAM_MODE }, 'Notifications enabled');
 };
 
 // Resolves what server.ts needs to start the poller, or null when it should not start one

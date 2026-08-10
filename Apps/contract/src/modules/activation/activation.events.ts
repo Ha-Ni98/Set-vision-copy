@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { PendingActivationDTO } from './activation.dtos';
-import { ActivationStat, ClientActivationStatus } from './activation.enums';
+import { ActivationStat, ClientActivationStatus, ClientUpdateKind } from './activation.enums';
 
 export const ActivationTakenPayloadSchema = z.object({
   activationId: z.uuid(),
@@ -12,6 +12,7 @@ export type ActivationTakenPayload = z.infer<typeof ActivationTakenPayloadSchema
 export const ActivationClientUpdatedPayloadSchema = z.object({
   activationId: z.uuid(),
   activatorId: z.uuid(),
+  kind: z.enum(ClientUpdateKind),
   timestamp: z.iso.datetime(),
 });
 export type ActivationClientUpdatedPayload = z.infer<typeof ActivationClientUpdatedPayloadSchema>;

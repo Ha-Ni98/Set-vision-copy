@@ -11,6 +11,7 @@ import {
   ActivationStat,
   AccountInformation,
   ClientActivationStatus,
+  ClientUpdateKind,
   CardStat,
   LogActionType,
   type KeyVerificationDTO,
@@ -450,6 +451,7 @@ export class ActivationService implements IActivationService {
       eventBus.emit('activation:client-updated', {
         activationId,
         activatorId: activation.activatorId!,
+        kind: ClientUpdateKind.CORRECTION,
         timestamp: now.toISOString(),
       });
       eventBus.emit('activation:status-changed', {
@@ -515,6 +517,7 @@ export class ActivationService implements IActivationService {
     eventBus.emit('activation:client-updated', {
       activationId,
       activatorId: activation.activatorId!,
+      kind: ClientUpdateKind.ADDITIONAL,
       timestamp: now.toISOString(),
     });
     eventBus.emit('activation:status-changed', {
