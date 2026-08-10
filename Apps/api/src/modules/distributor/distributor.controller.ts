@@ -99,4 +99,13 @@ export class DistributorController {
       next(error);
     }
   };
+
+  myDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.service.myDashboard(req.user!.id);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

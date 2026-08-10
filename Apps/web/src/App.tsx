@@ -24,6 +24,9 @@ const DashboardPage = lazy(() => import("@/pages/activator/DashboardPage"));
 const RequestsPage = lazy(() => import("@/pages/activator/RequestsPage"));
 const HistoryPage = lazy(() => import("@/pages/activator/HistoryPage"));
 const PortalPage = lazy(() => import("@/pages/distributor/PortalPage"));
+const DistributorCardsPage = lazy(() => import("@/pages/distributor/CardsPage"));
+const DistributorOrdersPage = lazy(() => import("@/pages/distributor/OrdersPage"));
+const DistributorActivationsPage = lazy(() => import("@/pages/distributor/ActivationsPage"));
 const DistributorRequestsPage = lazy(() => import("@/pages/distributor/RequestsPage"));
 const DistributorRevocationsPage = lazy(() => import("@/pages/distributor/RevocationsPage"));
 
@@ -165,6 +168,21 @@ const router = createBrowserRouter([
               {
                 path: "/portal",
                 element: withSuspense(PortalPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/portal/cards",
+                element: withSuspense(DistributorCardsPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/portal/orders",
+                element: withSuspense(DistributorOrdersPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/portal/activations",
+                element: withSuspense(DistributorActivationsPage),
                 errorElement: <RouteErrorBoundary />,
               },
               {

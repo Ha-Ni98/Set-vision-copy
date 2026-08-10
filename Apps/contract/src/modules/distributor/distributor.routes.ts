@@ -8,4 +8,5 @@ export const DISTRIBUTOR_ROUTES = {
   DELETE: '/:id',
   CREATE_ACCOUNT: '/:id/account',
   UNLINK_ACCOUNT: '/:id/account',
+  MY_DASHBOARD: '/me/dashboard',
 } as const;

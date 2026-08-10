@@ -193,13 +193,22 @@ function attachAdminNamespaceListeners(socket: AppSocket): void {
 
 // Set 4/5: distributor-owned order/revocation requests move live — a decision, an unlink,
 // or the linked order's own status propagating all land here.
+// Set 7: a linked order reaching DELIVERED assigns cards to this distributor and moves every
+// dashboard/card/order count — the same transaction (order.service.ts) that propagates
+// order-request:status-changed — so that event also invalidates the Set 7 portal queries.
 function attachDistributorNamespaceListeners(socket: AppSocket): void {
   socket.on("connect", () => {
     queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.mineAll() });
     queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.distributors.myDashboard() });
+    queryClient.invalidateQueries({ queryKey: qk.cards.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.orders.mineAll() });
   });
   socket.on("order-request:status-changed", () => {
     queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.orders.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.cards.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.distributors.myDashboard() });
   });
   socket.on("revocation-request:status-changed", () => {
     queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.mineAll() });

@@ -5,7 +5,10 @@ import { RevocationRequestStat } from './card-revocation-request.enums';
 export const CardRevocationRequestResponseSchema = z.object({
   id: z.uuid(),
   cardId: z.uuid(),
-  cardKey: z.string(),
+  // nullable: the DISTRIBUTOR path gates this through distributorVisibleKey(), so an approved
+  // revocation (card back at AT_DISTRIBUTOR and re-sellable, Set 7 §0.6) stops publishing a live
+  // key. The ADMIN path is unchanged and always receives the full key (toDTO vs toMineDTO).
+  cardKey: z.string().nullable(),
   activationId: z.uuid().nullable(),
   distributorId: z.uuid(),
   distributorName: z.string(),
@@ -21,6 +24,9 @@ export type CardRevocationRequestDTO = z.infer<typeof CardRevocationRequestRespo
 
 export const RevocableCardResponseSchema = z.object({
   cardId: z.uuid(),
+  // Full key, and that is correct under the Set 7 policy: this query returns
+  // ACTIVATION_FAILED cards only, which distributorVisibleKey() puts in the full tier. If this
+  // query's cardStat predicate ever widens, route this field through distributorVisibleKey().
   cardKey: z.string(),
   subscriptionLabel: z.string(),
   activationId: z.uuid().nullable(),

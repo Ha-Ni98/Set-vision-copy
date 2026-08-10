@@ -56,7 +56,13 @@ export function MyRevocationRequestsTable({
 
   const columns = useMemo<ColumnDef<CardRevocationRequestDTO>[]>(
     () => [
-      { accessorKey: "cardKey", header: t("distributor.revocations.table.card") },
+      {
+        id: "cardKey",
+        header: t("distributor.revocations.table.card"),
+        // Nullable per the Set 7 key policy: once approved, the card is back at
+        // AT_DISTRIBUTOR (sellable stock) and the server stops sending a live key.
+        cell: ({ row }) => row.original.cardKey ?? "—",
+      },
       { accessorKey: "subscriptionLabel", header: t("distributor.revocations.table.plan") },
       { accessorKey: "reason", header: t("distributor.revocations.table.reason") },
       {
@@ -118,7 +124,7 @@ export function MyRevocationRequestsTable({
         renderMobileRow={(row) => (
           <div className="flex items-center justify-between gap-3 p-4 text-sm">
             <div>
-              <div className="font-semibold">{row.cardKey}</div>
+              <div className="font-semibold">{row.cardKey ?? "—"}</div>
               <div className="text-muted-foreground">{row.subscriptionLabel}</div>
             </div>
             <RevocationRequestStatusBadge status={row.stat} />

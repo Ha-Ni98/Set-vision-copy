@@ -273,9 +273,13 @@ async function onOrderRequestStatusChanged(
 async function onRevocationRequestStatusChanged(
   svc: INotificationService,
   prisma: PrismaClient,
-  p: { distributorId: string; cardKey: string; stat: string; adminNote: string | null },
+  p: { distributorId: string; cardKey?: string | undefined; stat: string; adminNote: string | null },
 ): Promise<void> {
   if (p.stat !== 'APPROVED') return;
+  // cardKey is optional on the bus payload as of Set 7 (the distributor socket room strips
+  // it — §7.3); the three service call sites that reach this handler still always populate
+  // it, so this is a defensive guard, not an expected path.
+  if (!p.cardKey) return;
 
   const recipient = await oneDistributor(prisma, p.distributorId);
   if (!recipient) return;

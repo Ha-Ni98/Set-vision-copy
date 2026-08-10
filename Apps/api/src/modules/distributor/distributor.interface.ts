@@ -2,6 +2,7 @@ import type {
   DistributorDTO,
   DistributorDetailDTO,
   DistributorWithCredentialsDTO,
+  DistributorDashboardDTO,
   PaginatedDistributors,
   GetDistributorsQuery,
   CreateDistributorCommand,
@@ -22,4 +23,5 @@ export interface IDistributorService {
     actorId: string,
   ): Promise<DistributorWithCredentialsDTO>;
   unlinkAccount(id: string, actorId: string): Promise<DistributorDTO>;
+  myDashboard(principalUserId: string): Promise<DistributorDashboardDTO>;
 }

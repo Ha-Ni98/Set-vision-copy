@@ -3,6 +3,7 @@ import type { IOrderService } from './order.interface';
 import { sendSuccess } from '@common/http/response';
 import type {
   GetOrdersQuery,
+  GetMyOrdersQuery,
   CreateOrderCommand,
   OrderIdParams,
   TransitionOrderCommand,
@@ -52,6 +53,24 @@ export class OrderController {
       const { id } = req.validated.params as OrderIdParams;
       await this.service.delete(id, req.user!.id);
       res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getMine = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.validated.query as GetMyOrdersQuery;
+      sendSuccess(res, await this.service.getMine(req.user!.id, query));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getMineById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.validated.params as OrderIdParams;
+      sendSuccess(res, await this.service.getMineById(req.user!.id, id));
     } catch (err) {
       next(err);
     }

@@ -11,6 +11,8 @@ import {
   Settings,
   FileText,
   BellRing,
+  Truck,
+  Ban,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,8 +32,11 @@ export const ACTIVATOR_NAV_LINKS: NavLink[] = [
 
 export const DISTRIBUTOR_NAV_LINKS: NavLink[] = [
   { to: "/portal", labelKey: "distributor.nav.portal", icon: LayoutDashboard },
+  { to: "/portal/cards", labelKey: "distributor.nav.cards", icon: CreditCard },
+  { to: "/portal/orders", labelKey: "distributor.nav.orders", icon: Truck },
+  { to: "/portal/activations", labelKey: "distributor.nav.activations", icon: Zap },
   { to: "/portal/requests", labelKey: "distributor.nav.orderRequests", icon: Package },
-  { to: "/portal/revocations", labelKey: "distributor.nav.revocations", icon: CreditCard },
+  { to: "/portal/revocations", labelKey: "distributor.nav.revocations", icon: Ban },
 ];
 
 // A collapsible group in the admin sidebar (e.g. "Distributors ▾"). Additive to NavLink —

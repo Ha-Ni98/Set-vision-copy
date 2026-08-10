@@ -6,10 +6,12 @@ import { LogActionType, CardStat, OrderStat, UserRole } from '@my-app/contract';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { hashPassword } from '@common/utils/password.utils';
 import { generateTempPassword } from '@common/utils/password-generator.util';
+import { resolveDistributorScope } from '@common/auth/distributor-scope';
 import type {
   DistributorDTO,
   DistributorDetailDTO,
   DistributorWithCredentialsDTO,
+  DistributorDashboardDTO,
   PaginatedDistributors,
   GetDistributorsQuery,
   CreateDistributorCommand,
@@ -323,5 +325,20 @@ export class DistributorService implements IDistributorService {
   private async validateCommuneBelongsToWilaya(communeId: string, wilayaId: string): Promise<void> {
     const commune = await this.prisma.commune.findFirst({ where: { id: communeId, wilayaId } });
     if (!commune) throw new BadRequestError('Commune does not belong to the specified wilaya');
+  }
+
+  async myDashboard(principalUserId: string): Promise<DistributorDashboardDTO> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+
+    // ONE round trip. Grouping on the two boolean flags alongside cardStat yields at most
+    // 7 x 2 x 2 = 28 rows, cheaper to fold in memory than three extra COUNT queries
+    // (Set 7 execute prompt: "One aggregated summary endpoint. No N+1.").
+    const rows = await this.prisma.card.groupBy({
+      by: ['cardStat', 'isDisabled', 'isRevoked'],
+      where: { distributorId: distributor.id, deletedAt: null },
+      _count: { _all: true },
+    });
+
+    return DistributorMapper.toDashboardDTO(rows);
   }
 }

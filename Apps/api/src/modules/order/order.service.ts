@@ -19,6 +19,7 @@ import type {
   CreateOrderCommand,
   TransitionOrderCommand,
   GetOrdersQuery,
+  GetMyOrdersQuery,
   PaginatedResult,
 } from '@my-app/contract';
 import type { IOrderService } from './order.interface';
@@ -27,6 +28,7 @@ import { generateOrderNumber } from './order.util';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, BadRequestError } from '@common/errors';
 import { eventBus } from '@common/events/event-bus';
+import { resolveDistributorScope } from '@common/auth/distributor-scope';
 import {
   propagateOrderStatToRequest,
   unlinkRequestFromOrder,
@@ -88,6 +90,79 @@ export class OrderService implements IOrderService {
   async getById(id: string): Promise<OrderDetailDTO> {
     const order = await this.prisma.order.findUnique({
       where: { id },
+      include: {
+        distributor: { select: { storeName: true } },
+        wilaya: { select: { frName: true } },
+        commune: { select: { frName: true } },
+        deliveryCompany: { select: { name: true } },
+        orderLots: { include: { lot: { include: { subscriptionPlan: true } } } },
+      },
+    });
+
+    if (!order) throw new NotFoundError('Order not found');
+
+    const joins = this.extractJoins(order);
+    const lots: LotBreakdown[] = order.orderLots.map((ol) => ({
+      lotId: ol.lot.id,
+      lotNumber: ol.lot.lotNumber,
+      subscriptionPlan: {
+        subscriptionType: ol.lot.subscriptionPlan.subscriptionType as unknown as SubscriptionType,
+        subscriptionDuration: ol.lot.subscriptionPlan.subscriptionDuration as unknown as SubscriptionDuration,
+      },
+      cardsCount: ol.lot.nbOfCards,
+      lotStat: ol.lot.lotStat,
+    }));
+
+    return OrderMapper.toDetailDTO(order, joins, lots);
+  }
+
+  async getMine(principalUserId: string, query: GetMyOrdersQuery): Promise<PaginatedResult<OrderDTO>> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const where = {
+      distributorId: distributor.id,
+      ...(query.search && {
+        OR: [
+          { orderNumber: { contains: query.search, mode: 'insensitive' as const } },
+          { receivedName: { contains: query.search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...(query.state && { orderStat: query.state as PrismaOrderStat }),
+      ...((query.dateFrom || query.dateTo) && {
+        createdAt: {
+          ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
+          ...(query.dateTo && { lte: new Date(query.dateTo) }),
+        },
+      }),
+    };
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          distributor: { select: { storeName: true } },
+          wilaya: { select: { frName: true } },
+          commune: { select: { frName: true } },
+          deliveryCompany: { select: { name: true } },
+          orderLots: { include: { lot: { select: { lotNumber: true, nbOfCards: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    const items = orders.map((order) => OrderMapper.toDTO(order, this.extractJoins(order)));
+    return { items, meta: buildPaginationMeta(page, limit, total) };
+  }
+
+  async getMineById(principalUserId: string, id: string): Promise<OrderDetailDTO> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+
+    const order = await this.prisma.order.findFirst({
+      where: { id, distributorId: distributor.id },
       include: {
         distributor: { select: { storeName: true } },
         wilaya: { select: { frName: true } },

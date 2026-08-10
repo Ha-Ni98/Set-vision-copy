@@ -15,6 +15,8 @@ import {
   SetActivatorPriceSchema,
   GetActivationsQuerySchema,
   GetActivatorHistoryQuerySchema,
+  GetDistributorActivationsQuerySchema,
+  DistributorActivationIdParamsSchema,
   ActivateActivationSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
@@ -28,6 +30,7 @@ const controller = new ActivationController(service);
 
 const activatorOnly = requireAuth({ roles: [UserRole.ACTIVATOR] });
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+const distributorOnly = requireAuth({ roles: [UserRole.DISTRIBUTOR] });
 // The global pending pool and global recent feed carry no per-activator scoping (their
 // service methods take no viewer id), so the admin dashboard reads them too — not just the
 // activator portal. Widened from activatorOnly to fix the admin dashboard 403 (Stage-04-fix).
@@ -84,6 +87,21 @@ activationRouter.get(
 );
 
 activationRouter.get(ACTIVATION_ROUTES.GET_RECENT, activatorOrAdmin, controller.getRecent);
+
+// Distributor static routes — before /:id, same convention as card/order routes.
+activationRouter.get(
+  ACTIVATION_ROUTES.GET_ON_MY_CARDS,
+  distributorOnly,
+  validateRequest({ query: GetDistributorActivationsQuerySchema }),
+  controller.getOnMyCards,
+);
+
+activationRouter.get(
+  ACTIVATION_ROUTES.GET_ON_MY_CARDS_BY_ID,
+  distributorOnly,
+  validateRequest({ params: DistributorActivationIdParamsSchema }),
+  controller.getOnMyCardsById,
+);
 
 activationRouter.get(
   ACTIVATION_ROUTES.GET_ALL,

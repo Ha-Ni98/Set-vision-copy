@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { paginated } from '../../common/types';
+import { CardStat } from '../card/card.enums';
 
 export const DistributorResponseSchema = z.object({
   id: z.uuid(),
@@ -37,3 +38,18 @@ export const DistributorWithCredentialsResponseSchema = z.object({
   generatedPassword: z.string(),
 });
 export type DistributorWithCredentialsDTO = z.infer<typeof DistributorWithCredentialsResponseSchema>;
+
+// Card counts by status for the signed-in distributor's own stock. Deliberately the ONLY
+// aggregate in this DTO: the portal dashboard is "card counts by status only" (Set 7 scope).
+// No money, no activator data, no activation counts.
+//
+// Array-of-{stat,count} rather than Record<CardStat, number>, matching InventorySummaryDTO.cards
+// exactly — a Record collides with noUncheckedIndexedAccess at every read site. Stats with zero
+// cards are OMITTED; a consumer treats a missing stat as 0, never as undefined.
+export const DistributorDashboardResponseSchema = z.object({
+  cardsByStat: z.array(z.object({ stat: z.enum(CardStat), count: z.number().int() })),
+  totalCards: z.number().int(),
+  disabledCards: z.number().int(),
+  revokedCards: z.number().int(),
+});
+export type DistributorDashboardDTO = z.infer<typeof DistributorDashboardResponseSchema>;

@@ -5,14 +5,22 @@ import type {
   CardDTO,
   CardDetailDTO,
   AvailableCardDTO,
+  DistributorCardDTO,
   GetCardsQuery,
   GetAvailableCardsQuery,
+  GetDistributorCardsQuery,
   PaginatedResult,
 } from '@my-app/contract';
 import type { ICardService } from './card.interface';
-import { CardMapper, type CardJoins, type DistributionTimelineEntry } from './card.mapper';
+import {
+  CardMapper,
+  type CardJoins,
+  type DistributionTimelineEntry,
+  type DistributorCardJoins,
+} from './card.mapper';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError } from '@common/errors';
+import { resolveDistributorScope } from '@common/auth/distributor-scope';
 
 // Set 5 §3.2 refactor: extracted from CardService.revoke() so the card-revocation-request
 // module's APPROVE path can join the SAME transaction — this is now THE ONLY place that
@@ -240,6 +248,71 @@ export class CardService implements ICardService {
     });
 
     return CardMapper.toDTO(updated, this.extractJoins(updated));
+  }
+
+  async getMine(
+    principalUserId: string,
+    query: GetDistributorCardsQuery,
+  ): Promise<PaginatedResult<DistributorCardDTO>> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const where = {
+      distributorId: distributor.id,
+      deletedAt: null,
+      ...(query.search && { lot: { lotNumber: { contains: query.search, mode: 'insensitive' as const } } }),
+      ...(query.cardStat && { cardStat: query.cardStat as PrismaCardStat }),
+      ...(query.subscriptionPlanId && { subscriptionPlanId: query.subscriptionPlanId }),
+      ...(query.flag === CardFlag.disabled && { isDisabled: true }),
+      ...(query.flag === CardFlag.revoked && { isRevoked: true }),
+    };
+
+    const [cards, total] = await Promise.all([
+      this.prisma.card.findMany({
+        where,
+        include: {
+          subscriptionPlan: true,
+          lot: { include: { orderLots: { include: { order: true }, orderBy: { order: { createdAt: 'desc' } }, take: 1 } } },
+        },
+        orderBy: [{ createdAt: 'desc' }],
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.card.count({ where }),
+    ]);
+
+    const items = cards.map((c) => CardMapper.toDistributorDTO(c, this.extractDistributorJoins(c)));
+    return { items, meta: buildPaginationMeta(page, limit, total) };
+  }
+
+  async getMineById(principalUserId: string, id: string): Promise<DistributorCardDTO> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+
+    const card = await this.prisma.card.findFirst({
+      where: { id, distributorId: distributor.id, deletedAt: null },
+      include: {
+        subscriptionPlan: true,
+        lot: { include: { orderLots: { include: { order: true }, orderBy: { order: { createdAt: 'desc' } }, take: 1 } } },
+      },
+    });
+
+    if (!card) throw new NotFoundError('Card not found');
+
+    return CardMapper.toDistributorDTO(card, this.extractDistributorJoins(card));
+  }
+
+  private extractDistributorJoins(card: {
+    subscriptionPlan: { subscriptionType: string; subscriptionDuration: string };
+    lot: {
+      lotNumber: string;
+      orderLots: Array<{ order: { completedAt: Date | null } }>;
+    } | null;
+  }): DistributorCardJoins {
+    return {
+      subscriptionPlan: card.subscriptionPlan as unknown as DistributorCardJoins['subscriptionPlan'],
+      lot: card.lot ? { lotNumber: card.lot.lotNumber } : null,
+      deliveredAt: card.lot?.orderLots[0]?.order.completedAt ?? null,
+    };
   }
 
   private extractJoins(card: {

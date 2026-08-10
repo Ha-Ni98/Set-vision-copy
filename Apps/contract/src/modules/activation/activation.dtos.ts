@@ -192,3 +192,44 @@ export type PaginatedActivations = z.infer<typeof PaginatedActivationsSchema>;
 
 export const PaginatedActivatorHistorySchema = paginated(ActivatorHistoryItemResponseSchema);
 export type PaginatedActivatorHistory = z.infer<typeof PaginatedActivatorHistorySchema>;
+
+// Distributor-facing. Built field-by-field; NOT derived from AdminActivationResponseSchema, which
+// carries activatorFullName and activationPrice — both forbidden here (Set 7: "No activator
+// earnings, credits, or commission data"; the activator's identity is equally not the
+// distributor's business).
+//
+// DELIBERATELY ABSENT, and none of these may be added later without revisiting Set 7's scope:
+//   activatorFullName / activator{}   — activator identity
+//   activationPrice / earning         — activator commission
+//   activationEmail                   — the pool address the activation was completed with
+//   submittedInformation / accountFields / otpValue / timeline[].wrongFields
+//                                     — the client's Snapchat credentials. D3 opened these to the
+//                                       ADMIN only; the distributor is not in that decision.
+export const DistributorActivationResponseSchema = z.object({
+  id: z.uuid(),
+  subscriptionLabel: z.string(),
+  // Same gate as the card list — see distributorVisibleKey(). An activation always implies the
+  // card is in the lifecycle, so in practice this is full or 4-char-prefixed, never null; the
+  // nullable type keeps the ONE policy honest instead of special-casing it here.
+  key: z.string().nullable(),
+  cardId: z.uuid(),
+  cardStat: z.enum(CardStat),
+  client: ClientBlockSchema,
+  state: z.enum(ActivationStat),
+  requestedAt: z.iso.datetime(),
+  completedAt: z.iso.datetime().nullable(),
+  durationSeconds: z.number().int().nullable(),
+});
+export type DistributorActivationDTO = z.infer<typeof DistributorActivationResponseSchema>;
+
+// Detail adds only the card's own chain and the status history — no new sensitive surface.
+export const DistributorActivationDetailResponseSchema = DistributorActivationResponseSchema.extend({
+  lotNumber: z.string().nullable(),
+  // Status transitions and their timestamps ONLY. NOT TimelineEntrySchema — that carries
+  // wrongFields/additionalFields, i.e. the client's credential values.
+  statusHistory: z.array(z.object({ stat: z.enum(ActivationStat), at: z.iso.datetime() })),
+});
+export type DistributorActivationDetailDTO = z.infer<typeof DistributorActivationDetailResponseSchema>;
+
+export const PaginatedDistributorActivationsSchema = paginated(DistributorActivationResponseSchema);
+export type PaginatedDistributorActivations = z.infer<typeof PaginatedDistributorActivationsSchema>;

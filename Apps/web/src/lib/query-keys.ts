@@ -13,12 +13,15 @@ import type {
   GetLotsQuery,
   GetAvailableLotsQuery,
   GetOrdersQuery,
+  GetMyOrdersQuery,
   GetCardOrderRequestsQuery,
   GetMyCardOrderRequestsQuery,
   GetCardRevocationRequestsQuery,
   GetMyCardRevocationRequestsQuery,
   GetCardsQuery,
   GetAvailableCardsQuery,
+  GetDistributorCardsQuery,
+  GetDistributorActivationsQuery,
   StatisticsOverviewQuery,
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
@@ -55,6 +58,10 @@ export const qk = {
     listAll: () => ["activations", "list"] as const,
     list: (query: GetActivationsQuery) => ["activations", "list", query] as const,
     detail: (id: string) => ["activations", "detail", id] as const,
+    onMyCardsAll: () => ["activations", "on-my-cards"] as const,
+    onMyCards: (query: GetDistributorActivationsQuery) =>
+      ["activations", "on-my-cards", query] as const,
+    onMyCardsDetail: (id: string) => ["activations", "on-my-cards", "detail", id] as const,
   },
   activators: {
     all: () => ["activators"] as const,
@@ -96,6 +103,7 @@ export const qk = {
     all: () => ["distributors"] as const,
     list: (query: GetDistributorsQuery) => ["distributors", "list", query] as const,
     detail: (id: string) => ["distributors", "detail", id] as const,
+    myDashboard: () => ["distributors", "my-dashboard"] as const,
   },
   sets: {
     all: () => ["sets"] as const,
@@ -111,6 +119,9 @@ export const qk = {
     all: () => ["orders"] as const,
     list: (query: GetOrdersQuery) => ["orders", "list", query] as const,
     detail: (id: string) => ["orders", "detail", id] as const,
+    mineAll: () => ["orders", "mine"] as const,
+    mine: (query: GetMyOrdersQuery) => ["orders", "mine", query] as const,
+    mineDetail: (id: string) => ["orders", "mine", "detail", id] as const,
   },
   cardOrderRequests: {
     all: () => ["card-order-requests"] as const,
@@ -136,6 +147,9 @@ export const qk = {
     availableForLot: (query: GetAvailableCardsQuery) =>
       ["cards", "available-for-lot", query] as const,
     detail: (id: string) => ["cards", "detail", id] as const,
+    mineAll: () => ["cards", "mine"] as const,
+    mine: (query: GetDistributorCardsQuery) => ["cards", "mine", query] as const,
+    mineDetail: (id: string) => ["cards", "mine", "detail", id] as const,
   },
   statistics: {
     all: () => ["statistics"] as const,

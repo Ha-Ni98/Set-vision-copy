@@ -4,6 +4,7 @@ import {
   type DistributorDTO,
   type DistributorDetailDTO,
   type DistributorWithCredentialsDTO,
+  type DistributorDashboardDTO,
   type PaginatedDistributors,
   type GetDistributorsQuery,
   type CreateDistributorCommand,
@@ -12,6 +13,15 @@ import {
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
+
+export async function getMyDashboard(signal?: AbortSignal): Promise<DistributorDashboardDTO> {
+  const res = await api.get<ApiResponse<DistributorDashboardDTO>>(
+    apiPath(DISTRIBUTOR_ROUTES.BASE, DISTRIBUTOR_ROUTES.MY_DASHBOARD),
+    { signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
 
 export async function getAll(
   query: GetDistributorsQuery,

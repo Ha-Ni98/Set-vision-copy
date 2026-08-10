@@ -22,6 +22,8 @@ import {
   type RecentActivationDTO,
   type AdminActivationDTO,
   type ActivationDetailDTO,
+  type DistributorActivationDTO,
+  type DistributorActivationDetailDTO,
   type PaginatedResult,
   type VerifyKeyCommand,
   type SubmitActivationCommand,
@@ -33,6 +35,7 @@ import {
   type SetActivatorPriceCommand,
   type GetActivationsQuery,
   type GetActivatorHistoryQuery,
+  type GetDistributorActivationsQuery,
   type ActivateActivationCommand,
 } from '@my-app/contract';
 import type { IActivationService } from './activation.interface';
@@ -43,6 +46,7 @@ import {
   type ActivationInfoEntry,
   type ActivationStepEntry,
 } from './activation.mapper';
+import { resolveDistributorScope } from '@common/auth/distributor-scope';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, ForbiddenError } from '@common/errors';
 import { eventBus } from '@common/events/event-bus';
@@ -1202,6 +1206,118 @@ export class ActivationService implements IActivationService {
       activation.steps,
       cardHistory,
       commissionTierLabel,
+    );
+  }
+
+  async getOnMyCards(
+    principalUserId: string,
+    query: GetDistributorActivationsQuery,
+  ): Promise<PaginatedResult<DistributorActivationDTO>> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    // The scope predicate lives inside the SAME `card` object as the card filters — never
+    // spread a separately-built cardWhere over `card`, which risks a future edit overwriting
+    // it wholesale and dropping the scope (Set 7 §4.3).
+    const where = {
+      card: {
+        distributorId: distributor.id,
+        deletedAt: null,
+        ...(query.subscriptionPlanId && { subscriptionPlanId: query.subscriptionPlanId }),
+        ...(query.cardStat && { cardStat: query.cardStat as PrismaCardStat }),
+      },
+      ...(query.state && { activationStat: query.state as PrismaActivationStat }),
+      // Deliberately clientFullName/clientPhone ONLY — never the card key (see the schema
+      // comment on GetDistributorActivationsQuerySchema).
+      ...(query.search && {
+        OR: [
+          { clientFullName: { contains: query.search, mode: 'insensitive' as const } },
+          { clientPhone: { contains: query.search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...((query.dateFrom || query.dateTo) && {
+        requestedAt: {
+          ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
+          ...(query.dateTo && { lte: new Date(query.dateTo) }),
+        },
+      }),
+    };
+
+    const orderBy = [
+      { [query.sortBy ?? 'requestedAt']: query.sortDir ?? 'desc' } as Prisma.ActivationOrderByWithRelationInput,
+      { id: 'asc' as const },
+    ];
+
+    const [activations, total] = await Promise.all([
+      this.prisma.activation.findMany({
+        where,
+        include: {
+          card: {
+            select: {
+              id: true,
+              key: true,
+              cardStat: true,
+              subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+            },
+          },
+        },
+        orderBy,
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.activation.count({ where }),
+    ]);
+
+    const items = activations.map((a) =>
+      ActivationMapper.toDistributorActivationDTO(
+        a,
+        a.card.subscriptionPlan as unknown as ActivationPlanJoin,
+        { id: a.card.id, key: a.card.key, cardStat: a.card.cardStat as CardStat },
+      ),
+    );
+
+    return { items, meta: buildPaginationMeta(page, limit, total) };
+  }
+
+  async getOnMyCardsById(
+    principalUserId: string,
+    id: string,
+  ): Promise<DistributorActivationDetailDTO> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+
+    const activation = await this.prisma.activation.findFirst({
+      where: { id, card: { distributorId: distributor.id, deletedAt: null } },
+      include: {
+        card: {
+          select: {
+            id: true,
+            key: true,
+            cardStat: true,
+            lot: { select: { lotNumber: true } },
+            subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+          },
+        },
+        steps: { orderBy: { createdAt: 'asc' as const }, select: { activationStat: true, createdAt: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    const statusHistory = activation.steps.map((s) => ({
+      stat: s.activationStat as unknown as ActivationStat,
+      at: s.createdAt,
+    }));
+
+    return ActivationMapper.toDistributorActivationDetailDTO(
+      activation,
+      activation.card.subscriptionPlan as unknown as ActivationPlanJoin,
+      {
+        id: activation.card.id,
+        key: activation.card.key,
+        cardStat: activation.card.cardStat as CardStat,
+        lot: activation.card.lot,
+      },
+      statusHistory,
     );
   }
 

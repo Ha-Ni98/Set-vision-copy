@@ -22,7 +22,13 @@ import { NotFoundError, ConflictError, ForbiddenError } from '@common/errors';
 import { eventBus } from '@common/events/event-bus';
 
 const DETAIL_INCLUDE = {
-  card: { select: { key: true, subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } } } },
+  card: {
+    select: {
+      key: true,
+      cardStat: true,
+      subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+    },
+  },
   distributor: { select: { storeName: true } },
   reviewedBy: { select: { admin: { select: { fullName: true } } } },
 } as const;
@@ -88,7 +94,8 @@ export class CardRevocationRequestService implements ICardRevocationRequestServi
       this.prisma.cardRevocationRequest.count({ where }),
     ]);
 
-    const items = requests.map((r) => CardRevocationRequestMapper.toDTO(r, r));
+    // DISTRIBUTOR audience — key gated by toMineDTO, never the admin's toDTO.
+    const items = requests.map((r) => CardRevocationRequestMapper.toMineDTO(r, r));
     return { items, meta: buildPaginationMeta(page, limit, total) };
   }
 
@@ -175,6 +182,9 @@ export class CardRevocationRequestService implements ICardRevocationRequestServi
       include: DETAIL_INCLUDE,
     });
 
+    // toDTO (not toMineDTO): the card is guaranteed ACTIVATION_FAILED here (checked above),
+    // which is the full-key tier either way, and the 'revocation-request:created' event
+    // payload's cardKey is a required string — toMineDTO's nullable key would not satisfy it.
     const dto = CardRevocationRequestMapper.toDTO(created, created);
 
     eventBus.emit('revocation-request:created', {
@@ -182,7 +192,10 @@ export class CardRevocationRequestService implements ICardRevocationRequestServi
       distributorId: dto.distributorId,
       distributorName: dto.distributorName,
       cardId: dto.cardId,
-      cardKey: dto.cardKey,
+      // Non-null by construction: dto came from toDTO() on a card just verified
+      // ACTIVATION_FAILED — the full-key tier either way. This event's payload type is
+      // unchanged (still a required string) since it only ever fires at creation.
+      cardKey: dto.cardKey!,
       subscriptionLabel: dto.subscriptionLabel,
       reason: dto.reason,
       timestamp: dto.createdAt,
@@ -300,7 +313,9 @@ export class CardRevocationRequestService implements ICardRevocationRequestServi
       requestId: dto.id,
       distributorId: dto.distributorId,
       cardId: dto.cardId,
-      cardKey: dto.cardKey,
+      // dto always comes from getById() (admin toDTO), whose cardKey is never actually null —
+      // the ?? undefined is only to satisfy the bus payload's optional type (§7.3).
+      cardKey: dto.cardKey ?? undefined,
       stat: dto.stat,
       previousStat,
       adminNote: dto.adminNote,

@@ -127,9 +127,13 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
   eventBus.on('revocation-request:status-changed', (p) =>
     safe(() => {
       adminNs.to(rooms.ADMIN_BELL).emit('revocation-request:status-changed', p);
+      // The distributor's own room never receives key material: by the time this fires the
+      // card may be back at AT_DISTRIBUTOR and re-sellable (Set 7 §2.2/§7.3). Nothing on the
+      // client reads cardKey — the listener only invalidates — so this is a pure removal.
+      const { cardKey: _cardKey, ...forDistributor } = p;
       distributorNs
         .to(rooms.distributor(p.distributorId))
-        .emit('revocation-request:status-changed', p);
+        .emit('revocation-request:status-changed', forDistributor);
     }, 'revocation-request:status-changed'),
   );
 
