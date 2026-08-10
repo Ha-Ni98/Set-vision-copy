@@ -13,6 +13,10 @@ import type {
   GetLotsQuery,
   GetAvailableLotsQuery,
   GetOrdersQuery,
+  GetCardOrderRequestsQuery,
+  GetMyCardOrderRequestsQuery,
+  GetCardRevocationRequestsQuery,
+  GetMyCardRevocationRequestsQuery,
   GetCardsQuery,
   GetAvailableCardsQuery,
   StatisticsOverviewQuery,
@@ -105,6 +109,24 @@ export const qk = {
     all: () => ["orders"] as const,
     list: (query: GetOrdersQuery) => ["orders", "list", query] as const,
     detail: (id: string) => ["orders", "detail", id] as const,
+  },
+  cardOrderRequests: {
+    all: () => ["card-order-requests"] as const,
+    list: (query: GetCardOrderRequestsQuery) => ["card-order-requests", "list", query] as const,
+    mineAll: () => ["card-order-requests", "mine"] as const,
+    mine: (query: GetMyCardOrderRequestsQuery) => ["card-order-requests", "mine", query] as const,
+    linkable: () => ["card-order-requests", "linkable"] as const,
+    detail: (id: string) => ["card-order-requests", "detail", id] as const,
+  },
+  cardRevocationRequests: {
+    all: () => ["card-revocation-requests"] as const,
+    list: (query: GetCardRevocationRequestsQuery) =>
+      ["card-revocation-requests", "list", query] as const,
+    mineAll: () => ["card-revocation-requests", "mine"] as const,
+    mine: (query: GetMyCardRevocationRequestsQuery) =>
+      ["card-revocation-requests", "mine", query] as const,
+    eligible: () => ["card-revocation-requests", "eligible"] as const,
+    detail: (id: string) => ["card-revocation-requests", "detail", id] as const,
   },
   cards: {
     all: () => ["cards"] as const,

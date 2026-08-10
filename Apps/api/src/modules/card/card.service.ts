@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma, Card } from '@prisma/client';
 import { CardStat as PrismaCardStat } from '@prisma/client';
 import { LogActionType, CardStat, CardFlag } from '@my-app/contract';
 import type {
@@ -13,6 +13,57 @@ import type { ICardService } from './card.interface';
 import { CardMapper, type CardJoins, type DistributionTimelineEntry } from './card.mapper';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError } from '@common/errors';
+
+// Set 5 §3.2 refactor: extracted from CardService.revoke() so the card-revocation-request
+// module's APPROVE path can join the SAME transaction — this is now THE ONLY place that
+// mutates Card revocation state, called by both the direct admin revoke and an approved
+// revocation request. Three deliberate behaviour changes versus the pre-refactor version:
+// the REVOKE_CARD log now writes INSIDE the transaction (was after, one of R8's five legacy
+// sites); deletedAt is now checked (a soft-deleted card was previously revocable); an
+// explicit isRevoked guard was added (previously reachable only indirectly via cardStat).
+export async function revokeCardWithin(
+  tx: Prisma.TransactionClient,
+  cardId: string,
+  actorId: string,
+): Promise<Card> {
+  const card = await tx.card.findUnique({ where: { id: cardId } });
+
+  if (!card || card.deletedAt) throw new NotFoundError('Card not found');
+
+  if (card.cardStat !== PrismaCardStat.ACTIVATION_FAILED) {
+    throw new ConflictError(`Cannot revoke a card in state ${card.cardStat}`);
+  }
+
+  if (card.isDisabled) {
+    throw new ConflictError('Cannot revoke a disabled card');
+  }
+
+  if (card.isRevoked) {
+    throw new ConflictError('Card is already revoked');
+  }
+
+  const updated = await tx.card.update({
+    where: { id: cardId },
+    data: { isRevoked: true, isActive: true, cardStat: PrismaCardStat.AT_DISTRIBUTOR },
+  });
+
+  if (card.distributorId) {
+    await tx.distributor.update({
+      where: { id: card.distributorId },
+      data: { nbOfActiveCards: { increment: 1 } },
+    });
+  }
+
+  await tx.log.create({
+    data: {
+      actionType: LogActionType.REVOKE_CARD,
+      actionDescription: `Revoked card: ${card.key}`,
+      userId: actorId,
+    },
+  });
+
+  return updated;
+}
 
 export class CardService implements ICardService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -181,44 +232,11 @@ export class CardService implements ICardService {
   }
 
   async revoke(id: string, actorId: string): Promise<CardDTO> {
-    const card = await this.prisma.card.findUnique({
+    await this.prisma.$transaction((tx) => revokeCardWithin(tx, id, actorId));
+
+    const updated = await this.prisma.card.findUniqueOrThrow({
       where: { id },
       include: { subscriptionPlan: true, set: true, lot: true, distributor: true },
-    });
-
-    if (!card) throw new NotFoundError('Card not found');
-
-    if (card.cardStat !== PrismaCardStat.ACTIVATION_FAILED) {
-      throw new ConflictError(`Cannot revoke a card in state ${card.cardStat}`);
-    }
-
-    if (card.isDisabled) {
-      throw new ConflictError('Cannot revoke a disabled card');
-    }
-
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.card.update({
-        where: { id },
-        data: { isRevoked: true, isActive: true, cardStat: PrismaCardStat.AT_DISTRIBUTOR },
-        include: { subscriptionPlan: true, set: true, lot: true, distributor: true },
-      });
-
-      if (card.distributorId) {
-        await tx.distributor.update({
-          where: { id: card.distributorId },
-          data: { nbOfActiveCards: { increment: 1 } },
-        });
-      }
-
-      return u;
-    });
-
-    await this.prisma.log.create({
-      data: {
-        actionType: LogActionType.REVOKE_CARD,
-        actionDescription: `Revoked card: ${card.key}`,
-        userId: actorId,
-      },
     });
 
     return CardMapper.toDTO(updated, this.extractJoins(updated));

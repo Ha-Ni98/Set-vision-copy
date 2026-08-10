@@ -2,6 +2,8 @@ import {
   ActivationStat,
   CardStat,
   OrderStat,
+  OrderRequestStat,
+  RevocationRequestStat,
   SetStat,
   LotStat,
   LogActionType,
@@ -90,6 +92,41 @@ export function OrderStatusBadge({ status }: { status: OrderStat }) {
   return <StatusPill tone={ORDER_TONE[status]} label={t(`enums.orderStat.${status}`)} />;
 }
 
+const ORDER_REQUEST_TONE: Record<OrderRequestStat, BadgeTone> = {
+  [OrderRequestStat.PENDING]: "warning",
+  [OrderRequestStat.APPROVED]: "success",
+  [OrderRequestStat.REJECTED]: "destructive",
+  [OrderRequestStat.CANCELLED]: "neutral",
+  [OrderRequestStat.PENDING_DELIVERY]: "warning",
+  [OrderRequestStat.IN_DELIVERY]: "warning",
+  [OrderRequestStat.DELIVERED]: "success",
+  [OrderRequestStat.RETURNED]: "destructive",
+};
+
+export function OrderRequestStatusBadge({ status }: { status: OrderRequestStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill tone={ORDER_REQUEST_TONE[status]} label={t(`enums.orderRequestStat.${status}`)} />
+  );
+}
+
+const REVOCATION_REQUEST_TONE: Record<RevocationRequestStat, BadgeTone> = {
+  [RevocationRequestStat.PENDING]: "warning",
+  [RevocationRequestStat.APPROVED]: "success",
+  [RevocationRequestStat.REJECTED]: "destructive",
+  [RevocationRequestStat.CANCELLED]: "neutral",
+};
+
+export function RevocationRequestStatusBadge({ status }: { status: RevocationRequestStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill
+      tone={REVOCATION_REQUEST_TONE[status]}
+      label={t(`enums.revocationRequestStat.${status}`)}
+    />
+  );
+}
+
 const SET_TONE: Record<SetStat, BadgeTone> = {
   [SetStat.NOT_PRINTED]: "neutral",
   [SetStat.PENDING_PRINTING]: "warning",
@@ -129,6 +166,8 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.REVOKE_CARD]: "destructive",
   [LogActionType.LINK_USER_ACCOUNT]: "success",
   [LogActionType.UNLINK_USER_ACCOUNT]: "warning",
+  [LogActionType.CHANGE_ORDER_REQUEST_STAT]: "neutral",
+  [LogActionType.CHANGE_REVOCATION_REQUEST_STAT]: "neutral",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {

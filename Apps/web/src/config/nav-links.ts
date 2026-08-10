@@ -27,10 +27,10 @@ export const ACTIVATOR_NAV_LINKS: NavLink[] = [
   { to: "/history", labelKey: "activator.nav.history", icon: History },
 ];
 
-// Empty shell in Set 1 (v2-decisions.md D1/D5/D11's order- and revocation-request work is
-// out of scope here) — one entry so the shell has a visible, working nav to test against.
 export const DISTRIBUTOR_NAV_LINKS: NavLink[] = [
   { to: "/portal", labelKey: "distributor.nav.portal", icon: LayoutDashboard },
+  { to: "/portal/requests", labelKey: "distributor.nav.orderRequests", icon: Package },
+  { to: "/portal/revocations", labelKey: "distributor.nav.revocations", icon: CreditCard },
 ];
 
 // A collapsible group in the admin sidebar (e.g. "Distributors ▾"). Additive to NavLink —
@@ -60,6 +60,16 @@ export const ADMIN_NAV_LINKS: AdminNavItem[] = [
     children: [
       { to: "/admin/distributors", labelKey: "admin.shell.nav.distributors", icon: Store },
       { to: "/admin/distributors/orders", labelKey: "admin.shell.nav.orders", icon: Package },
+      {
+        to: "/admin/distributors/order-requests",
+        labelKey: "admin.shell.nav.orderRequests",
+        icon: Package,
+      },
+      {
+        to: "/admin/distributors/revocation-requests",
+        labelKey: "admin.shell.nav.revocationRequests",
+        icon: CreditCard,
+      },
     ],
   },
   {

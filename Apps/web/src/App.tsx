@@ -24,6 +24,8 @@ const DashboardPage = lazy(() => import("@/pages/activator/DashboardPage"));
 const RequestsPage = lazy(() => import("@/pages/activator/RequestsPage"));
 const HistoryPage = lazy(() => import("@/pages/activator/HistoryPage"));
 const PortalPage = lazy(() => import("@/pages/distributor/PortalPage"));
+const DistributorRequestsPage = lazy(() => import("@/pages/distributor/RequestsPage"));
+const DistributorRevocationsPage = lazy(() => import("@/pages/distributor/RevocationsPage"));
 
 const AdminDashboardPage = lazy(() => import("@/pages/admin/DashboardPage"));
 const AdminActivatorsPage = lazy(() => import("@/pages/admin/activators/ActivatorsPage"));
@@ -33,6 +35,10 @@ const AdminDistributorDetailPage = lazy(
   () => import("@/pages/admin/distributors/DistributorDetailPage"),
 );
 const AdminOrdersPage = lazy(() => import("@/pages/admin/distributors/OrdersPage"));
+const AdminOrderRequestsPage = lazy(() => import("@/pages/admin/distributors/OrderRequestsPage"));
+const AdminRevocationRequestsPage = lazy(
+  () => import("@/pages/admin/distributors/RevocationRequestsPage"),
+);
 const AdminSetsLotsPage = lazy(() => import("@/pages/admin/activations/SetsLotsPage"));
 const AdminCardsPage = lazy(() => import("@/pages/admin/activations/CardsPage"));
 const AdminActivationsPage = lazy(() => import("@/pages/admin/activations/ActivationsPage"));
@@ -160,6 +166,16 @@ const router = createBrowserRouter([
                 element: withSuspense(PortalPage),
                 errorElement: <RouteErrorBoundary />,
               },
+              {
+                path: "/portal/requests",
+                element: withSuspense(DistributorRequestsPage),
+                errorElement: <RouteErrorBoundary />,
+              },
+              {
+                path: "/portal/revocations",
+                element: withSuspense(DistributorRevocationsPage),
+                errorElement: <RouteErrorBoundary />,
+              },
             ],
           },
         ],
@@ -198,6 +214,18 @@ const router = createBrowserRouter([
             // (plan.md §C routing precedence note).
             path: "/admin/distributors/orders",
             element: withSuspense(AdminOrdersPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            // Same static-before-param precedence as "orders" above.
+            path: "/admin/distributors/order-requests",
+            element: withSuspense(AdminOrderRequestsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            // Same static-before-param precedence as "orders" above.
+            path: "/admin/distributors/revocation-requests",
+            element: withSuspense(AdminRevocationRequestsPage),
             errorElement: <RouteErrorBoundary />,
           },
           {

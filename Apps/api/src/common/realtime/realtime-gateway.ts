@@ -106,5 +106,32 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
     ),
   );
 
+  eventBus.on('order-request:created', (p) =>
+    safe(() => adminNs.to(rooms.ADMIN_BELL).emit('order-request:created', p), 'order-request:created'),
+  );
+
+  eventBus.on('order-request:status-changed', (p) =>
+    safe(() => {
+      adminNs.to(rooms.ADMIN_BELL).emit('order-request:status-changed', p);
+      distributorNs.to(rooms.distributor(p.distributorId)).emit('order-request:status-changed', p);
+    }, 'order-request:status-changed'),
+  );
+
+  eventBus.on('revocation-request:created', (p) =>
+    safe(
+      () => adminNs.to(rooms.ADMIN_BELL).emit('revocation-request:created', p),
+      'revocation-request:created',
+    ),
+  );
+
+  eventBus.on('revocation-request:status-changed', (p) =>
+    safe(() => {
+      adminNs.to(rooms.ADMIN_BELL).emit('revocation-request:status-changed', p);
+      distributorNs
+        .to(rooms.distributor(p.distributorId))
+        .emit('revocation-request:status-changed', p);
+    }, 'revocation-request:status-changed'),
+  );
+
   logger.info('Realtime gateway initialized');
 };

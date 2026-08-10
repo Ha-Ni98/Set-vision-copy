@@ -9,6 +9,8 @@ import {
   DISTRIBUTOR_ROUTES,
   PAYMENT_ROUTES,
   STATISTICS_ROUTES,
+  CARD_ORDER_REQUEST_ROUTES,
+  CARD_REVOCATION_REQUEST_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -25,6 +27,8 @@ import { subscriptionPlanRouter } from './subscription-plan/subscription-plan.ro
 import { distributorRouter } from './distributor/distributor.routes';
 import { paymentRouter } from './payment/payment.routes';
 import { statisticsRouter } from './statistics/statistics.routes';
+import { cardOrderRequestRouter } from './card-order-request/card-order-request.routes';
+import { cardRevocationRequestRouter } from './card-revocation-request/card-revocation-request.routes';
 
 export const moduleRouter = Router();
 
@@ -44,3 +48,5 @@ moduleRouter.use(SUBSCRIPTION_PLAN_ROUTES.BASE, subscriptionPlanRouter);
 moduleRouter.use(DISTRIBUTOR_ROUTES.BASE, distributorRouter);
 moduleRouter.use(PAYMENT_ROUTES.BASE, paymentRouter);
 moduleRouter.use(STATISTICS_ROUTES.BASE, statisticsRouter);
+moduleRouter.use(CARD_ORDER_REQUEST_ROUTES.BASE, cardOrderRequestRouter);
+moduleRouter.use(CARD_REVOCATION_REQUEST_ROUTES.BASE, cardRevocationRequestRouter);

@@ -30,7 +30,8 @@ export class OrderController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await this.service.create(req.validated.body as CreateOrderCommand), 201);
+      const cmd = req.validated.body as CreateOrderCommand;
+      sendSuccess(res, await this.service.create(cmd, req.user!.id), 201);
     } catch (err) {
       next(err);
     }
@@ -39,7 +40,8 @@ export class OrderController {
   transition = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.validated.params as OrderIdParams;
-      sendSuccess(res, await this.service.transition(id, req.validated.body as TransitionOrderCommand));
+      const cmd = req.validated.body as TransitionOrderCommand;
+      sendSuccess(res, await this.service.transition(id, cmd, req.user!.id));
     } catch (err) {
       next(err);
     }
@@ -48,7 +50,7 @@ export class OrderController {
   delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.validated.params as OrderIdParams;
-      await this.service.delete(id);
+      await this.service.delete(id, req.user!.id);
       res.status(204).send();
     } catch (err) {
       next(err);

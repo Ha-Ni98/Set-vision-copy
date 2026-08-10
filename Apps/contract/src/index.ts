@@ -14,6 +14,8 @@ export * from './modules/distributor';
 export * from './modules/set';
 export * from './modules/lot';
 export * from './modules/order';
+export * from './modules/card-order-request';
+export * from './modules/card-revocation-request';
 export * from './modules/card';
 export * from './modules/activation';
 export * from './modules/statistics';

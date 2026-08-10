@@ -17,6 +17,9 @@ const service = new SubscriptionPlanService(prisma);
 const controller = new SubscriptionPlanController(service);
 
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+// SubscriptionPlanDTO is a catalogue with no financial data (commissions stay adminOnly via
+// GET_COMMISSIONS above) — the distributor order-request submit form needs this list too.
+const adminOrDistributor = requireAuth({ roles: [UserRole.ADMIN, UserRole.DISTRIBUTOR] });
 
 export const subscriptionPlanRouter = Router();
 
@@ -41,7 +44,7 @@ subscriptionPlanRouter.patch(
 // Collection routes
 subscriptionPlanRouter.get(
   SUBSCRIPTION_PLAN_ROUTES.GET_ALL,
-  adminOnly,
+  adminOrDistributor,
   validateRequest({ query: GetSubscriptionPlansQuerySchema }),
   controller.getAll,
 );
