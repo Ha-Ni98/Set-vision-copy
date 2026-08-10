@@ -11,6 +11,8 @@ import {
   STATISTICS_ROUTES,
   CARD_ORDER_REQUEST_ROUTES,
   CARD_REVOCATION_REQUEST_ROUTES,
+  TELEGRAM_ROUTES,
+  NOTIFICATION_ROUTES,
 } from '@my-app/contract';
 import { authRouter } from './auth/auth.routes';
 import { adminRouter } from './admin/admin.routes';
@@ -29,6 +31,8 @@ import { paymentRouter } from './payment/payment.routes';
 import { statisticsRouter } from './statistics/statistics.routes';
 import { cardOrderRequestRouter } from './card-order-request/card-order-request.routes';
 import { cardRevocationRequestRouter } from './card-revocation-request/card-revocation-request.routes';
+import { telegramRouter } from './telegram/telegram.routes';
+import { notificationRouter } from './notification/notification.routes';
 
 export const moduleRouter = Router();
 
@@ -50,3 +54,5 @@ moduleRouter.use(PAYMENT_ROUTES.BASE, paymentRouter);
 moduleRouter.use(STATISTICS_ROUTES.BASE, statisticsRouter);
 moduleRouter.use(CARD_ORDER_REQUEST_ROUTES.BASE, cardOrderRequestRouter);
 moduleRouter.use(CARD_REVOCATION_REQUEST_ROUTES.BASE, cardRevocationRequestRouter);
+moduleRouter.use(TELEGRAM_ROUTES.BASE, telegramRouter);
+moduleRouter.use(NOTIFICATION_ROUTES.BASE, notificationRouter);

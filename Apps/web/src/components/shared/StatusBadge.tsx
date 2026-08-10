@@ -7,6 +7,7 @@ import {
   SetStat,
   LotStat,
   LogActionType,
+  NotificationStat,
 } from "@my-app/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -168,12 +169,30 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.UNLINK_USER_ACCOUNT]: "warning",
   [LogActionType.CHANGE_ORDER_REQUEST_STAT]: "neutral",
   [LogActionType.CHANGE_REVOCATION_REQUEST_STAT]: "neutral",
+  [LogActionType.GENERATE_TELEGRAM_TOKEN]: "neutral",
+  [LogActionType.UNLINK_TELEGRAM]: "warning",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {
   const { t } = useTranslation();
   return (
     <StatusPill tone={LOG_ACTION_TONE[actionType]} label={t(`enums.logActionType.${actionType}`)} />
+  );
+}
+
+const NOTIFICATION_STAT_TONE: Record<NotificationStat, BadgeTone> = {
+  [NotificationStat.PENDING]: "warning",
+  [NotificationStat.SENT]: "success",
+  [NotificationStat.FAILED]: "destructive",
+};
+
+export function NotificationStatusBadge({ status }: { status: NotificationStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill
+      tone={NOTIFICATION_STAT_TONE[status]}
+      label={t(`enums.notificationStat.${status}`)}
+    />
   );
 }
 

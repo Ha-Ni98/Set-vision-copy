@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AdminDTO } from "@my-app/contract";
+import { UserRole, type AdminDTO } from "@my-app/contract";
 import { DataTable } from "@/components/shared/DataTable";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Users, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
@@ -33,6 +34,7 @@ import {
 } from "@/hooks/useAdmins";
 import { formatDateTime } from "@/lib/utils";
 import { GeneratedPasswordPanel } from "../../activators/components/GeneratedPasswordPanel";
+import { TelegramLinkPanel } from "@/components/sections/admin/TelegramLinkPanel";
 import { AdminActionsMenu } from "./AdminActionsMenu";
 import { AddAdminModal } from "./AddAdminModal";
 import { EditAdminModal } from "./EditAdminModal";
@@ -51,6 +53,7 @@ export function AdminAccountsTab() {
   const [resetRow, setResetRow] = useState<AdminDTO | null>(null);
   const [resetGeneratedPassword, setResetGeneratedPassword] = useState<string | null>(null);
   const [deleteRow, setDeleteRow] = useState<AdminDTO | null>(null);
+  const [telegramRow, setTelegramRow] = useState<AdminDTO | null>(null);
 
   const debouncedSearch = useDebouncedValue(search);
   const sessionQuery = useSession();
@@ -97,6 +100,7 @@ export function AdminAccountsTab() {
               onRequestEdit={setEditRow}
               onRequestToggle={setToggleRow}
               onRequestResetPassword={setResetRow}
+              onRequestTelegram={setTelegramRow}
               onRequestDelete={setDeleteRow}
               deleteDisabled={isSelf || isLast}
               deleteDisabledReason={isSelf ? "self" : isLast ? "last" : undefined}
@@ -309,6 +313,15 @@ export function AdminAccountsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={telegramRow !== null} onOpenChange={(open) => !open && setTelegramRow(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("admin.telegram.title")}</DialogTitle>
+          </DialogHeader>
+          {telegramRow && <TelegramLinkPanel role={UserRole.ADMIN} profileId={telegramRow.id} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

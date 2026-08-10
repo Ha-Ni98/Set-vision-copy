@@ -48,6 +48,7 @@ const AdminActivationDetailPage = lazy(
 const AdminStatisticsPage = lazy(() => import("@/pages/admin/statistics/StatisticsPage"));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/settings/SettingsPage"));
 const AdminLogsPage = lazy(() => import("@/pages/admin/logs/LogsPage"));
+const AdminNotificationsPage = lazy(() => import("@/pages/admin/notifications/NotificationsPage"));
 
 const withSuspense = (Component: LazyExoticComponent<() => JSX.Element>) => (
   <Suspense fallback={<PageLoader />}>
@@ -269,6 +270,11 @@ const router = createBrowserRouter([
           {
             path: "/admin/logs",
             element: withSuspense(AdminLogsPage),
+            errorElement: <RouteErrorBoundary />,
+          },
+          {
+            path: "/admin/notifications",
+            element: withSuspense(AdminNotificationsPage),
             errorElement: <RouteErrorBoundary />,
           },
         ],

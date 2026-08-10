@@ -22,6 +22,8 @@ import type {
   StatisticsOverviewQuery,
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
+  GetNotificationsQuery,
+  UserRole,
 } from "@my-app/contract";
 
 // Central query-key registry (plan.md §3.1). Hooks read keys from here — never inline
@@ -147,5 +149,12 @@ export const qk = {
     wilayaHeatmap: (query: WilayaHeatmapQuery) => ["statistics", "wilaya-heatmap", query] as const,
     wilayaDrilldown: (wilayaId: string, query: WilayaDrilldownQuery) =>
       ["statistics", "wilaya-drilldown", wilayaId, query] as const,
+  },
+  notifications: {
+    all: () => ["notifications"] as const,
+    list: (query: GetNotificationsQuery) => ["notifications", "list", query] as const,
+  },
+  telegramLink: {
+    detail: (role: UserRole, profileId: string) => ["telegram-link", role, profileId] as const,
   },
 } as const;

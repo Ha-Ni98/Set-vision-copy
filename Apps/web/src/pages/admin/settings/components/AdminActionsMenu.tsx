@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Power, KeyRound, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Power, KeyRound, Send, Trash2 } from "lucide-react";
 import type { AdminDTO } from "@my-app/contract";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ interface Props {
   onRequestEdit: (admin: AdminDTO) => void;
   onRequestToggle: (admin: AdminDTO) => void;
   onRequestResetPassword: (admin: AdminDTO) => void;
+  onRequestTelegram: (admin: AdminDTO) => void;
   onRequestDelete: (admin: AdminDTO) => void;
   /** True for the signed-in admin's own row, or when this admin is the only one left —
    * both are page-level facts (session id, list length), not knowable from the row alone
@@ -29,6 +30,7 @@ export function AdminActionsMenu({
   onRequestEdit,
   onRequestToggle,
   onRequestResetPassword,
+  onRequestTelegram,
   onRequestDelete,
   deleteDisabled,
   deleteDisabledReason,
@@ -52,6 +54,9 @@ export function AdminActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onRequestResetPassword(admin)}>
           <KeyRound className="mr-2 h-4 w-4" /> {t("common.actions.resetPassword")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onRequestTelegram(admin)}>
+          <Send className="mr-2 h-4 w-4" /> {t("admin.telegram.menuLabel")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

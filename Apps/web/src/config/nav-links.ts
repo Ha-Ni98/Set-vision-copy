@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   FileText,
+  BellRing,
   type LucideIcon,
 } from "lucide-react";
 
@@ -84,4 +85,5 @@ export const ADMIN_NAV_LINKS: AdminNavItem[] = [
   { to: "/admin/statistics", labelKey: "admin.shell.nav.statistics", icon: BarChart3 },
   { to: "/admin/settings", labelKey: "admin.shell.nav.settings", icon: Settings },
   { to: "/admin/logs", labelKey: "admin.shell.nav.logs", icon: FileText },
+  { to: "/admin/notifications", labelKey: "admin.shell.nav.notifications", icon: BellRing },
 ];

@@ -130,6 +130,39 @@ enum LogActionType {
   UNLINK_USER_ACCOUNT
   CHANGE_ORDER_REQUEST_STAT
   CHANGE_REVOCATION_REQUEST_STAT
+  GENERATE_TELEGRAM_TOKEN
+  UNLINK_TELEGRAM
+}
+
+// Set 6: the delivery channel. Only TELEGRAM has a real provider; EMAIL/WHATSAPP exist so the
+// provider interface has more than one implementation and the stubs are type-checked.
+enum NotificationChannel {
+  TELEGRAM
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStat {
+  PENDING
+  SENT
+  FAILED
+}
+
+// One value per template. Record<NotificationType, …> in notification.templates.ts is
+// exhaustive, so an unmapped value fails tsc — this is the "no magic strings" guarantee for
+// notification copy. Only TELEGRAM_LINKED has a real template in Set 6a; the other nine are
+// declared now (Q11) so 6b needs no second ALTER TYPE migration.
+enum NotificationType {
+  TELEGRAM_LINKED
+  ACTIVATION_CREATED
+  ACTIVATION_INFORMATION_UPDATED
+  ACTIVATION_OTP_RECEIVED
+  ACTIVATION_STATUS_CHANGED
+  ACTIVATION_FROZEN
+  ORDER_REQUEST_CREATED
+  REVOCATION_REQUEST_CREATED
+  ORDER_CREATED
+  REVOCATION_APPROVED
 }
 
 // ============================================================
@@ -167,6 +200,12 @@ model Admin {
   phone     String
   isEnabled Boolean @default(true)
 
+  // Telegram delivery (Set 6 / D7). All three nullable; @unique on a nullable column is
+  // correct in Postgres — unlimited NULLs never collide, so unlinked rows don't conflict.
+  telegramChatId    String? // Telegram chat id, stored as text: ids exceed 2^31 and are opaque
+  telegramLinkToken String? @unique // one-time deep-link payload; cleared the moment it is used
+  telegramLinkedAt  DateTime?
+
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments Payment[]
 }
@@ -180,6 +219,11 @@ model Activator {
   credits                  Decimal @default(0) @db.Decimal(12, 2)
   nbOfActivation           Int     @default(0)
   nbOfSuccessfulActivation Int     @default(0)
+
+  // Telegram delivery (Set 6 / D7) — see Admin above for the field-by-field rationale.
+  telegramChatId    String?
+  telegramLinkToken String? @unique
+  telegramLinkedAt  DateTime?
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments    Payment[]
@@ -583,6 +627,13 @@ model Distributor {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
+  // Telegram delivery (Set 6 / D7) — see Admin above for the field-by-field rationale.
+  // Crucially this makes an ACCOUNT-LESS distributor (userId null) still reachable: linking
+  // is per-profile, not per-User.
+  telegramChatId    String?
+  telegramLinkToken String? @unique
+  telegramLinkedAt  DateTime?
+
   user               User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   wilaya             Wilaya                  @relation(fields: [wilayaId], references: [id])
   commune            Commune                 @relation(fields: [communeId], references: [id])
@@ -594,4 +645,43 @@ model Distributor {
   @@index([wilayaId])
   @@index([communeId])
   @@index([isEnabled])
+}
+
+// ============================================================
+// Notifications (Set 6)
+// ============================================================
+
+// Outbox + audit trail for every notification the system attempted. One row per
+// (recipient × event) — a fan-out to 5 activators writes 5 rows.
+//
+// Deliberately NOT related to User: the recipient is a PROFILE (an account-less
+// Distributor is a legal recipient, see Distributor above). recipientRole +
+// recipientProfileId is a polymorphic pointer; Prisma cannot express "exactly one of three
+// FKs is set", and three nullable FKs would need a CHECK constraint this schema has no
+// precedent for. The row is an immutable record for the admin log page, not a graph to
+// traverse.
+model Notification {
+  id      String              @id @default(uuid())
+  channel NotificationChannel
+  type    NotificationType
+  stat    NotificationStat    @default(PENDING)
+
+  recipientRole      UserRole
+  recipientProfileId String // Admin.id | Activator.id | Distributor.id — never User.id
+  recipientName      String // snapshot of fullName/storeName at send time, for the log table
+  recipientAddress   String // snapshot of the chat id used. Resend re-resolves it.
+
+  // The rendered message, exactly as sent. MAY contain the client's Snapchat password and
+  // OTP (D3 / Set 6 scope note). MUST NEVER contain User.password, a refresh-token hash, a
+  // JWT, or a telegramLinkToken.
+  body      String
+  error     String? // provider failure, truncated to 500 chars by the service
+  attempts  Int      @default(0)
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([stat])
+  @@index([createdAt])
+  @@index([recipientRole, recipientProfileId])
+  @@index([type])
 }
