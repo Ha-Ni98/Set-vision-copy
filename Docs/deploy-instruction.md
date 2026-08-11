@@ -131,6 +131,43 @@ Deploy. Render will run the build command (installs, `prisma generate`, `prisma 
 — this applies your schema to the empty Neon database), then start the server. Check
 `https://<your-service>.onrender.com/health` returns `{"success":true,"data":{"status":"ok"}}`.
 
+### Notifications (Telegram) — optional
+
+Leave `NOTIFICATIONS_ENABLED` unset (defaults `false`) if you don't need Telegram notifications
+yet — nothing else in this section is required in that case, and the whole subsystem stays
+inert (no poller, no webhook route, no sends).
+
+To enable it on Render, set:
+
+| Key | Value |
+|---|---|
+| `NOTIFICATIONS_ENABLED` | `true` |
+| `TELEGRAM_MODE` | `webhook` — polling doesn't survive Render's cold-start sleep (see "Known free-tier limitations" below); webhook does, since Telegram's own POST is what wakes the instance |
+| `TELEGRAM_BOT_TOKEN` | from `@BotFather` (`/newbot` → `/token`) — **use a bot dedicated to this deployment**, see the warning below |
+| `TELEGRAM_BOT_USERNAME` | that bot's username, no leading `@` |
+| `TELEGRAM_WEBHOOK_SECRET` | a random 32+ char string — generate with `openssl rand -hex 32`. Telegram echoes it back on every update; the API rejects anything that doesn't match. |
+| `TELEGRAM_WEBHOOK_BASE_URL` | `https://<your-service>.onrender.com` — **origin only, no trailing slash, no path** |
+
+> **⚠️ Use a separate bot per environment.** Telegram allows only one intake transport per bot
+> token. If you also run the app locally in `TELEGRAM_MODE=polling` with the **same** token, the
+> local poller calls `deleteWebhook` on every start — silently taking this deployment's
+> notifications offline. Create two bots with `@BotFather`: one for local polling, one for this
+> deployment's webhook. The API logs a warning naming the URL if the poller is ever about to
+> delete a live webhook, but the fix is to not share the token in the first place.
+>
+> **You do not need to call Telegram's `setWebhook` yourself.** On every boot, after the port is
+> bound, the server registers the webhook automatically — derived from `TELEGRAM_WEBHOOK_BASE_URL`
+> + `API_PREFIX` + the webhook route, so it can never point at the wrong path. Check the boot log
+> for `"Telegram webhook registered"`; a `"Failed to register Telegram webhook"` line means one of
+> the four `TELEGRAM_*` variables above is wrong (bad token is the usual cause) — this does not
+> crash the server, so the API stays up while you fix it and redeploy. You can independently
+> verify what Telegram thinks is registered with:
+> ```bash
+> curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
+> ```
+> `"url"` should match `TELEGRAM_WEBHOOK_BASE_URL` + `/api/v1/telegram/webhook`, and
+> `"last_error_message"` should be absent.
+
 ### One-time data seeding
 
 `Apps/api/scripts/load-wilayas.ts` and `Apps/api/scripts/create-admin.ts` are plain Node scripts

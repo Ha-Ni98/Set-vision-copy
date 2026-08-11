@@ -80,3 +80,32 @@ export async function getUpdates(opts: GetUpdatesOptions): Promise<TelegramUpdat
 export async function deleteWebhook(botToken: string): Promise<void> {
   await fetch(`https://api.telegram.org/bot${botToken}/deleteWebhook`, { method: 'POST' });
 }
+
+export type WebhookInfo = {
+  url: string; // '' when nothing is registered
+  pending_update_count: number;
+  last_error_message?: string;
+};
+
+// Read-only — used by the poller to warn before it deletes a live webhook (a shared bot
+// token cannot serve both transports), and available for diagnostics generally.
+export async function getWebhookInfo(botToken: string): Promise<WebhookInfo> {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+  const json = (await res.json()) as { ok: boolean; result: WebhookInfo };
+  return json.result;
+}
+
+// Called once on boot in webhook mode (common/notifications/index.ts) — the webhook-mode
+// counterpart to the poller's deleteWebhook. Idempotent: re-registering the same URL/secret
+// is a no-op on Telegram's side.
+export async function setWebhook(botToken: string, url: string, secretToken: string): Promise<void> {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, secret_token: secretToken, allowed_updates: ['message'] }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Telegram setWebhook ${res.status}: ${body.slice(0, 300)}`);
+  }
+}

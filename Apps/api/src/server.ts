@@ -10,6 +10,7 @@ import { NS } from './common/realtime/rooms';
 import { UserRole } from '@my-app/contract';
 import {
   initNotifications,
+  initTelegramWebhook,
   resolveTelegramPollerDeps,
   startTelegramPoller,
   stopTelegramPoller,
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
     // background process in this app (Set 6 plan §7.1, §0.7).
     const pollerDeps = resolveTelegramPollerDeps();
     if (pollerDeps) startTelegramPoller(pollerDeps);
+    // Webhook mode's counterpart — also only after the port is bound, so the endpoint exists
+    // before Telegram is told about it. Fire-and-forget: never blocks or crashes boot.
+    void initTelegramWebhook();
   });
 }
 

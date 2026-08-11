@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { getUpdates, deleteWebhook, TelegramApiError } from './telegram.api';
+import { getUpdates, getWebhookInfo, deleteWebhook, TelegramApiError } from './telegram.api';
 import { handleTelegramUpdate } from './telegram.intake';
 import type { NotificationService } from './notification.service';
 import { logger } from '../config/logger';
@@ -39,6 +39,15 @@ async function loop(deps: TelegramPollerDeps, signal: AbortSignal): Promise<void
   // on start is a deliberate side effect on shared bot state — this is exactly why the plan
   // requires a SEPARATE bot token for polling vs. the deployed webhook (Set 6 plan §7.5).
   try {
+    // A shared bot token cannot serve both transports — deleting a LIVE webhook here is a
+    // real production hazard (see Set 6 hotfix notes), so it's surfaced loudly, not silently.
+    const info = await getWebhookInfo(deps.botToken).catch(() => null);
+    if (info?.url) {
+      logger.warn(
+        { url: info.url },
+        'Deleting an existing Telegram webhook to start polling on this bot token — if that URL belongs to a deployed instance, this just took its notifications offline. Use a separate bot token per environment.',
+      );
+    }
     await deleteWebhook(deps.botToken);
   } catch (err) {
     logger.warn({ err }, 'Failed to clear any existing Telegram webhook before polling');
