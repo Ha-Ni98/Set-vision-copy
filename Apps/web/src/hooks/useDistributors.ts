@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { GetDistributorsQuery, UpdateDistributorCommand } from "@my-app/contract";
+import type {
+  GetDistributorsQuery,
+  UpdateDistributorCommand,
+  CreateDistributorAccountCommand,
+} from "@my-app/contract";
 import * as distributorsService from "@/services/distributors.service";
 import { qk } from "@/lib/query-keys";
 
@@ -55,6 +59,27 @@ export function useDeleteDistributor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: distributorsService.remove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.distributors.all() });
+    },
+  });
+}
+
+export function useCreateDistributorAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, command }: { id: string; command: CreateDistributorAccountCommand }) =>
+      distributorsService.createAccount(id, command),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.distributors.all() });
+    },
+  });
+}
+
+export function useUnlinkDistributorAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: distributorsService.unlinkAccount,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.distributors.all() });
     },

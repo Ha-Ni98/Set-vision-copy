@@ -2,6 +2,10 @@ import type {
   JWTPayload,
   PendingActivationDTO,
   ClientActivationStatus,
+  OrderRequestCreatedPayload,
+  OrderRequestStatusChangedPayload,
+  RevocationRequestCreatedPayload,
+  RevocationRequestStatusChangedPayload,
 } from '@my-app/contract';
 
 export interface ServerToClientEvents {
@@ -15,6 +19,10 @@ export interface ServerToClientEvents {
     status: ClientActivationStatus;
     timestamp: string;
   }) => void;
+  'order-request:created': (p: OrderRequestCreatedPayload) => void;
+  'order-request:status-changed': (p: OrderRequestStatusChangedPayload) => void;
+  'revocation-request:created': (p: RevocationRequestCreatedPayload) => void;
+  'revocation-request:status-changed': (p: RevocationRequestStatusChangedPayload) => void;
 }
 
 export interface ClientToServerEvents {

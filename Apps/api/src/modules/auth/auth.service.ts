@@ -80,20 +80,38 @@ export class AuthService implements IAuthService {
 
     let profile: { fullName: string };
 
-    if (user.role === UserRole.ADMIN) {
-      const admin = await this.prisma.admin.findUnique({
-        where: { userId: user.id },
-        select: { fullName: true },
-      });
-      if (!admin) throw new AuthError('Admin profile not found');
-      profile = admin;
-    } else {
-      const activator = await this.prisma.activator.findUnique({
-        where: { userId: user.id },
-        select: { fullName: true },
-      });
-      if (!activator) throw new AuthError('Activator profile not found');
-      profile = activator;
+    switch (user.role) {
+      case UserRole.ADMIN: {
+        const admin = await this.prisma.admin.findUnique({
+          where: { userId: user.id },
+          select: { fullName: true },
+        });
+        if (!admin) throw new AuthError('Admin profile not found');
+        profile = admin;
+        break;
+      }
+      case UserRole.ACTIVATOR: {
+        const activator = await this.prisma.activator.findUnique({
+          where: { userId: user.id },
+          select: { fullName: true },
+        });
+        if (!activator) throw new AuthError('Activator profile not found');
+        profile = activator;
+        break;
+      }
+      case UserRole.DISTRIBUTOR: {
+        // Distributor is soft-deleted (unlike Activator) — findFirst + deletedAt: null so an
+        // unlinked-then-soft-deleted distributor's login can never resolve a session.
+        const distributor = await this.prisma.distributor.findFirst({
+          where: { userId: user.id, deletedAt: null },
+          select: { fullName: true },
+        });
+        if (!distributor) throw new AuthError('Distributor profile not found');
+        profile = distributor;
+        break;
+      }
+      default:
+        throw new AuthError('Unknown role');
     }
 
     return AuthMapper.toSessionUserDTO(user, profile);

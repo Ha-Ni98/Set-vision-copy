@@ -333,7 +333,8 @@ Then write Docs/Stage-04-fix/plan/set-2-plan.md with:
 6. Every endpoint changing its return unit to seconds, and every UI site that must change.
 7. Open questions and manual test checklist.
 
-Scope discipline: read-only. Admin editing is Set 3.
+Scope discipline: read-only. The admin never edits an activation field — only the commission,
+via the existing SET_PRICE route.
 ```
 
 ### Execute prompt
@@ -358,71 +359,101 @@ Report changed files and my manual test checklist.
 
 ---
 
-# Set 3 — Admin correction of activation info + audit log
+# Set 3 — Correction write-back: `ActivationInformation` holds the current value, `WrongInformation` holds the rejected one
 
-**Depends on:** 2 · **Touches:** prisma (one enum value), contract, api, web
+**Depends on:** 2 · **Touches:** api (+ two schema.prisma comments, + one admin label in web)
+
+> **Replaces the original Set 3** ("Admin correction of activation info + audit log"), which was
+> withdrawn. **The admin does not edit any activation field except the commission** — they read the
+> account information (Set 2) and set the price via the existing `SET_PRICE` route. There is no
+> admin edit endpoint, no `CHANGE_ACTIVATION_INFORMATION` log action, and no
+> `activation:information-updated` event anywhere in this programme.
+
+**The problem.** `ActivationInformation` is written once at `submit()` and never again. When the
+activator flags a field wrong, `flagWrong()` writes a `WrongInformation` row with `value: null`;
+when the client corrects it, `update()` writes the **new** value into that same `WrongInformation`
+row. So the table named *WrongInformation* holds the **right** value and `ActivationInformation`
+holds the **wrong** one. `resolveLatestWinsInfo()` hides the inversion by overlaying step values at
+read time — except in the window between the flag and the client's reply, where the `null` overlay
+makes the field render **blank** on the activator's card and in the client's own prefill.
 
 **Scope**
-- Admin edits activation account information (any `AccountInformation` key), client fields, `activationEmail`.
-- Every modification writes a Log row with before → after. For PASSWORD and OTP: log **that** the field changed, not the value.
-- `LogActionType` += `CHANGE_ACTIVATION_INFORMATION`.
-- New event `activation:information-updated` → gateway pushes to the activator room and the client's activation room. Set 6 subscribes the notifier to the same event.
-- Admin audit-log view filterable by activation.
+- `flagWrong()` snapshots the field's current value into `WrongInformation.value` instead of `null`.
+- `update()` upserts `ActivationInformation` on `[activationId, accountInform]` with the client's
+  new value, and leaves `WrongInformation` alone — those rows become immutable rejection history.
+- `resolveLatestWinsInfo` → `resolveEffectiveInfo`: base row overlaid by `additionalInformation`
+  **only**. The `wrongInformation` overlay is removed.
+- Guard preserved: only fields flagged in the latest `WRONG_INFORMATION` step may be written. The
+  client form posts every field, and `updateMany` used to no-op on unflagged ones — an unguarded
+  upsert would let a public caller rewrite anything.
+- Admin timeline label: "Incorrect Fields" → "Rejected Values", plus a hint line.
+- **Out of scope:** the additional-information / OTP flow keeps its current step storage. No
+  contract change, no schema change, no migration, no audit log (the update route is public and
+  unauthenticated — there is no actor and `Log.userId` is non-nullable).
 
 **Manual test after**
-1. Edit a username on a PENDING activation → activator dashboard updates live.
-2. Edit while in progress → no duplicate `ActivationInformation` rows.
-3. Log row shows old → new for a normal field.
-4. Edit PASSWORD → log records the change, not the value.
-5. Activator hitting the edit endpoint → 403.
-6. Bad email → field-level error, nothing written.
+1. Flag a username → the activator's card still shows the rejected value, it does **not** go blank.
+2. Flag a username → the client's correction form prefills the old value, not an empty box.
+3. Correct `adm` → `admin`: `ActivationInformation = "admin"`, `WrongInformation = "adm"`, and no
+   duplicate `ActivationInformation` row.
+4. The activator's card flips to the new value live, with no manual refresh.
+5. Flag USERNAME only, then submit a changed EMAIL too → EMAIL is unchanged.
+6. Request an OTP and answer it → unchanged behaviour, no OTP row in `ActivationInformation`.
 
 ### Plan prompt
 
 ```
 Read CLAUDE.md, Docs/Stage-04-fix/plan/v2-decisions.md, Docs/Stage-04-fix/plan/set-2-plan.md, and the rules docs.
 
-Plan Set 3: admin correction of activation information, with full audit logging and a realtime
-push. WRITE NO CODE.
+Plan Set 3: fix where a client correction is stored. WRITE NO CODE.
+
+Today: submit() creates the ActivationInformation rows and nothing ever updates them; flagWrong()
+creates a WrongInformation row with value null; update() writes the client's NEW value into that
+WrongInformation row. The tables are inverted, and between the flag and the client's reply the
+null overlay blanks the field on the activator's card and in the client's prefill.
+
+Target: ActivationInformation is the single current value of every account field. WrongInformation
+is an immutable snapshot of the value that was rejected, taken at flag time.
 
 Audit first:
 - How ActivationInformation rows are written during the normal flow (which service, upsert or
   create, how the [activationId, accountInform] unique constraint is respected).
-- The existing audit-log write path and its helper signature.
+- resolveLatestWinsInfo and all three of its readers.
 - The existing activation events and how the gateway maps them to rooms.
 
 Then write Docs/Stage-04-fix/plan/set-3-plan.md with:
-1. The exact editable field set, and per field: validation rule, and whether its VALUE may
-   appear in a log description. PASSWORD and OTP: value never logged, only the fact of change.
-2. Contract: update command schema, route constant, the new event type.
-3. Backend: service logic (upsert against the unique constraint), transaction boundary (data
-   write + log write must not half-apply), event publish, guard.
-4. Gateway: which rooms receive the event, and what the client portal sees versus the activator.
-5. Frontend: admin edit UI (inline vs dialog — recommend one), hook and its invalidations,
-   translation keys.
+1. The current-vs-target semantics as a worked example, table by table.
+2. flagWrong: where the snapshot value comes from without adding a query.
+3. update: the upsert against [activationId, accountInform], the flagged-fields guard, the
+   transaction boundary, and what must NOT be written.
+4. resolveEffectiveInfo: the new overlay rule and why the wrongInformation overlay must go.
+5. Realtime: prove no change is needed, and that no field value crosses a socket.
 6. A note for Set 6: the exact event name and payload the notifier will subscribe to.
 7. Open questions and manual test checklist.
 
-Scope discipline: admin-side correction only. Client self-correction is Set 12.
+Scope discipline: the wrong-information flow only. The OTP/additional flow keeps its current
+storage. Client self-correction UX is Set 12.
 ```
 
 ### Execute prompt
 
 ```
-Implement Docs/Stage-04-fix/plan/set-3-plan.md exactly. Order: prisma → contract → backend → frontend.
+Implement Docs/Stage-04-fix/plan/set-3-plan.md exactly. Order: backend → frontend.
 
 Reminders for this set:
-- Data write + log write in one transaction. A correction that logs nothing, or a log with no
-  correction, is a bug.
-- Upsert against [activationId, accountInform]; no duplicate information rows.
-- Never put a password or OTP value in a log description or a Pino line.
-- The service publishes to the event bus; only realtime-gateway.ts touches Socket.IO.
-- The client room must not receive sensitive field values.
-- Mutation hooks invalidate their read queries; never hand-patch the cache.
+- Upsert against [activationId, accountInform]; no duplicate information rows. Sequential awaits,
+  not Promise.all — concurrent upserts on the same compound unique race into P2002.
+- Only fields flagged in the latest WRONG_INFORMATION step may be written. The client posts every
+  field; unflagged ones are ignored, exactly as today.
+- WrongInformation.value is written once, at flag time, and never updated again.
+- The wrongInformation overlay must be removed from the resolver in the same change as the
+  flagWrong snapshot — shipping either alone corrupts what every reader sees.
+- The OTP/additional path is untouched, including its null-overwrite semantics.
+- No contract change, no schema change, no migration, no log row.
 
 Constraints: tests frozen. No test commands.
-Done = tsc + eslint + madge clean, migration applied, no test file touched.
-Report changed files, the migration name, and my manual test checklist.
+Done = tsc + eslint + madge clean, no migration, no test file touched.
+Report changed files, "migration: none", and my manual test checklist.
 ```
 
 ---
@@ -614,8 +645,18 @@ Express Controller → Domain Service → event bus
 - **Intake, two transports (D12):** `TELEGRAM_MODE=polling|webhook`. One handler for `/start <token>`; polling drives it via `getUpdates`, webhook via a route. Same handler, same token logic.
 - Admin UI: generate/regenerate a link token per user, copyable deep link, link status, unlink; notification log with resend.
 - Env: `NOTIFICATIONS_ENABLED`, `TELEGRAM_MODE`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` — in `env.ts` and `.env.example`.
-- Subscribers wired to the full notification matrix.
-- **Templates never interpolate a password or OTP.**
+- Subscribers wired to the full notification matrix. The information-updated and OTP notifications
+  subscribe to **`activation:client-updated`** (`{activationId, activatorId, timestamp}`) — the
+  withdrawn `activation:information-updated` does not exist. `activatorId` is the `Activator.id`,
+  which is the row carrying `telegramChatId`, so no `User` lookup is needed to route the message.
+- **Client credential values ARE sent, deliberately:** the information-updated template sends the
+  new values **including the PASSWORD in the clear**, and the additional-information template sends
+  the **OTP normally, unhidden**. Do not mask, omit, or substitute a "field changed" placeholder.
+  Same D3 reasoning as the admin detail DTO — these are the client's own Snapchat credentials, not
+  system secrets, and both messages go to the single assigned activator's private chat, the same
+  trust boundary as their active-request card, where both are already shown in the clear.
+- **`User.password`, refresh-token hashes and JWTs never appear in a message, a `Notification` row,
+  or a Pino line.** That is the line templates must not cross.
 
 **Manual test after**
 1. `NOTIFICATIONS_ENABLED=false` → nothing sends, nothing crashes.
@@ -626,8 +667,11 @@ Express Controller → Domain Service → event bus
 6. Status change → only the activator in charge.
 7. `FREEZE` → admins only.
 8. Order request / revocation request → admins. Order created / revocation approved → that distributor.
-9. **No password or OTP in any message or Notification row.**
-10. Resend a failed one → attempts increments.
+9. Client corrects a flagged field → the assigned activator's message carries the **new values,
+   password included in the clear**. Client answers an OTP request → the message carries the
+   **OTP value**. Neither is masked.
+10. **No `User.password`, refresh-token hash or JWT in any message, Notification row, or Pino line.**
+11. Resend a failed one → attempts increments.
 
 ### Plan prompt
 
@@ -672,8 +716,9 @@ Then write Docs/Stage-04-fix/plan/set-6-plan.md with:
 5. A TABLE: event → recipients (and the exact query resolving them) → template key. Use my
    notification matrix; flag any recipient you cannot resolve from the current schema.
 6. Template strategy: where copy lives, French (A1), how the Set 2 duration formatter is used in
-   bodies, and an explicit ALLOWLIST of fields a template may interpolate. PASSWORD and OTP are
-   not on it.
+   bodies, and an explicit ALLOWLIST of fields a template may interpolate. The client's account
+   fields ARE on it — PASSWORD and OTP included, in the clear, per the scope note above.
+   `User.password`, refresh-token hashes and JWTs are not, and never can be.
 7. Polling loop: lifecycle, offset persistence across restarts, error backoff, and the failure
    mode if two instances ever run (getUpdates conflicts).
 8. Token flow: generation, uniqueness, single-use semantics, regeneration, unlink, audit entries.
@@ -702,8 +747,9 @@ Reminders for this set:
   is written once.
 - The webhook route is protected by the secret from the plan. It is the only unauthenticated
   write endpoint in the API; treat it accordingly.
-- Templates interpolate only allowlisted fields. Password and OTP values never appear in a
-  message, a Notification row, or a Pino line.
+- Templates interpolate only allowlisted fields. The client's account values — password and OTP
+  included — are allowlisted and sent unmasked. `User.password`, refresh-token hashes and JWTs
+  never appear in a message, a Notification row, or a Pino line.
 - The stub providers satisfy the interface and no-op cleanly — not throwing placeholders, and
   not selectable by accident.
 - Every new env var goes in the env.ts Zod schema AND .env.example. A referenced-but-missing var
@@ -1149,8 +1195,11 @@ Audit first:
 - Which step is the Finish step and how it is identified.
 - Where the support phone and WhatsApp number live for the header/footer — the banner reuses that
   source, not a new env var.
-- The Set 3 admin correction endpoint: can the client path reuse the service with different
-  authorization and a narrower field set? Recommend reuse or separation, with reasoning.
+- `KEY_ROUTES.UPDATE` / `ActivationService.update()`, whose storage semantics Set 3 fixed
+  (corrections now upsert `ActivationInformation`, guarded to the fields flagged in the latest
+  `WRONG_INFORMATION` step). There is no admin correction endpoint to reuse. Say whether the
+  client self-correction path extends that method or needs its own, with reasoning — and check
+  Set 3's open question Q1 (the `SUBMITTED` pre-pickup re-edit currently 409s) before deciding.
 
 Then write Docs/Stage-04-fix/plan/set-12-plan.md with:
 1. The banner: component location, placement in the step layout, visibility predicate as a
@@ -1227,7 +1276,7 @@ Produce Docs/Stage-04-fix/plan/set-13-plan.md with four inventories, each a tabl
    creation and status propagation, revocations, status changes, role assignment, Telegram
    link/unlink, admin actions. Columns: action, logged yes/no, LogActionType used, where, fix.
 
-Also list every inline string still in JSX and every translation key missing en, fr, or ar.
+Also list every inline string still in JSX and every translation key missing en or fr.
 
 Order the combined fix list by risk and mark anything that would change an API contract — I decide
 separately whether those are in scope.
@@ -1291,7 +1340,7 @@ Sets sharing a session keep Claude's context warm — the second set reuses the 
 |---|---|---|
 | **A** | 0 | Recon alone. Its output is the reference every later session reads. |
 | **B** | 1 | The guard audit needs undivided attention; a mistake here is a security hole. |
-| **C** | 2 → 3 | Same domain, same files, same mappers. Set 3 edits exactly what Set 2 just learned to read. |
+| **C** | 2 → 3 | Same domain, same files, same mappers. Set 2's unmasked timeline is where Set 3's rejected-vs-current split becomes visible and verifiable. |
 | **D** | 4 → 5 | Set 5 mirrors Set 4's module structure deliberately. Building it in the same session is why it comes out consistent. |
 | **E** | 6 | Largest set. Alone, and possibly split in two by its own plan. |
 | **F** | 7 | Portal UI is broad but shallow; benefits from a clean context. |

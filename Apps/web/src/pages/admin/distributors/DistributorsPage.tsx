@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Store, CheckCircle2, CreditCard, TrendingUp, Plus } from "lucide-react";
+import type { DistributorDTO } from "@my-app/contract";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SimplePagination } from "@/components/shared/SimplePagination";
 import { Button } from "@/components/ui/button";
@@ -11,12 +12,15 @@ import {
   useCreateDistributor,
   useToggleDistributor,
   useDeleteDistributor,
+  useCreateDistributorAccount,
+  useUnlinkDistributorAccount,
 } from "@/hooks/useDistributors";
 import { useWilayas, useCommunes } from "@/hooks/useGeography";
 import { StatsRow, type DashboardStatCardData } from "../components/StatsRow";
 import { DistributorsFilters } from "./components/DistributorsFilters";
 import { DistributorsTable } from "./components/DistributorsTable";
 import { CreateDistributorModal } from "./components/CreateDistributorModal";
+import { CreateDistributorAccountModal } from "./components/CreateDistributorAccountModal";
 
 const LIMIT = 10;
 
@@ -28,6 +32,8 @@ export default function DistributorsPage() {
   const [communeId, setCommuneId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createWilayaId, setCreateWilayaId] = useState("");
+  const [accountTarget, setAccountTarget] = useState<DistributorDTO | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -47,6 +53,8 @@ export default function DistributorsPage() {
   const createDistributor = useCreateDistributor();
   const toggleDistributor = useToggleDistributor();
   const deleteDistributor = useDeleteDistributor();
+  const createDistributorAccount = useCreateDistributorAccount();
+  const unlinkDistributorAccount = useUnlinkDistributorAccount();
 
   const hasFilters = search.length > 0 || wilayaId.length > 0 || communeId.length > 0;
   const clearFilters = () => {
@@ -142,6 +150,8 @@ export default function DistributorsPage() {
         onToggle={(d) => toggleDistributor.mutate(d.id)}
         onDelete={(d) => deleteDistributor.mutate(d.id)}
         onAddFirst={() => setCreateOpen(true)}
+        onRequestCreateAccount={setAccountTarget}
+        onUnlinkAccount={(d) => unlinkDistributorAccount.mutate(d.id)}
       />
 
       {distributorsQuery.data && (
@@ -172,6 +182,25 @@ export default function DistributorsPage() {
         communesError={createCommunesQuery.isError}
         selectedWilayaId={createWilayaId}
         onWilayaChange={setCreateWilayaId}
+      />
+
+      <CreateDistributorAccountModal
+        open={accountTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAccountTarget(null);
+            setGeneratedPassword(null);
+          }
+        }}
+        onSubmit={(values) => {
+          if (!accountTarget) return;
+          createDistributorAccount.mutate(
+            { id: accountTarget.id, command: values },
+            { onSuccess: (data) => setGeneratedPassword(data.generatedPassword) },
+          );
+        }}
+        isPending={createDistributorAccount.isPending}
+        generatedPassword={generatedPassword}
       />
     </div>
   );

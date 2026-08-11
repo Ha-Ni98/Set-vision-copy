@@ -3,9 +3,11 @@ import type {
   CommissionDurationDTO,
   CommissionMatrixDTO,
   CommissionCellDTO,
+  SubscriptionPlanCostDTO,
   GetSubscriptionPlansQuery,
   CreateSubscriptionPlanCommand,
   UpdateCommissionCommand,
+  UpdateSubscriptionPlanCostCommand,
 } from '@my-app/contract';
 
 export interface ISubscriptionPlanService {
@@ -15,4 +17,6 @@ export interface ISubscriptionPlanService {
   getCommissionDurations(): Promise<CommissionDurationDTO[]>;
   getCommissions(): Promise<CommissionMatrixDTO>;
   updateCommission(cmd: UpdateCommissionCommand, actorId: string): Promise<CommissionCellDTO>;
+  getCosts(): Promise<SubscriptionPlanCostDTO[]>;
+  updateCost(cmd: UpdateSubscriptionPlanCostCommand, actorId: string): Promise<SubscriptionPlanCostDTO>;
 }

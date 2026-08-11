@@ -12,6 +12,8 @@ export const CreateOrderSchema = z.object({
   deliveryType: z.enum(DeliveryType),
   orderPrice: z.number().positive().multipleOf(0.01),
   deliverPrice: z.number().nonnegative().multipleOf(0.01),
+  // D5: the add-order form's optional selector over approved, unlinked CardOrderRequest rows.
+  orderRequestId: z.uuid().optional(),
 });
 export type CreateOrderCommand = z.infer<typeof CreateOrderSchema>;
 

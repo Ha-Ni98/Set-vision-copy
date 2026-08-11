@@ -33,6 +33,9 @@ export function ActivationTimeline({ entries }: Props) {
                 <p className="text-xs font-semibold text-muted-foreground">
                   {t("admin.activationDetail.timeline.wrongFields")}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("admin.activationDetail.timeline.wrongFieldsHint")}
+                </p>
                 <ul className="ml-2 list-disc text-foreground">
                   {entry.wrongFields.map((f) => (
                     <li key={f.fieldLabel}>

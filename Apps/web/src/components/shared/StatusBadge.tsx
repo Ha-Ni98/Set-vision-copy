@@ -2,9 +2,12 @@ import {
   ActivationStat,
   CardStat,
   OrderStat,
+  OrderRequestStat,
+  RevocationRequestStat,
   SetStat,
   LotStat,
   LogActionType,
+  NotificationStat,
 } from "@my-app/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -90,6 +93,41 @@ export function OrderStatusBadge({ status }: { status: OrderStat }) {
   return <StatusPill tone={ORDER_TONE[status]} label={t(`enums.orderStat.${status}`)} />;
 }
 
+const ORDER_REQUEST_TONE: Record<OrderRequestStat, BadgeTone> = {
+  [OrderRequestStat.PENDING]: "warning",
+  [OrderRequestStat.APPROVED]: "success",
+  [OrderRequestStat.REJECTED]: "destructive",
+  [OrderRequestStat.CANCELLED]: "neutral",
+  [OrderRequestStat.PENDING_DELIVERY]: "warning",
+  [OrderRequestStat.IN_DELIVERY]: "warning",
+  [OrderRequestStat.DELIVERED]: "success",
+  [OrderRequestStat.RETURNED]: "destructive",
+};
+
+export function OrderRequestStatusBadge({ status }: { status: OrderRequestStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill tone={ORDER_REQUEST_TONE[status]} label={t(`enums.orderRequestStat.${status}`)} />
+  );
+}
+
+const REVOCATION_REQUEST_TONE: Record<RevocationRequestStat, BadgeTone> = {
+  [RevocationRequestStat.PENDING]: "warning",
+  [RevocationRequestStat.APPROVED]: "success",
+  [RevocationRequestStat.REJECTED]: "destructive",
+  [RevocationRequestStat.CANCELLED]: "neutral",
+};
+
+export function RevocationRequestStatusBadge({ status }: { status: RevocationRequestStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill
+      tone={REVOCATION_REQUEST_TONE[status]}
+      label={t(`enums.revocationRequestStat.${status}`)}
+    />
+  );
+}
+
 const SET_TONE: Record<SetStat, BadgeTone> = {
   [SetStat.NOT_PRINTED]: "neutral",
   [SetStat.PENDING_PRINTING]: "warning",
@@ -127,12 +165,38 @@ const LOG_ACTION_TONE: Record<LogActionType, BadgeTone> = {
   [LogActionType.REMOVE_SET]: "destructive",
   [LogActionType.REMOVE_CARD]: "destructive",
   [LogActionType.REVOKE_CARD]: "destructive",
+  [LogActionType.LINK_USER_ACCOUNT]: "success",
+  [LogActionType.UNLINK_USER_ACCOUNT]: "warning",
+  [LogActionType.CHANGE_ORDER_REQUEST_STAT]: "neutral",
+  [LogActionType.CHANGE_REVOCATION_REQUEST_STAT]: "neutral",
+  [LogActionType.GENERATE_TELEGRAM_TOKEN]: "neutral",
+  [LogActionType.UNLINK_TELEGRAM]: "warning",
+  [LogActionType.SET_SUBSCRIPTION_PLAN_COST]: "warning",
+  [LogActionType.CHANGE_ACTIVATION_COST]: "warning",
+  [LogActionType.ADD_ACTIVATION_EMAIL]: "success",
+  [LogActionType.DELETE_ACTIVATION_EMAIL]: "destructive",
 };
 
 export function LogActionBadge({ actionType }: { actionType: LogActionType }) {
   const { t } = useTranslation();
   return (
     <StatusPill tone={LOG_ACTION_TONE[actionType]} label={t(`enums.logActionType.${actionType}`)} />
+  );
+}
+
+const NOTIFICATION_STAT_TONE: Record<NotificationStat, BadgeTone> = {
+  [NotificationStat.PENDING]: "warning",
+  [NotificationStat.SENT]: "success",
+  [NotificationStat.FAILED]: "destructive",
+};
+
+export function NotificationStatusBadge({ status }: { status: NotificationStat }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill
+      tone={NOTIFICATION_STAT_TONE[status]}
+      label={t(`enums.notificationStat.${status}`)}
+    />
   );
 }
 

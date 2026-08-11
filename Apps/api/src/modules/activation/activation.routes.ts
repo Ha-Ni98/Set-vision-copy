@@ -13,13 +13,17 @@ import {
   RequestAdditionalInfoSchema,
   FreezeRequestSchema,
   SetActivatorPriceSchema,
+  SetActivationCostSchema,
   GetActivationsQuerySchema,
   GetActivatorHistoryQuerySchema,
+  GetDistributorActivationsQuerySchema,
+  DistributorActivationIdParamsSchema,
   ActivateActivationSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
 import { validateRequest } from '@common/middlewares/validate-request.middleware';
+import { publicKeyRateLimiter } from '@common/middlewares/rate-limit.middleware';
 import { ActivationService } from './activation.service';
 import { ActivationController } from './activation.controller';
 
@@ -28,6 +32,7 @@ const controller = new ActivationController(service);
 
 const activatorOnly = requireAuth({ roles: [UserRole.ACTIVATOR] });
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+const distributorOnly = requireAuth({ roles: [UserRole.DISTRIBUTOR] });
 // The global pending pool and global recent feed carry no per-activator scoping (their
 // service methods take no viewer id), so the admin dashboard reads them too — not just the
 // activator portal. Widened from activatorOnly to fix the admin dashboard 403 (Stage-04-fix).
@@ -37,8 +42,14 @@ const activatorOrAdmin = requireAuth({ roles: [UserRole.ACTIVATOR, UserRole.ADMI
 
 export const keyRouter = Router();
 
+// publicKeyRateLimiter on VERIFY/UPDATE/ADDITIONAL (set-12-plan §6.4.1): this whole router is
+// unauthenticated, and it is the only mitigation for R19 that doesn't need the declined
+// key-check contract change. SUBMIT and STATUS are left unlimited — SUBMIT already requires a
+// real, active card key to do anything (verify() is the actual guess-surface), and STATUS
+// leaks nothing (activationId + status only).
 keyRouter.post(
   KEY_ROUTES.VERIFY,
+  publicKeyRateLimiter,
   validateRequest({ body: VerifyKeySchema }),
   controller.verify,
 );
@@ -51,12 +62,14 @@ keyRouter.post(
 
 keyRouter.post(
   KEY_ROUTES.UPDATE,
+  publicKeyRateLimiter,
   validateRequest({ params: ActivationIdParamsSchema, body: UpdateActivationSchema }),
   controller.update,
 );
 
 keyRouter.post(
   KEY_ROUTES.ADDITIONAL,
+  publicKeyRateLimiter,
   validateRequest({ params: ActivationIdParamsSchema, body: SubmitAdditionalInfoSchema }),
   controller.additional,
 );
@@ -84,6 +97,21 @@ activationRouter.get(
 );
 
 activationRouter.get(ACTIVATION_ROUTES.GET_RECENT, activatorOrAdmin, controller.getRecent);
+
+// Distributor static routes — before /:id, same convention as card/order routes.
+activationRouter.get(
+  ACTIVATION_ROUTES.GET_ON_MY_CARDS,
+  distributorOnly,
+  validateRequest({ query: GetDistributorActivationsQuerySchema }),
+  controller.getOnMyCards,
+);
+
+activationRouter.get(
+  ACTIVATION_ROUTES.GET_ON_MY_CARDS_BY_ID,
+  distributorOnly,
+  validateRequest({ params: DistributorActivationIdParamsSchema }),
+  controller.getOnMyCardsById,
+);
 
 activationRouter.get(
   ACTIVATION_ROUTES.GET_ALL,
@@ -170,4 +198,11 @@ activationRouter.post(
   adminOnly,
   validateRequest({ params: ActivationActionParamsSchema, body: SetActivatorPriceSchema }),
   controller.setPrice,
+);
+
+activationRouter.post(
+  ACTIVATION_ROUTES.SET_COST,
+  adminOnly,
+  validateRequest({ params: ActivationActionParamsSchema, body: SetActivationCostSchema }),
+  controller.setCost,
 );

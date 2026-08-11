@@ -6,6 +6,9 @@ import {
   WilayaHeatmapQuerySchema,
   WilayaDrilldownQuerySchema,
   WilayaIdParamsSchema,
+  RevenueSummaryQuerySchema,
+  RevenueSeriesQuerySchema,
+  RevenueBreakdownQuerySchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
@@ -45,6 +48,28 @@ statisticsRouter.get(
   adminOnly,
   validateRequest({ query: WilayaHeatmapQuerySchema }),
   controller.wilayaHeatmap,
+);
+
+// Set 11 — statics, registered BEFORE the param route /wilaya/:wilayaId below.
+statisticsRouter.get(
+  STATISTICS_ROUTES.REVENUE_SUMMARY,
+  adminOnly,
+  validateRequest({ query: RevenueSummaryQuerySchema }),
+  controller.revenueSummary,
+);
+
+statisticsRouter.get(
+  STATISTICS_ROUTES.REVENUE_SERIES,
+  adminOnly,
+  validateRequest({ query: RevenueSeriesQuerySchema }),
+  controller.revenueSeries,
+);
+
+statisticsRouter.get(
+  STATISTICS_ROUTES.REVENUE_BREAKDOWN,
+  adminOnly,
+  validateRequest({ query: RevenueBreakdownQuerySchema }),
+  controller.revenueBreakdown,
 );
 
 statisticsRouter.get(

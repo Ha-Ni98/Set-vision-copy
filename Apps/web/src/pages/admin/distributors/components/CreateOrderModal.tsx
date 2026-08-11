@@ -17,6 +17,7 @@ import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useAvailableLotsForOrder } from "@/hooks/useLots";
 import { useWilayas, useCommunes } from "@/hooks/useGeography";
 import { useDeliveryCompanies } from "@/hooks/useDeliveryCompanies";
+import { useLinkableOrderRequests } from "@/hooks/useCardOrderRequests";
 import {
   createOrderSchema,
   type CreateOrderFormValues,
@@ -55,6 +56,7 @@ const DEFAULT_VALUES: CreateOrderFormInput = {
   deliveryType: DeliveryType.HOME,
   orderPrice: 0,
   deliverPrice: 0,
+  orderRequestId: undefined,
 };
 
 interface Props {
@@ -95,6 +97,7 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
   const deliveryType = watch("deliveryType");
   const orderPrice = watch("orderPrice");
   const deliverPrice = watch("deliverPrice");
+  const orderRequestId = watch("orderRequestId");
 
   // Distributors are fetched by search only (no server `enabled` filter, F-5) — enabled
   // distributors are client-filtered from the fetched page.
@@ -111,6 +114,7 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
   const wilayasQuery = useWilayas();
   const communesQuery = useCommunes(wilayaId || undefined);
   const deliveryCompaniesQuery = useDeliveryCompanies({ active: true });
+  const linkableRequestsQuery = useLinkableOrderRequests();
 
   const isFirst = step === 0;
   const isLast = step === STEP_KEYS.length - 1;
@@ -129,6 +133,8 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
   // user action, not a fetch, so it's fine outside a data hook (rules §2).
   const handleSelectDistributor = (id: string) => {
     setValue("distributorId", id, { shouldValidate: true });
+    // A different distributor's approved request is no longer applicable to this order.
+    setValue("orderRequestId", undefined);
     const distributor = enabledDistributors.find((d) => d.id === id);
     if (distributor) {
       setValue("receivedName", distributor.fullName);
@@ -163,6 +169,9 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
   const selectedDeliveryCompany = deliveryCompaniesQuery.data?.find(
     (c) => c.id === deliveryCompanyId,
   );
+  const selectedOrderRequest = (linkableRequestsQuery.data ?? []).find(
+    (r) => r.id === orderRequestId,
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -184,6 +193,12 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
             selectedDistributorId={distributorId}
             onSelectDistributor={handleSelectDistributor}
             error={errors.distributorId?.message}
+            linkableRequests={linkableRequestsQuery.data}
+            linkableLoading={linkableRequestsQuery.isLoading}
+            linkableError={linkableRequestsQuery.isError}
+            selectedOrderRequestId={orderRequestId}
+            onSelectOrderRequest={(id) => setValue("orderRequestId", id)}
+            onRemoveOrderRequest={() => setValue("orderRequestId", undefined)}
           />
         )}
         {step === 1 && (
@@ -251,6 +266,14 @@ export function CreateOrderModal({ open, onOpenChange, onSubmit, isPending }: Pr
             deliveryType={deliveryType}
             orderPrice={Number(orderPrice)}
             deliverPrice={Number(deliverPrice)}
+            linkedOrderRequestSummary={
+              selectedOrderRequest
+                ? t("admin.orders.create.orderRequest.summary", {
+                    count: selectedOrderRequest.nbOfCards,
+                    plan: selectedOrderRequest.subscriptionLabel,
+                  })
+                : undefined
+            }
           />
         )}
 

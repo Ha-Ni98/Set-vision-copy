@@ -1,8 +1,12 @@
 import { EventEmitter } from 'node:events';
-import type { ActivationEvents } from '@my-app/contract';
+import type {
+  ActivationEvents,
+  CardOrderRequestEvents,
+  CardRevocationRequestEvents,
+} from '@my-app/contract';
 
 // UserEvents is not yet exported by the contract; widen to UserEvents & ActivationEvents when it is.
-type AppEvents = ActivationEvents;
+type AppEvents = ActivationEvents & CardOrderRequestEvents & CardRevocationRequestEvents;
 
 class TypedBus {
   private emitter = new EventEmitter();

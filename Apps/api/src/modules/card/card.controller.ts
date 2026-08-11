@@ -4,6 +4,7 @@ import { sendSuccess } from '@common/http/response';
 import type {
   GetCardsQuery,
   GetAvailableCardsQuery,
+  GetDistributorCardsQuery,
   CardIdParams,
 } from '@my-app/contract';
 
@@ -67,6 +68,24 @@ export class CardController {
     try {
       const { id } = req.validated.params as CardIdParams;
       sendSuccess(res, await this.service.revoke(id, req.user!.id));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getMine = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.validated.query as GetDistributorCardsQuery;
+      sendSuccess(res, await this.service.getMine(req.user!.id, query));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getMineById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.validated.params as CardIdParams;
+      sendSuccess(res, await this.service.getMineById(req.user!.id, id));
     } catch (err) {
       next(err);
     }

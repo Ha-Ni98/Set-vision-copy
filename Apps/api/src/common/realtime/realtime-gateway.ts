@@ -19,6 +19,7 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
   const clientNs = io.of(NS.CLIENT);
   const activatorNs = io.of(NS.ACTIVATORS);
   const adminNs = io.of(NS.ADMIN);
+  const distributorNs = io.of(NS.DISTRIBUTORS);
 
   activatorNs.on('connection', (socket) => {
     const userId = socket.data.user?.id;
@@ -36,6 +37,20 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
 
   adminNs.on('connection', (socket) => {
     void socket.join(rooms.ADMIN_BELL);
+  });
+
+  distributorNs.on('connection', (socket) => {
+    const userId = socket.data.user?.id;
+    if (!userId) return;
+    // Same rule as the activator join above: room keyed by Distributor.id, not User.id.
+    // deletedAt: null is the one intentional difference — Distributor is soft-deleted,
+    // unlike Activator.
+    prisma.distributor
+      .findFirst({ where: { userId, deletedAt: null }, select: { id: true } })
+      .then((distributor) => {
+        if (distributor) void socket.join(rooms.distributor(distributor.id));
+      })
+      .catch((err) => logger.error({ err, userId }, 'Failed to resolve distributor for realtime join'));
   });
 
   clientNs.on('connection', (socket) => {
@@ -89,6 +104,37 @@ export const initRealtimeGateway = (io: AppIOServer, prisma: PrismaClient): void
       () => clientNs.to(rooms.activation(p.activationId)).emit('activation:status-changed', p),
       'activation:status-changed',
     ),
+  );
+
+  eventBus.on('order-request:created', (p) =>
+    safe(() => adminNs.to(rooms.ADMIN_BELL).emit('order-request:created', p), 'order-request:created'),
+  );
+
+  eventBus.on('order-request:status-changed', (p) =>
+    safe(() => {
+      adminNs.to(rooms.ADMIN_BELL).emit('order-request:status-changed', p);
+      distributorNs.to(rooms.distributor(p.distributorId)).emit('order-request:status-changed', p);
+    }, 'order-request:status-changed'),
+  );
+
+  eventBus.on('revocation-request:created', (p) =>
+    safe(
+      () => adminNs.to(rooms.ADMIN_BELL).emit('revocation-request:created', p),
+      'revocation-request:created',
+    ),
+  );
+
+  eventBus.on('revocation-request:status-changed', (p) =>
+    safe(() => {
+      adminNs.to(rooms.ADMIN_BELL).emit('revocation-request:status-changed', p);
+      // The distributor's own room never receives key material: by the time this fires the
+      // card may be back at AT_DISTRIBUTOR and re-sellable (Set 7 §2.2/§7.3). Nothing on the
+      // client reads cardKey — the listener only invalidates — so this is a pure removal.
+      const { cardKey: _cardKey, ...forDistributor } = p;
+      distributorNs
+        .to(rooms.distributor(p.distributorId))
+        .emit('revocation-request:status-changed', forDistributor);
+    }, 'revocation-request:status-changed'),
   );
 
   logger.info('Realtime gateway initialized');

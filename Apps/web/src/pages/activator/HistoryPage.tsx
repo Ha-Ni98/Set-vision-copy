@@ -8,7 +8,8 @@ import type {
   RecentActivationDTO,
   GetActivatorHistoryQuery,
 } from "@my-app/contract";
-import { formatDZD, formatTime } from "@/lib/utils";
+import { formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
@@ -196,9 +197,7 @@ export default function HistoryPage() {
         id: "time",
         header: t("activator.history.myTable.time"),
         cell: ({ row }) => (
-          <span className="font-mono">
-            {row.original.durationSeconds ? formatTime(row.original.durationSeconds) : "—"}
-          </span>
+          <span className="font-mono">{formatDuration(row.original.durationSeconds)}</span>
         ),
       },
       {
@@ -369,8 +368,7 @@ export default function HistoryPage() {
                     <KeyRound className="h-3 w-3" /> {r.key.slice(-9)}
                   </div>
                   <div className="inline-flex items-center gap-1">
-                    <ClockIcon className="h-3 w-3" />{" "}
-                    {r.durationSeconds ? formatTime(r.durationSeconds) : "—"}
+                    <ClockIcon className="h-3 w-3" /> {formatDuration(r.durationSeconds)}
                   </div>
                   <div className="inline-flex items-center gap-1 font-semibold text-foreground">
                     <Coins className="h-3 w-3" /> {r.earning ? formatDZD(r.earning, language) : "—"}

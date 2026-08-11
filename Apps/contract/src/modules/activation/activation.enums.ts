@@ -20,6 +20,15 @@ export enum AccountInformation {
   PASSWORD = 'PASSWORD',
 }
 
+// Which client-facing flow produced an activation:client-updated event. The two flows are
+// otherwise indistinguishable — both end at PROCESSING — and Set 6's notification templates
+// need to tell them apart (correction vs. an OTP answer). The realtime gateway ignores this
+// field; it exists for the notification subscriber only.
+export enum ClientUpdateKind {
+  CORRECTION = 'CORRECTION',
+  ADDITIONAL = 'ADDITIONAL',
+}
+
 // Contract-owned — not in Prisma. The public portal sees this; raw ActivationStat never crosses to the client.
 export enum ClientActivationStatus {
   INVALID = 'INVALID',

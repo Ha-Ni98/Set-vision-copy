@@ -6,6 +6,7 @@ import type {
   CreateSubscriptionPlanCommand,
   SubscriptionPlanIdParams,
   UpdateCommissionCommand,
+  UpdateSubscriptionPlanCostCommand,
 } from '@my-app/contract';
 
 export class SubscriptionPlanController {
@@ -64,6 +65,26 @@ export class SubscriptionPlanController {
       const cmd = req.validated.body as UpdateCommissionCommand;
       const actorId = req.user!.id;
       const result = await this.service.updateCommission(cmd, actorId);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getCosts = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.service.getCosts();
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateCost = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const cmd = req.validated.body as UpdateSubscriptionPlanCostCommand;
+      const actorId = req.user!.id;
+      const result = await this.service.updateCost(cmd, actorId);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

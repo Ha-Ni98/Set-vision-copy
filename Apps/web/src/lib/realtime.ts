@@ -1,6 +1,13 @@
 import { io, type Socket } from "socket.io-client";
 import { toast } from "sonner";
-import { UserRole, type ServerToClientEvents } from "@my-app/contract";
+import {
+  UserRole,
+  type ServerToClientEvents as ActivationServerToClientEvents,
+  type OrderRequestCreatedPayload,
+  type OrderRequestStatusChangedPayload,
+  type RevocationRequestCreatedPayload,
+  type RevocationRequestStatusChangedPayload,
+} from "@my-app/contract";
 import * as tokenStore from "./token-store";
 import { refreshTokens } from "./axios";
 import { queryClient } from "./query-client";
@@ -17,12 +24,32 @@ const NS = {
   CLIENT: "/client",
   ACTIVATORS: "/activators",
   ADMIN: "/admin",
+  DISTRIBUTORS: "/distributors",
 } as const;
+
+// Record<UserRole, string>, so a fourth role fails to compile here rather than silently
+// falling back to /activators (v2-decisions.md R1 — the bug this namespace map exists to
+// prevent for good).
+const ROLE_NAMESPACE: Record<UserRole, string> = {
+  [UserRole.ADMIN]: NS.ADMIN,
+  [UserRole.ACTIVATOR]: NS.ACTIVATORS,
+  [UserRole.DISTRIBUTOR]: NS.DISTRIBUTORS,
+};
 
 interface ClientToServerEvents {
   subscribe: (activationId: string) => void;
   unsubscribe: (activationId: string) => void;
 }
+
+// ServerToClientEvents from the contract only maps ActivationEvents (activation.events.ts) —
+// the same contract gap as the comment above. Widened locally, same as the rest of this file,
+// until CardOrderRequestEvents lands in a contract-side ServerToClientEvents.
+type ServerToClientEvents = ActivationServerToClientEvents & {
+  "order-request:created": (p: OrderRequestCreatedPayload) => void;
+  "order-request:status-changed": (p: OrderRequestStatusChangedPayload) => void;
+  "revocation-request:created": (p: RevocationRequestCreatedPayload) => void;
+  "revocation-request:status-changed": (p: RevocationRequestStatusChangedPayload) => void;
+};
 
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -143,6 +170,49 @@ function attachAdminNamespaceListeners(socket: AppSocket): void {
   socket.on("activation:frozen", () => {
     queryClient.invalidateQueries({ queryKey: qk.activations.all() });
   });
+
+  // Set 4: a new distributor submission — the admin queue has no live feed/badge yet
+  // (v2-decisions.md §4.4 / Set 4 plan Q2), so this is invalidation + a toast.
+  socket.on("order-request:created", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.all() });
+    toast.info(translate("admin.orderRequests.toast.newRequest", getLanguage()));
+  });
+  socket.on("order-request:status-changed", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.all() });
+  });
+
+  // Set 5: same invalidation + toast shape as order requests.
+  socket.on("revocation-request:created", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.all() });
+    toast.info(translate("admin.revocationRequests.toast.newRequest", getLanguage()));
+  });
+  socket.on("revocation-request:status-changed", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.all() });
+  });
+}
+
+// Set 4/5: distributor-owned order/revocation requests move live — a decision, an unlink,
+// or the linked order's own status propagating all land here.
+// Set 7: a linked order reaching DELIVERED assigns cards to this distributor and moves every
+// dashboard/card/order count — the same transaction (order.service.ts) that propagates
+// order-request:status-changed — so that event also invalidates the Set 7 portal queries.
+function attachDistributorNamespaceListeners(socket: AppSocket): void {
+  socket.on("connect", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.distributors.myDashboard() });
+    queryClient.invalidateQueries({ queryKey: qk.cards.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.orders.mineAll() });
+  });
+  socket.on("order-request:status-changed", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardOrderRequests.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.orders.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.cards.mineAll() });
+    queryClient.invalidateQueries({ queryKey: qk.distributors.myDashboard() });
+  });
+  socket.on("revocation-request:status-changed", () => {
+    queryClient.invalidateQueries({ queryKey: qk.cardRevocationRequests.mineAll() });
+  });
 }
 
 function attachClientNamespaceListeners(socket: AppSocket): void {
@@ -174,15 +244,20 @@ let roleSocket: AppSocket | null = null;
 
 export function connectRoleSocket(role: UserRole): void {
   disconnectRoleSocket();
-  const namespace = role === UserRole.ADMIN ? NS.ADMIN : NS.ACTIVATORS;
-  const socket = io(wsUrl(namespace), { auth: authCallback }) as AppSocket;
+  const socket = io(wsUrl(ROLE_NAMESPACE[role]), { auth: authCallback }) as AppSocket;
 
   attachAuthErrorHandling(socket);
   attachStatusTracking(socket);
-  if (role === UserRole.ADMIN) {
-    attachAdminNamespaceListeners(socket);
-  } else {
-    attachActivatorNamespaceListeners(socket);
+  switch (role) {
+    case UserRole.ADMIN:
+      attachAdminNamespaceListeners(socket);
+      break;
+    case UserRole.ACTIVATOR:
+      attachActivatorNamespaceListeners(socket);
+      break;
+    case UserRole.DISTRIBUTOR:
+      attachDistributorNamespaceListeners(socket);
+      break;
   }
 
   roleSocket = socket;

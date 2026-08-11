@@ -3,6 +3,7 @@ import {
   ORDER_ROUTES,
   UserRole,
   GetOrdersQuerySchema,
+  GetMyOrdersQuerySchema,
   CreateOrderSchema,
   OrderIdParamsSchema,
   TransitionOrderSchema,
@@ -17,6 +18,7 @@ const service = new OrderService(prisma);
 const controller = new OrderController(service);
 
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+const distributorOnly = requireAuth({ roles: [UserRole.DISTRIBUTOR] });
 
 export const orderRouter = Router();
 
@@ -25,6 +27,21 @@ orderRouter.get(
   adminOnly,
   validateRequest({ query: GetOrdersQuerySchema }),
   controller.getAll,
+);
+
+// Static segments must be registered before the /:id param route
+orderRouter.get(
+  ORDER_ROUTES.GET_MINE,
+  distributorOnly,
+  validateRequest({ query: GetMyOrdersQuerySchema }),
+  controller.getMine,
+);
+
+orderRouter.get(
+  ORDER_ROUTES.GET_MINE_BY_ID,
+  distributorOnly,
+  validateRequest({ params: OrderIdParamsSchema }),
+  controller.getMineById,
 );
 
 orderRouter.get(

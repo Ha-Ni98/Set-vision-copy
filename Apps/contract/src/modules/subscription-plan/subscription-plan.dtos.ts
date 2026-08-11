@@ -42,3 +42,14 @@ export const CommissionMatrixResponseSchema = z.object({
   ),
 });
 export type CommissionMatrixDTO = z.infer<typeof CommissionMatrixResponseSchema>;
+
+// Set 9 (D10). null = never configured for this plan (renders "—"); distinct from a
+// deliberate 0 (a genuinely free plan).
+export const SubscriptionPlanCostResponseSchema = z.object({
+  subscriptionPlanId: z.uuid(),
+  planLabel: z.string(),
+  isActive: z.boolean(),
+  cost: z.number().nullable(),
+  updatedAt: z.iso.datetime().nullable(),
+});
+export type SubscriptionPlanCostDTO = z.infer<typeof SubscriptionPlanCostResponseSchema>;

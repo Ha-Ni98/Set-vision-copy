@@ -9,11 +9,16 @@ import {
   StatisticsOverviewResponseSchema,
   WilayaHeatmapResponseSchema,
   WilayaDrilldownResponseSchema,
+  RevenueSummaryResponseSchema,
+  RevenueSeriesResponseSchema,
+  RevenueBreakdownResponseSchema,
   ActivationStat,
   CardStat,
   LotStat,
   OrderStat,
   SetStat,
+  type RevenueGranularity,
+  type RevenueDimension,
   type DashboardStatsDTO,
   type ActivatorsSummaryDTO,
   type DistributorsSummaryDTO,
@@ -23,6 +28,9 @@ import {
   type StatisticsOverviewDTO,
   type WilayaHeatmapDTO,
   type WilayaDrilldownDTO,
+  type RevenueSummaryDTO,
+  type RevenueSeriesDTO,
+  type RevenueBreakdownDTO,
 } from '@my-app/contract';
 import { composeSubscriptionLabel } from '@modules/set/set.mapper';
 
@@ -100,6 +108,30 @@ export type RawWilayaDrilldown = {
     count: number;
   }[];
   activationsOverTime: { date: Date; count: number }[];
+};
+
+export type RawRevenueTotals = { cashIn: DecimalLike; cashOut: DecimalLike; net: DecimalLike };
+
+export type RawRevenueSummary = {
+  from: Date;
+  to: Date;
+  current: RawRevenueTotals;
+  previous: RawRevenueTotals;
+  cashOutSplit: { activationCost: DecimalLike; activationPrice: DecimalLike };
+  deliveredOrders: number;
+  completedActivations: number;
+};
+
+export type RawRevenueSeries = {
+  granularity: RevenueGranularity;
+  points: { bucketStart: Date; cashIn: DecimalLike; cashOut: DecimalLike; net: DecimalLike }[];
+};
+
+export type RawRevenueBreakdown = {
+  dimension: RevenueDimension;
+  rows: { key: string; label: string; cashIn: DecimalLike; cashOut: DecimalLike; net: DecimalLike }[];
+  others: RawRevenueTotals;
+  totals: RawRevenueTotals;
 };
 
 export class StatisticsMapper {
@@ -206,6 +238,55 @@ export class StatisticsMapper {
         date: r.date.toISOString(),
         count: r.count,
       })),
+    });
+  }
+
+  static toRevenueTotalsDTO(raw: RawRevenueTotals) {
+    return {
+      cashIn: Number(raw.cashIn.toFixed(2)),
+      cashOut: Number(raw.cashOut.toFixed(2)),
+      net: Number(raw.net.toFixed(2)),
+    };
+  }
+
+  static toRevenueSummaryDTO(raw: RawRevenueSummary): RevenueSummaryDTO {
+    return RevenueSummaryResponseSchema.parse({
+      range: { from: raw.from.toISOString(), to: raw.to.toISOString() },
+      current: StatisticsMapper.toRevenueTotalsDTO(raw.current),
+      previous: StatisticsMapper.toRevenueTotalsDTO(raw.previous),
+      cashOutSplit: {
+        activationCost: Number(raw.cashOutSplit.activationCost.toFixed(2)),
+        activationPrice: Number(raw.cashOutSplit.activationPrice.toFixed(2)),
+      },
+      deliveredOrders: raw.deliveredOrders,
+      completedActivations: raw.completedActivations,
+    });
+  }
+
+  static toRevenueSeriesDTO(raw: RawRevenueSeries): RevenueSeriesDTO {
+    return RevenueSeriesResponseSchema.parse({
+      granularity: raw.granularity,
+      points: raw.points.map((p) => ({
+        bucketStart: p.bucketStart.toISOString(),
+        cashIn: Number(p.cashIn.toFixed(2)),
+        cashOut: Number(p.cashOut.toFixed(2)),
+        net: Number(p.net.toFixed(2)),
+      })),
+    });
+  }
+
+  static toRevenueBreakdownDTO(raw: RawRevenueBreakdown): RevenueBreakdownDTO {
+    return RevenueBreakdownResponseSchema.parse({
+      dimension: raw.dimension,
+      rows: raw.rows.map((r) => ({
+        key: r.key,
+        label: r.label,
+        cashIn: Number(r.cashIn.toFixed(2)),
+        cashOut: Number(r.cashOut.toFixed(2)),
+        net: Number(r.net.toFixed(2)),
+      })),
+      others: StatisticsMapper.toRevenueTotalsDTO(raw.others),
+      totals: StatisticsMapper.toRevenueTotalsDTO(raw.totals),
     });
   }
 }

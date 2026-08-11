@@ -11,6 +11,8 @@ export const ACTIVATION_ROUTES = {
   BASE: '/activations',
   GET_PENDING: '/pending',
   GET_ACTIVE: '/active',
+  GET_ON_MY_CARDS: '/on-my-cards',
+  GET_ON_MY_CARDS_BY_ID: '/on-my-cards/:id',
   TAKE: '/:id/take',
   FLAG_WRONG: '/:id/flag-wrong-info',
   REQUEST_ADDITIONAL: '/:id/request-additional',
@@ -25,4 +27,5 @@ export const ACTIVATION_ROUTES = {
   ACTIVATE_BY_ADMIN: '/:id/activate-by-admin',
   CANCEL_BY_ADMIN: '/:id/cancel-by-admin',
   SET_PRICE: '/:id/set-price',
+  SET_COST: '/:id/set-cost',
 } as const;

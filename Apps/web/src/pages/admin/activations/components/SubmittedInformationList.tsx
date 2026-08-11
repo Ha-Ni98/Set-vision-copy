@@ -1,10 +1,15 @@
 import type { AccountFieldValue } from "@my-app/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 
+// U+2014 EM DASH — punctuation for "no value", not copy. Not a translation key.
+const EMPTY_VALUE = "—";
+
 interface Props {
   fields: AccountFieldValue[];
 }
 
+// Values are raw here (D3) — incl. PASSWORD/OTP, selectable in monospace. No reveal toggle,
+// no blur, no copy-gate: the prompt forbids a reveal gate on data the client typed themselves.
 export function SubmittedInformationList({ fields }: Props) {
   const { t } = useTranslation();
 
@@ -17,7 +22,9 @@ export function SubmittedInformationList({ fields }: Props) {
         {fields.map((field) => (
           <div key={field.fieldLabel}>
             <dt className="text-muted-foreground">{field.fieldLabel}</dt>
-            <dd className="font-medium text-foreground">{field.value}</dd>
+            <dd className="select-all font-mono font-medium text-foreground">
+              {field.value || EMPTY_VALUE}
+            </dd>
           </div>
         ))}
       </dl>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LineChart as LineChartIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
-import { formatTime } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 
 interface Props {
   data?: StatisticsOverviewDTO["avgTimeTrend"];
@@ -67,12 +67,13 @@ export function AvgTimeTrendChart({ data, isLoading, isError, onRetry }: Props) 
             className="text-muted-foreground"
           />
           <YAxis
+            width={96}
             tick={{ fontSize: 12 }}
             stroke="currentColor"
             className="text-muted-foreground"
-            tickFormatter={(v: number) => formatTime(v)}
+            tickFormatter={(v: number) => formatDuration(v)}
           />
-          <Tooltip formatter={(v) => formatTime(Number(v))} />
+          <Tooltip formatter={(v) => formatDuration(Number(v))} />
           <Line
             type="monotone"
             dataKey="avgSeconds"

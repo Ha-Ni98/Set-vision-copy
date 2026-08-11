@@ -20,9 +20,14 @@ import {
   type AdminActivationDTO,
   ActivationDetailResponseSchema,
   type ActivationDetailDTO,
+  DistributorActivationResponseSchema,
+  type DistributorActivationDTO,
+  DistributorActivationDetailResponseSchema,
+  type DistributorActivationDetailDTO,
   type CardStat,
 } from '@my-app/contract';
 import { composeSubscriptionLabel } from '@modules/set/set.mapper';
+import { distributorVisibleKey } from '@modules/card/card.mapper';
 
 // ─── Static lookups ───────────────────────────────────────────────────────────
 
@@ -34,11 +39,6 @@ const FIELD_LABEL: Record<AccountInformation, string> = {
   [AccountInformation.BIRTHDAY]: 'Birthday',
   [AccountInformation.PASSWORD]: 'Password',
 };
-
-const SENSITIVE_FIELDS = new Set<AccountInformation>([
-  AccountInformation.PASSWORD,
-  AccountInformation.OTP,
-]);
 
 const STAT_TO_CLIENT_STATUS: Partial<Record<ActivationStat, ClientActivationStatus>> = {
   [ActivationStat.PENDING]: ClientActivationStatus.SUBMITTED,
@@ -52,7 +52,9 @@ const STAT_TO_CLIENT_STATUS: Partial<Record<ActivationStat, ClientActivationStat
 
 // ─── Join types (shapes the service must supply) ─────────────────────────────
 
-export type ActivationPlanJoin = Pick<SubscriptionPlan, 'subscriptionType' | 'subscriptionDuration'>;
+// Set 10 (D13, U1): widened to include 'id' — the activation-email picker is scoped to the
+// activation's plan, and the composed subscriptionLabel string cannot be used as a key.
+export type ActivationPlanJoin = Pick<SubscriptionPlan, 'id' | 'subscriptionType' | 'subscriptionDuration'>;
 
 export type ActivationDistributorJoin = {
   storeName: string;
@@ -72,6 +74,13 @@ export type ActivationStepEntry = {
   additionalInformation: Array<{ accountInform: string; value: string | null }>;
 };
 
+export type ActivationCardChainJoin = {
+  key: string;
+  set: { setNumber: string };
+  lot: { lotNumber: string } | null;
+  subscriptionPlan: ActivationPlanJoin;
+};
+
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 function toLabel(field: string): string {
@@ -80,11 +89,6 @@ function toLabel(field: string): string {
 
 function maskKey(key: string): string {
   return key.length <= 4 ? key : '*'.repeat(key.length - 4) + key.slice(-4);
-}
-
-function maskValue(field: string, value: string | null): string {
-  if (value === null) return '';
-  return SENSITIVE_FIELDS.has(field as AccountInformation) ? '****' : value;
 }
 
 function decimalToNumber(d: Decimal | null | undefined): number | null {
@@ -203,6 +207,7 @@ export class ActivationMapper {
     const dto: ActiveRequestDTO = {
       id: activation.id,
       subscriptionLabel: composeSubscriptionLabel(plan),
+      subscriptionPlanId: plan.id,
       key: cardKey,
       takenAt: activation.takenAt.toISOString(),
       state: activation.activationStat as unknown as ActivationStat,
@@ -288,6 +293,7 @@ export class ActivationMapper {
       takenAt: Date | null;
       completedAt: Date | null;
       activationPrice: Decimal | null;
+      activationCost: Decimal | null;
       freezReason: string | null;
     },
     plan: ActivationPlanJoin,
@@ -299,6 +305,7 @@ export class ActivationMapper {
       id: activation.id,
       key: cardKey,
       subscriptionLabel: composeSubscriptionLabel(plan),
+      subscriptionPlanId: plan.id,
       activatorFullName,
       distributorStoreName,
       clientName: activation.clientFullName,
@@ -309,6 +316,7 @@ export class ActivationMapper {
       completedAt: activation.completedAt ? activation.completedAt.toISOString() : null,
       durationSeconds: durationSeconds(activation.takenAt, activation.completedAt),
       activationPrice: decimalToNumber(activation.activationPrice),
+      activationCost: decimalToNumber(activation.activationCost),
       freezeReason: activation.freezReason,
     };
     return AdminActivationResponseSchema.parse(dto);
@@ -317,21 +325,30 @@ export class ActivationMapper {
   static toActivationDetailDTO(
     activation: {
       id: string;
+      activationStat: string;
       clientFullName: string;
       clientPhone: string;
       activationPrice: Decimal | null;
+      activationCost: Decimal | null;
       freezReason: string | null;
+      requestedAt: Date;
+      takenAt: Date | null;
+      completedAt: Date | null;
+      activationEmail: string | null;
     },
     distributor: ActivationDistributorJoin,
     activator: { id: string; fullName: string } | null,
+    card: ActivationCardChainJoin,
     information: ActivationInfoEntry[],
     steps: ActivationStepEntry[],
     cardHistory: Array<{ stat: CardStat; at: Date }>,
     commissionTierLabel: string | null,
   ): ActivationDetailDTO {
+    // Values below are RAW — see the file-level note above ActivationDetailResponseSchema
+    // (D3): the admin detail path no longer masks PASSWORD/OTP.
     const submittedInformation = information.map((i) => ({
       fieldLabel: toLabel(i.accountInform),
-      value: maskValue(i.accountInform, i.value),
+      value: i.value ?? '',
     }));
 
     const timeline = steps.map((step) => ({
@@ -339,17 +356,18 @@ export class ActivationMapper {
       createdAt: step.createdAt.toISOString(),
       wrongFields: step.wrongInformation.map((w) => ({
         fieldLabel: toLabel(w.accountInform),
-        value: maskValue(w.accountInform, w.value),
+        value: w.value ?? '',
       })),
       additionalFields: step.additionalInformation.map((a) => ({
         fieldLabel: toLabel(a.accountInform),
-        value: maskValue(a.accountInform, a.value),
+        value: a.value ?? '',
       })),
       freezeReason: step.activationStat === ActivationStat.FREEZE ? activation.freezReason : null,
     }));
 
     const dto: ActivationDetailDTO = {
       id: activation.id,
+      state: activation.activationStat as unknown as ActivationStat,
       client: {
         fullName: activation.clientFullName,
         phone: activation.clientPhone,
@@ -360,6 +378,19 @@ export class ActivationMapper {
         communeName: distributor.commune.frName,
       },
       activator: activator ? { id: activator.id, fullName: activator.fullName } : null,
+      card: {
+        key: card.key,
+        setNumber: card.set.setNumber,
+        lotNumber: card.lot ? card.lot.lotNumber : null,
+        subscriptionLabel: composeSubscriptionLabel(card.subscriptionPlan),
+      },
+      timing: {
+        requestedAt: activation.requestedAt.toISOString(),
+        takenAt: activation.takenAt ? activation.takenAt.toISOString() : null,
+        completedAt: activation.completedAt ? activation.completedAt.toISOString() : null,
+        durationSeconds: durationSeconds(activation.takenAt, activation.completedAt),
+      },
+      activationEmail: activation.activationEmail,
       submittedInformation,
       timeline,
       cardHistory: cardHistory.map((h) => ({
@@ -368,9 +399,66 @@ export class ActivationMapper {
       })),
       financial: {
         activationPrice: decimalToNumber(activation.activationPrice),
+        activationCost: decimalToNumber(activation.activationCost),
         commissionTierLabel,
       },
     };
     return ActivationDetailResponseSchema.parse(dto);
+  }
+
+  // Distributor-facing — no activator identity, no money, no client credentials. See the
+  // DELIBERATELY ABSENT comment on DistributorActivationResponseSchema (Set 7 §4.1).
+  static toDistributorActivationDTO(
+    activation: {
+      id: string;
+      activationStat: string;
+      clientFullName: string;
+      clientPhone: string;
+      requestedAt: Date;
+      takenAt: Date | null;
+      completedAt: Date | null;
+    },
+    plan: ActivationPlanJoin,
+    card: { id: string; key: string; cardStat: CardStat },
+  ): DistributorActivationDTO {
+    const dto: DistributorActivationDTO = {
+      id: activation.id,
+      subscriptionLabel: composeSubscriptionLabel(plan),
+      key: distributorVisibleKey(card.key, card.cardStat),
+      cardId: card.id,
+      cardStat: card.cardStat,
+      client: {
+        fullName: activation.clientFullName,
+        phone: activation.clientPhone,
+      },
+      state: activation.activationStat as unknown as ActivationStat,
+      requestedAt: activation.requestedAt.toISOString(),
+      completedAt: activation.completedAt ? activation.completedAt.toISOString() : null,
+      durationSeconds: durationSeconds(activation.takenAt, activation.completedAt),
+    };
+    return DistributorActivationResponseSchema.parse(dto);
+  }
+
+  static toDistributorActivationDetailDTO(
+    activation: {
+      id: string;
+      activationStat: string;
+      clientFullName: string;
+      clientPhone: string;
+      requestedAt: Date;
+      takenAt: Date | null;
+      completedAt: Date | null;
+    },
+    plan: ActivationPlanJoin,
+    card: { id: string; key: string; cardStat: CardStat; lot: { lotNumber: string } | null },
+    statusHistory: Array<{ stat: ActivationStat; at: Date }>,
+  ): DistributorActivationDetailDTO {
+    const base = ActivationMapper.toDistributorActivationDTO(activation, plan, card);
+    const dto: DistributorActivationDetailDTO = {
+      ...base,
+      lotNumber: card.lot ? card.lot.lotNumber : null,
+      statusHistory: statusHistory.map((h) => ({ stat: h.stat, at: h.at.toISOString() })),
+    };
+    return DistributorActivationDetailResponseSchema.parse(dto);
   }
 }

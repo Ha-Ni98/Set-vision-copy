@@ -12,7 +12,7 @@ export const ActivatorResponseSchema = z.object({
   credits: z.number(),
   nbOfActivation: z.number().int(),
   nbOfSuccessfulActivation: z.number().int(),
-  avgActivationTimeSeconds: z.number().nullable(),
+  avgActivationTimeSeconds: z.number().int().nullable(),
   lastLoginAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
 });
@@ -55,7 +55,7 @@ export const ActivatorDashboardResponseSchema = z.object({
   creditsBalance: z.number(),
   totalActivations: z.number().int(),
   activationsToday: z.number().int(),
-  avgActivationTimeSeconds: z.number().nullable(),
+  avgActivationTimeSeconds: z.number().int().nullable(),
   activeSlotsUsed: z.number().int(),
   weekly: z.array(
     z.object({

@@ -26,6 +26,11 @@ export type SubmitActivationCommand = z.infer<typeof SubmitActivationSchema>;
 
 export const UpdateActivationSchema = z.object({
   accountFields: AccountFieldsSchema,
+  // The client can fix their own contact details during the pre-pickup (PENDING) window
+  // (set-12-plan §5.2). Optional because a WRONG_INFORMATION correction ignores them — the
+  // activator cannot flag them (FlagWrongInfoSchema is AccountInformation[] only).
+  fullName: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
 });
 export type UpdateActivationCommand = z.infer<typeof UpdateActivationSchema>;
 
@@ -62,3 +67,10 @@ export const SetActivatorPriceSchema = z.object({
   amount: z.number().nonnegative().multipleOf(0.01),
 });
 export type SetActivatorPriceCommand = z.infer<typeof SetActivatorPriceSchema>;
+
+// A separate schema from SetActivatorPriceSchema even though the shape is identical — price
+// and cost are different commands on different money (Set 9, D10).
+export const SetActivationCostSchema = z.object({
+  amount: z.number().nonnegative().multipleOf(0.01),
+});
+export type SetActivationCostCommand = z.infer<typeof SetActivationCostSchema>;

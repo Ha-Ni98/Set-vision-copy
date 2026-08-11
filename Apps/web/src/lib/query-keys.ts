@@ -13,11 +13,24 @@ import type {
   GetLotsQuery,
   GetAvailableLotsQuery,
   GetOrdersQuery,
+  GetMyOrdersQuery,
+  GetCardOrderRequestsQuery,
+  GetMyCardOrderRequestsQuery,
+  GetCardRevocationRequestsQuery,
+  GetMyCardRevocationRequestsQuery,
   GetCardsQuery,
   GetAvailableCardsQuery,
+  GetDistributorCardsQuery,
+  GetDistributorActivationsQuery,
   StatisticsOverviewQuery,
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
+  RevenueSummaryQuery,
+  RevenueSeriesQuery,
+  RevenueBreakdownQuery,
+  GetNotificationsQuery,
+  GetActivationEmailsQuery,
+  UserRole,
 } from "@my-app/contract";
 
 // Central query-key registry (plan.md §3.1). Hooks read keys from here — never inline
@@ -49,6 +62,10 @@ export const qk = {
     listAll: () => ["activations", "list"] as const,
     list: (query: GetActivationsQuery) => ["activations", "list", query] as const,
     detail: (id: string) => ["activations", "detail", id] as const,
+    onMyCardsAll: () => ["activations", "on-my-cards"] as const,
+    onMyCards: (query: GetDistributorActivationsQuery) =>
+      ["activations", "on-my-cards", query] as const,
+    onMyCardsDetail: (id: string) => ["activations", "on-my-cards", "detail", id] as const,
   },
   activators: {
     all: () => ["activators"] as const,
@@ -76,6 +93,16 @@ export const qk = {
     list: (query: GetSubscriptionPlansQuery) => ["subscription-plans", "list", query] as const,
     commissionDurations: () => ["subscription-plans", "commission-durations"] as const,
     commissions: () => ["subscription-plans", "commissions"] as const,
+    costs: () => ["subscription-plans", "costs"] as const,
+  },
+  // `all()` sweeps both the settings-list cache and every cached pool — a delete must vanish
+  // from the picker too, so both mutations invalidate this root (Set 10 plan §7.1).
+  activationEmails: {
+    all: () => ["activation-emails"] as const,
+    listAll: () => ["activation-emails", "list"] as const,
+    list: (query: GetActivationEmailsQuery) => ["activation-emails", "list", query] as const,
+    pool: (subscriptionPlanId: string) =>
+      ["activation-emails", "pool", subscriptionPlanId] as const,
   },
   geography: {
     all: () => ["geography"] as const,
@@ -90,6 +117,7 @@ export const qk = {
     all: () => ["distributors"] as const,
     list: (query: GetDistributorsQuery) => ["distributors", "list", query] as const,
     detail: (id: string) => ["distributors", "detail", id] as const,
+    myDashboard: () => ["distributors", "my-dashboard"] as const,
   },
   sets: {
     all: () => ["sets"] as const,
@@ -105,13 +133,39 @@ export const qk = {
     all: () => ["orders"] as const,
     list: (query: GetOrdersQuery) => ["orders", "list", query] as const,
     detail: (id: string) => ["orders", "detail", id] as const,
+    mineAll: () => ["orders", "mine"] as const,
+    mine: (query: GetMyOrdersQuery) => ["orders", "mine", query] as const,
+    mineDetail: (id: string) => ["orders", "mine", "detail", id] as const,
+  },
+  cardOrderRequests: {
+    all: () => ["card-order-requests"] as const,
+    list: (query: GetCardOrderRequestsQuery) => ["card-order-requests", "list", query] as const,
+    mineAll: () => ["card-order-requests", "mine"] as const,
+    mine: (query: GetMyCardOrderRequestsQuery) => ["card-order-requests", "mine", query] as const,
+    linkable: () => ["card-order-requests", "linkable"] as const,
+    detail: (id: string) => ["card-order-requests", "detail", id] as const,
+  },
+  cardRevocationRequests: {
+    all: () => ["card-revocation-requests"] as const,
+    list: (query: GetCardRevocationRequestsQuery) =>
+      ["card-revocation-requests", "list", query] as const,
+    mineAll: () => ["card-revocation-requests", "mine"] as const,
+    mine: (query: GetMyCardRevocationRequestsQuery) =>
+      ["card-revocation-requests", "mine", query] as const,
+    eligible: () => ["card-revocation-requests", "eligible"] as const,
+    detail: (id: string) => ["card-revocation-requests", "detail", id] as const,
   },
   cards: {
     all: () => ["cards"] as const,
     list: (query: GetCardsQuery) => ["cards", "list", query] as const,
+    // Full query (plan, search, page, limit) — set-8-plan §7. Paging/searching the picker never
+    // needs to invalidate this; only a lot create/delete does, via cards.all().
     availableForLot: (query: GetAvailableCardsQuery) =>
       ["cards", "available-for-lot", query] as const,
     detail: (id: string) => ["cards", "detail", id] as const,
+    mineAll: () => ["cards", "mine"] as const,
+    mine: (query: GetDistributorCardsQuery) => ["cards", "mine", query] as const,
+    mineDetail: (id: string) => ["cards", "mine", "detail", id] as const,
   },
   statistics: {
     all: () => ["statistics"] as const,
@@ -125,5 +179,18 @@ export const qk = {
     wilayaHeatmap: (query: WilayaHeatmapQuery) => ["statistics", "wilaya-heatmap", query] as const,
     wilayaDrilldown: (wilayaId: string, query: WilayaDrilldownQuery) =>
       ["statistics", "wilaya-drilldown", wilayaId, query] as const,
+    revenueSummary: (query: RevenueSummaryQuery) =>
+      ["statistics", "revenue", "summary", query] as const,
+    revenueSeries: (query: RevenueSeriesQuery) =>
+      ["statistics", "revenue", "series", query] as const,
+    revenueBreakdown: (query: RevenueBreakdownQuery) =>
+      ["statistics", "revenue", "breakdown", query] as const,
+  },
+  notifications: {
+    all: () => ["notifications"] as const,
+    list: (query: GetNotificationsQuery) => ["notifications", "list", query] as const,
+  },
+  telegramLink: {
+    detail: (role: UserRole, profileId: string) => ["telegram-link", role, profileId] as const,
   },
 } as const;

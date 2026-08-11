@@ -18,3 +18,14 @@ export const OrderIdParamsSchema = z.object({
   id: z.uuid(),
 });
 export type OrderIdParams = z.infer<typeof OrderIdParamsSchema>;
+
+// Distributor-scoped list — no distributorId field. Scope is always the signed-in principal.
+export const GetMyOrdersQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(100).default(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(10).optional(),
+  search: z.string().optional(),
+  state: z.enum(OrderStat).optional(),
+  dateFrom: z.iso.datetime().optional(),
+  dateTo: z.iso.datetime().optional(),
+});
+export type GetMyOrdersQuery = z.infer<typeof GetMyOrdersQuerySchema>;

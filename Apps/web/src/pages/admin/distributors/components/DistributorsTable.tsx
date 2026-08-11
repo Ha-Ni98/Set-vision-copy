@@ -31,6 +31,10 @@ interface Props {
   onToggle: (distributor: DistributorDTO) => void;
   onDelete: (distributor: DistributorDTO) => void;
   onAddFirst?: () => void;
+  /** Bubbles to the page, which owns the create-account modal + mutation (mirrors the
+   * page-level "Add Distributor" create flow — this is per-row, so it can't live here). */
+  onRequestCreateAccount: (distributor: DistributorDTO) => void;
+  onUnlinkAccount: (distributor: DistributorDTO) => void;
 }
 
 export function DistributorsTable({
@@ -43,10 +47,13 @@ export function DistributorsTable({
   onToggle,
   onDelete,
   onAddFirst,
+  onRequestCreateAccount,
+  onUnlinkAccount,
 }: Props) {
   const { t } = useTranslation();
   const [toggleRow, setToggleRow] = useState<DistributorDTO | null>(null);
   const [deleteRow, setDeleteRow] = useState<DistributorDTO | null>(null);
+  const [unlinkRow, setUnlinkRow] = useState<DistributorDTO | null>(null);
 
   const columns = useMemo<ColumnDef<DistributorDTO>[]>(
     () => [
@@ -74,11 +81,13 @@ export function DistributorsTable({
             distributor={row.original}
             onRequestToggle={setToggleRow}
             onRequestDelete={setDeleteRow}
+            onRequestCreateAccount={onRequestCreateAccount}
+            onRequestUnlinkAccount={setUnlinkRow}
           />
         ),
       },
     ],
-    [t],
+    [t, onRequestCreateAccount],
   );
 
   if (isLoading) return <TableSkeleton rows={5} columns={9} />;
@@ -180,6 +189,29 @@ export function DistributorsTable({
               }}
             >
               {t("common.actions.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={unlinkRow !== null} onOpenChange={(open) => !open && setUnlinkRow(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.distributors.account.unlinkTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.distributors.account.unlinkBody")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (unlinkRow) onUnlinkAccount(unlinkRow);
+                setUnlinkRow(null);
+              }}
+            >
+              {t("admin.distributors.account.unlink")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

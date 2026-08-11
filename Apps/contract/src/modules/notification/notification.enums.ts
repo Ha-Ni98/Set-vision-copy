@@ -1,0 +1,27 @@
+export enum NotificationChannel {
+  TELEGRAM = 'TELEGRAM',
+  EMAIL = 'EMAIL',
+  WHATSAPP = 'WHATSAPP',
+}
+
+export enum NotificationStat {
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  FAILED = 'FAILED',
+}
+
+// One value per template — see common/notifications/notification.templates.ts on the backend.
+// Only TELEGRAM_LINKED has a real template in Set 6a; the rest are declared now (Q11) so Set 6b
+// needs no second migration.
+export enum NotificationType {
+  TELEGRAM_LINKED = 'TELEGRAM_LINKED',
+  ACTIVATION_CREATED = 'ACTIVATION_CREATED',
+  ACTIVATION_INFORMATION_UPDATED = 'ACTIVATION_INFORMATION_UPDATED',
+  ACTIVATION_OTP_RECEIVED = 'ACTIVATION_OTP_RECEIVED',
+  ACTIVATION_STATUS_CHANGED = 'ACTIVATION_STATUS_CHANGED',
+  ACTIVATION_FROZEN = 'ACTIVATION_FROZEN',
+  ORDER_REQUEST_CREATED = 'ORDER_REQUEST_CREATED',
+  REVOCATION_REQUEST_CREATED = 'REVOCATION_REQUEST_CREATED',
+  ORDER_CREATED = 'ORDER_CREATED',
+  REVOCATION_APPROVED = 'REVOCATION_APPROVED',
+}

@@ -6,6 +6,9 @@ import type {
   WilayaHeatmapQuery,
   WilayaDrilldownQuery,
   WilayaIdParams,
+  RevenueSummaryQuery,
+  RevenueSeriesQuery,
+  RevenueBreakdownQuery,
 } from '@my-app/contract';
 
 export class StatisticsController {
@@ -90,6 +93,36 @@ export class StatisticsController {
       const { wilayaId } = req.validated.params as WilayaIdParams;
       const query = req.validated.query as WilayaDrilldownQuery;
       const result = await this.service.wilayaDrilldown(wilayaId, query);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  revenueSummary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.validated.query as RevenueSummaryQuery;
+      const result = await this.service.revenueSummary(query);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  revenueSeries = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.validated.query as RevenueSeriesQuery;
+      const result = await this.service.revenueSeries(query);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  revenueBreakdown = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.validated.query as RevenueBreakdownQuery;
+      const result = await this.service.revenueBreakdown(query);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

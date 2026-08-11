@@ -6,6 +6,7 @@ import {
   CreateSubscriptionPlanSchema,
   SubscriptionPlanIdParamsSchema,
   UpdateCommissionSchema,
+  UpdateSubscriptionPlanCostSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
@@ -17,6 +18,9 @@ const service = new SubscriptionPlanService(prisma);
 const controller = new SubscriptionPlanController(service);
 
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+// SubscriptionPlanDTO is a catalogue with no financial data (commissions stay adminOnly via
+// GET_COMMISSIONS above) — the distributor order-request submit form needs this list too.
+const adminOrDistributor = requireAuth({ roles: [UserRole.ADMIN, UserRole.DISTRIBUTOR] });
 
 export const subscriptionPlanRouter = Router();
 
@@ -37,11 +41,18 @@ subscriptionPlanRouter.patch(
   validateRequest({ body: UpdateCommissionSchema }),
   controller.updateCommission,
 );
+subscriptionPlanRouter.get(SUBSCRIPTION_PLAN_ROUTES.GET_COSTS, adminOnly, controller.getCosts);
+subscriptionPlanRouter.patch(
+  SUBSCRIPTION_PLAN_ROUTES.UPDATE_COST,
+  adminOnly,
+  validateRequest({ body: UpdateSubscriptionPlanCostSchema }),
+  controller.updateCost,
+);
 
 // Collection routes
 subscriptionPlanRouter.get(
   SUBSCRIPTION_PLAN_ROUTES.GET_ALL,
-  adminOnly,
+  adminOrDistributor,
   validateRequest({ query: GetSubscriptionPlansQuerySchema }),
   controller.getAll,
 );

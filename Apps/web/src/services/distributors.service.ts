@@ -3,13 +3,25 @@ import {
   type ApiResponse,
   type DistributorDTO,
   type DistributorDetailDTO,
+  type DistributorWithCredentialsDTO,
+  type DistributorDashboardDTO,
   type PaginatedDistributors,
   type GetDistributorsQuery,
   type CreateDistributorCommand,
   type UpdateDistributorCommand,
+  type CreateDistributorAccountCommand,
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
+
+export async function getMyDashboard(signal?: AbortSignal): Promise<DistributorDashboardDTO> {
+  const res = await api.get<ApiResponse<DistributorDashboardDTO>>(
+    apiPath(DISTRIBUTOR_ROUTES.BASE, DISTRIBUTOR_ROUTES.MY_DASHBOARD),
+    { signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
 
 export async function getAll(
   query: GetDistributorsQuery,
@@ -63,4 +75,24 @@ export async function toggle(id: string): Promise<DistributorDTO> {
 
 export async function remove(id: string): Promise<void> {
   await api.delete(withParams(apiPath(DISTRIBUTOR_ROUTES.BASE, DISTRIBUTOR_ROUTES.DELETE), { id }));
+}
+
+export async function createAccount(
+  id: string,
+  command: CreateDistributorAccountCommand,
+): Promise<DistributorWithCredentialsDTO> {
+  const res = await api.post<ApiResponse<DistributorWithCredentialsDTO>>(
+    withParams(apiPath(DISTRIBUTOR_ROUTES.BASE, DISTRIBUTOR_ROUTES.CREATE_ACCOUNT), { id }),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function unlinkAccount(id: string): Promise<DistributorDTO> {
+  const res = await api.delete<ApiResponse<DistributorDTO>>(
+    withParams(apiPath(DISTRIBUTOR_ROUTES.BASE, DISTRIBUTOR_ROUTES.UNLINK_ACCOUNT), { id }),
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }

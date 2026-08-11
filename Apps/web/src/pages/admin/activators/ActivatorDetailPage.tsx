@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { UserRole } from "@my-app/contract";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { NotFoundState } from "@/components/shared/NotFoundState";
 import { StatCardSkeleton } from "@/components/shared/StatCardSkeleton";
@@ -32,6 +33,7 @@ import { PaymentsHistoryTable } from "./components/PaymentsHistoryTable";
 import { EditActivatorModal } from "./components/EditActivatorModal";
 import { RecordPaymentModal } from "./components/RecordPaymentModal";
 import { GeneratedPasswordPanel } from "./components/GeneratedPasswordPanel";
+import { TelegramLinkPanel } from "@/components/sections/admin/TelegramLinkPanel";
 
 function ProfileStatsSkeleton() {
   return (
@@ -101,6 +103,7 @@ export default function ActivatorDetailPage() {
             onResetPassword={() => setResetConfirmOpen(true)}
           />
           <StatsRevenueGrid activator={activator} />
+          <TelegramLinkPanel role={UserRole.ACTIVATOR} profileId={activator.id} />
         </>
       )}
 

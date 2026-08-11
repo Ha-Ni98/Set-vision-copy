@@ -4,6 +4,7 @@ import {
   UserRole,
   GetCardsQuerySchema,
   GetAvailableCardsQuerySchema,
+  GetDistributorCardsQuerySchema,
   CardIdParamsSchema,
 } from '@my-app/contract';
 import { prisma } from '@common/db/prisma';
@@ -16,6 +17,7 @@ const service = new CardService(prisma);
 const controller = new CardController(service);
 
 const adminOnly = requireAuth({ roles: [UserRole.ADMIN] });
+const distributorOnly = requireAuth({ roles: [UserRole.DISTRIBUTOR] });
 
 export const cardRouter = Router();
 
@@ -26,12 +28,26 @@ cardRouter.get(
   controller.getAll,
 );
 
-// Static segment must be registered before the /:id param route
+// Static segments must be registered before the /:id param route
 cardRouter.get(
   CARD_ROUTES.GET_AVAILABLE_FOR_LOT,
   adminOnly,
   validateRequest({ query: GetAvailableCardsQuerySchema }),
   controller.getAvailableForLot,
+);
+
+cardRouter.get(
+  CARD_ROUTES.GET_MINE,
+  distributorOnly,
+  validateRequest({ query: GetDistributorCardsQuerySchema }),
+  controller.getMine,
+);
+
+cardRouter.get(
+  CARD_ROUTES.GET_MINE_BY_ID,
+  distributorOnly,
+  validateRequest({ params: CardIdParamsSchema }),
+  controller.getMineById,
 );
 
 cardRouter.get(

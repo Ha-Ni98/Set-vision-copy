@@ -15,6 +15,7 @@ interface Props {
   deliveryType?: DeliveryType;
   orderPrice?: number;
   deliverPrice?: number;
+  linkedOrderRequestSummary?: string;
 }
 
 // Step 5 of the create-order wizard — pure review screen, no inputs. The host wires real
@@ -31,6 +32,7 @@ export function StepConfirmSummary({
   deliveryType,
   orderPrice,
   deliverPrice,
+  linkedOrderRequestSummary,
 }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -55,6 +57,10 @@ export function StepConfirmSummary({
     [
       t("admin.orders.create.deliverPrice"),
       deliverPrice != null ? formatDZD(deliverPrice, language) : dash,
+    ],
+    [
+      t("admin.orders.create.orderRequest.label"),
+      linkedOrderRequestSummary ?? t("admin.orders.create.orderRequest.none"),
     ],
   ];
 

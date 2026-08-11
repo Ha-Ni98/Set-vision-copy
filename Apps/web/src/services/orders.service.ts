@@ -5,6 +5,7 @@ import {
   type OrderDetailDTO,
   type PaginatedOrders,
   type GetOrdersQuery,
+  type GetMyOrdersQuery,
   type CreateOrderCommand,
   type TransitionOrderCommand,
 } from "@my-app/contract";
@@ -57,4 +58,27 @@ export async function transition(id: string, command: TransitionOrderCommand): P
 
 export async function remove(id: string): Promise<void> {
   await api.delete(withParams(apiPath(ORDER_ROUTES.BASE, ORDER_ROUTES.DELETE), { id }));
+}
+
+// ─── Distributor-facing ───────────────────────────────────────────────────────
+
+export async function getMine(
+  query: GetMyOrdersQuery,
+  signal?: AbortSignal,
+): Promise<PaginatedOrders> {
+  const res = await api.get<ApiResponse<PaginatedOrders>>(
+    apiPath(ORDER_ROUTES.BASE, ORDER_ROUTES.GET_MINE),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function getMineById(id: string, signal?: AbortSignal): Promise<OrderDetailDTO> {
+  const res = await api.get<ApiResponse<OrderDetailDTO>>(
+    withParams(apiPath(ORDER_ROUTES.BASE, ORDER_ROUTES.GET_MINE_BY_ID), { id }),
+    { signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
 }

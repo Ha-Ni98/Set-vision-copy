@@ -11,20 +11,16 @@ export function formatWilayaLabel(wilaya: Pick<WilayaDTO, "wilayaCode" | "frName
   return `${wilaya.wilayaCode}-${wilaya.frName}`;
 }
 
-// "MM:SS" isn't locale-sensitive (unlike a formatted number), so this stays plain. Round to
-// whole seconds first — the backend avg is a float (totalMs / n / 1000), so an un-rounded
-// `seconds % 60` would render as e.g. "9.327…" instead of a zero-padded "09".
-export function formatTime(seconds: number): string {
-  const total = Math.max(0, Math.round(seconds));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
 const LOCALE_TAG: Record<Language, string> = { en: "en-US", fr: "fr-FR", ar: "ar-DZ" };
 
 export function formatDZD(amount: number, language: Language = "en"): string {
   return `${new Intl.NumberFormat(LOCALE_TAG[language]).format(amount)} DZD`;
+}
+
+// Chart axis/tick label variant — "19 k DZD" instead of "18 848 DZD". Full formatDZD is kept for
+// tooltips and KPI values, where precision matters more than density (set-11-plan.md §5).
+export function formatDZDCompact(amount: number, language: Language = "en"): string {
+  return `${new Intl.NumberFormat(LOCALE_TAG[language], { notation: "compact" }).format(amount)} DZD`;
 }
 
 export function formatDateTime(iso: string, language: Language = "en"): string {
