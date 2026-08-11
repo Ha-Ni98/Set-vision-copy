@@ -15,6 +15,9 @@ export const UpdateDistributorSchema = z.object({
   phone: z.string().optional(),
   wilayaId: z.uuid().optional(),
   communeId: z.uuid().optional(),
+  // Optional new password for the distributor's linked login (Set 14). Omit it to leave the
+  // current password unchanged. Rejected with 409 if the distributor has no linked login.
+  password: z.string().min(8).optional(),
 });
 export type UpdateDistributorCommand = z.infer<typeof UpdateDistributorSchema>;
 

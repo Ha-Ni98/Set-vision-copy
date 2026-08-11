@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Pencil, Power } from "lucide-react";
+import { Eye, EyeOff, Loader2, Pencil, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import type { DistributorDetailDTO, WilayaDTO, CommuneDTO } from "@my-app/contra
 import {
   updateDistributorSchema,
   type UpdateDistributorFormValues,
+  type UpdateDistributorFormInput,
 } from "./update-distributor.schema";
 
 interface Props {
@@ -55,7 +56,9 @@ export function DistributorProfileCard({
 }: Props) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const communeDisabled = !editWilayaId || communesLoading || communesError;
+  const hasLogin = distributor.username !== null;
 
   const {
     register,
@@ -64,7 +67,7 @@ export function DistributorProfileCard({
     reset,
     setValue,
     formState: { errors },
-  } = useForm<UpdateDistributorFormValues>({
+  } = useForm<UpdateDistributorFormInput, unknown, UpdateDistributorFormValues>({
     resolver: zodResolver(updateDistributorSchema(t)),
     defaultValues: {
       fullName: distributor.fullName,
@@ -72,6 +75,7 @@ export function DistributorProfileCard({
       phone: distributor.phone,
       wilayaId: distributor.wilayaId,
       communeId: distributor.communeId,
+      password: "",
     },
   });
 
@@ -83,6 +87,7 @@ export function DistributorProfileCard({
         phone: distributor.phone,
         wilayaId: distributor.wilayaId,
         communeId: distributor.communeId,
+        password: "",
       });
       onEditWilayaChange(distributor.wilayaId);
     }
@@ -171,7 +176,40 @@ export function DistributorProfileCard({
           <Input id="edit-distributor-phone" type="tel" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
-        <div />
+        {hasLogin ? (
+          <div className="space-y-2">
+            <Label htmlFor="edit-distributor-password">
+              {t("admin.distributors.edit.password")}
+            </Label>
+            <div className="relative">
+              <Input
+                id="edit-distributor-password"
+                type={showPwd ? "text" : "password"}
+                autoComplete="new-password"
+                className="pe-10"
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+                aria-label={t(showPwd ? "auth.login.hidePassword" : "auth.login.showPassword")}
+              >
+                {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password ? (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {t("admin.distributors.edit.passwordHelper")}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div />
+        )}
         <div className="space-y-2">
           <Label>{t("admin.distributors.create.wilaya")}</Label>
           <Controller

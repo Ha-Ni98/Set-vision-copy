@@ -133,6 +133,15 @@ export class DistributorService implements IDistributorService {
       await this.validateCommuneBelongsToWilaya(targetCommuneId, targetWilayaId);
     }
 
+    // The login is a separate, optional row (createAccount/unlinkAccount own it), so a
+    // password for an account-less distributor is a client error, not a silent no-op.
+    if (cmd.password !== undefined && !existing.userId) {
+      throw new ConflictError('Distributor has no account');
+    }
+
+    // Hash before the transaction — bcrypt is slow and shouldn't hold a transaction open.
+    const hashedPassword = cmd.password ? await hashPassword(cmd.password) : undefined;
+
     const distributor = await this.prisma.$transaction(async (tx) => {
       const d = await tx.distributor.update({
         where: { id },
@@ -146,6 +155,10 @@ export class DistributorService implements IDistributorService {
         include: GEO_INCLUDE,
       });
 
+      if (hashedPassword && existing.userId) {
+        await tx.user.update({ where: { id: existing.userId }, data: { password: hashedPassword } });
+      }
+
       await tx.log.create({
         data: {
           actionType: LogActionType.CHANGE_DISTRIBUTOR_INFORMATION,
@@ -153,6 +166,16 @@ export class DistributorService implements IDistributorService {
           userId: actorId,
         },
       });
+
+      if (hashedPassword) {
+        await tx.log.create({
+          data: {
+            actionType: LogActionType.CHANGE_USER_PASSWORD,
+            actionDescription: `Changed login password for distributor ${d.fullName}`,
+            userId: actorId,
+          },
+        });
+      }
 
       return d;
     });
