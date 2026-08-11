@@ -205,6 +205,12 @@ export default function LandingPage() {
           <StepIndicator current={currentStep} />
         </div>
 
+        {showSupportBanner && (
+          <div className="mb-6 text-center">
+          <SupportBanner />
+          </div>
+          )}
+
         <div
           ref={cardRef}
           tabIndex={-1}
@@ -289,8 +295,6 @@ export default function LandingPage() {
           {view === "activated" && <CompletedStep username={activation?.accountUsername} />}
           {view === "failed" && <FailedStep />}
         </div>
-
-        {showSupportBanner && <SupportBanner />}
 
         <div className="mt-6 text-center">
           <CheckAnotherKeyButton />
