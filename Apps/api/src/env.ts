@@ -21,6 +21,9 @@ const envSchema = z
     TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
     TELEGRAM_BOT_USERNAME: z.string().min(1).optional(),
     TELEGRAM_WEBHOOK_SECRET: z.string().min(32).optional(),
+    // Origin only (e.g. https://svc.onrender.com), no path — the path is derived from
+    // API_PREFIX + TELEGRAM_ROUTES so it can never drift from where the route is mounted.
+    TELEGRAM_WEBHOOK_BASE_URL: z.url().optional(),
   })
   // Conditionally required, so NOTIFICATIONS_ENABLED=false boots with no dummy values while
   // an enabled-but-misconfigured boot CRASHES — that is intended (Set 6 plan §10).
@@ -45,6 +48,13 @@ const envSchema = z
         code: 'custom',
         path: ['TELEGRAM_WEBHOOK_SECRET'],
         message: 'Required when TELEGRAM_MODE=webhook',
+      });
+    }
+    if (v.TELEGRAM_MODE === 'webhook' && !v.TELEGRAM_WEBHOOK_BASE_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TELEGRAM_WEBHOOK_BASE_URL'],
+        message: 'Required when TELEGRAM_MODE=webhook (used to auto-register the webhook with Telegram on boot)',
       });
     }
   });
