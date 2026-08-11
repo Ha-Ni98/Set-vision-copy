@@ -10,6 +10,9 @@ import {
   BarChart3,
   Settings,
   FileText,
+  BellRing,
+  Truck,
+  Ban,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +28,15 @@ export const ACTIVATOR_NAV_LINKS: NavLink[] = [
   { to: "/dashboard", labelKey: "activator.nav.dashboard", icon: LayoutDashboard },
   { to: "/requests", labelKey: "activator.nav.requests", icon: Zap },
   { to: "/history", labelKey: "activator.nav.history", icon: History },
+];
+
+export const DISTRIBUTOR_NAV_LINKS: NavLink[] = [
+  { to: "/portal", labelKey: "distributor.nav.portal", icon: LayoutDashboard },
+  { to: "/portal/cards", labelKey: "distributor.nav.cards", icon: CreditCard },
+  { to: "/portal/orders", labelKey: "distributor.nav.orders", icon: Truck },
+  { to: "/portal/activations", labelKey: "distributor.nav.activations", icon: Zap },
+  { to: "/portal/requests", labelKey: "distributor.nav.orderRequests", icon: Package },
+  { to: "/portal/revocations", labelKey: "distributor.nav.revocations", icon: Ban },
 ];
 
 // A collapsible group in the admin sidebar (e.g. "Distributors ▾"). Additive to NavLink —
@@ -54,6 +66,16 @@ export const ADMIN_NAV_LINKS: AdminNavItem[] = [
     children: [
       { to: "/admin/distributors", labelKey: "admin.shell.nav.distributors", icon: Store },
       { to: "/admin/distributors/orders", labelKey: "admin.shell.nav.orders", icon: Package },
+      {
+        to: "/admin/distributors/order-requests",
+        labelKey: "admin.shell.nav.orderRequests",
+        icon: Package,
+      },
+      {
+        to: "/admin/distributors/revocation-requests",
+        labelKey: "admin.shell.nav.revocationRequests",
+        icon: CreditCard,
+      },
     ],
   },
   {
@@ -68,4 +90,5 @@ export const ADMIN_NAV_LINKS: AdminNavItem[] = [
   { to: "/admin/statistics", labelKey: "admin.shell.nav.statistics", icon: BarChart3 },
   { to: "/admin/settings", labelKey: "admin.shell.nav.settings", icon: Settings },
   { to: "/admin/logs", labelKey: "admin.shell.nav.logs", icon: FileText },
+  { to: "/admin/notifications", labelKey: "admin.shell.nav.notifications", icon: BellRing },
 ];

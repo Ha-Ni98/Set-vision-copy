@@ -45,7 +45,7 @@ function computeAvgSeconds(
     (sum, a) => sum + (a.completedAt!.getTime() - a.takenAt!.getTime()),
     0,
   );
-  return totalMs / completed.length / 1000;
+  return Math.round(totalMs / completed.length / 1000);
 }
 
 export class ActivatorService implements IActivatorService {

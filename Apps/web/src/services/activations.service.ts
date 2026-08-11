@@ -13,8 +13,12 @@ import {
   type ActivationDetailDTO,
   type AdminActivationDTO,
   type SetActivatorPriceCommand,
+  type SetActivationCostCommand,
   type GetActivationsQuery,
   type ActivateActivationCommand,
+  type PaginatedDistributorActivations,
+  type DistributorActivationDetailDTO,
+  type GetDistributorActivationsQuery,
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
@@ -174,6 +178,44 @@ export async function setPrice(
   const res = await api.post<ApiResponse<AdminActivationDTO>>(
     withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.SET_PRICE), { id }),
     command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function setCost(
+  id: string,
+  command: SetActivationCostCommand,
+): Promise<AdminActivationDTO> {
+  const res = await api.post<ApiResponse<AdminActivationDTO>>(
+    withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.SET_COST), { id }),
+    command,
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+// ─── Distributor-facing ───────────────────────────────────────────────────────
+
+export async function getOnMyCards(
+  query: GetDistributorActivationsQuery,
+  signal?: AbortSignal,
+): Promise<PaginatedDistributorActivations> {
+  const res = await api.get<ApiResponse<PaginatedDistributorActivations>>(
+    apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.GET_ON_MY_CARDS),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function getOnMyCardsById(
+  id: string,
+  signal?: AbortSignal,
+): Promise<DistributorActivationDetailDTO> {
+  const res = await api.get<ApiResponse<DistributorActivationDetailDTO>>(
+    withParams(apiPath(ACTIVATION_ROUTES.BASE, ACTIVATION_ROUTES.GET_ON_MY_CARDS_BY_ID), { id }),
+    { signal },
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive
   return res.data.data;

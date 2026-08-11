@@ -253,11 +253,15 @@ export default function SetsLotsPage() {
 
       <CreateLotModal
         open={createLotOpen}
-        onOpenChange={setCreateLotOpen}
+        onOpenChange={(open) => {
+          setCreateLotOpen(open);
+          if (!open) createLot.reset(); // clear a stale 409 so reopening starts clean
+        }}
         onSubmit={(command: CreateLotCommand) =>
           createLot.mutate(command, { onSuccess: () => setCreateLotOpen(false) })
         }
         isPending={createLot.isPending}
+        createError={createLot.error}
       />
     </div>
   );

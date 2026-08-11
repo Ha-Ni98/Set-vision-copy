@@ -133,6 +133,7 @@ export function FrozenActivationsTable({
       <ResolveFreezeDialog
         open={dialogRow !== null}
         action={dialogRow?.action ?? "activate"}
+        subscriptionPlanId={dialogRow?.row.subscriptionPlanId ?? ""}
         onOpenChange={(open) => {
           if (!open) setDialogRow(null);
         }}

@@ -13,3 +13,9 @@ export const UpdateCommissionSchema = z.object({
   commission: z.number().nonnegative().multipleOf(0.01),
 });
 export type UpdateCommissionCommand = z.infer<typeof UpdateCommissionSchema>;
+
+export const UpdateSubscriptionPlanCostSchema = z.object({
+  subscriptionPlanId: z.uuid(),
+  cost: z.number().nonnegative().multipleOf(0.01),
+});
+export type UpdateSubscriptionPlanCostCommand = z.infer<typeof UpdateSubscriptionPlanCostSchema>;

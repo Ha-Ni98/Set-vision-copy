@@ -7,6 +7,8 @@ import type {
   RecentActivationDTO,
   AdminActivationDTO,
   ActivationDetailDTO,
+  DistributorActivationDTO,
+  DistributorActivationDetailDTO,
   PaginatedResult,
   VerifyKeyCommand,
   SubmitActivationCommand,
@@ -16,8 +18,10 @@ import type {
   RequestAdditionalInfoCommand,
   FreezeRequestCommand,
   SetActivatorPriceCommand,
+  SetActivationCostCommand,
   GetActivationsQuery,
   GetActivatorHistoryQuery,
+  GetDistributorActivationsQuery,
   ActivateActivationCommand,
 } from '@my-app/contract';
 
@@ -48,4 +52,12 @@ export interface IActivationService {
   activateByAdmin(id: string, cmd: ActivateActivationCommand): Promise<AdminActivationDTO>;
   cancelByAdmin(id: string): Promise<AdminActivationDTO>;
   setPrice(id: string, cmd: SetActivatorPriceCommand, actorId: string): Promise<AdminActivationDTO>;
+  setCost(id: string, cmd: SetActivationCostCommand, actorId: string): Promise<AdminActivationDTO>;
+
+  // Distributor (principalUserId → resolves Distributor by userId)
+  getOnMyCards(
+    principalUserId: string,
+    query: GetDistributorActivationsQuery,
+  ): Promise<PaginatedResult<DistributorActivationDTO>>;
+  getOnMyCardsById(principalUserId: string, id: string): Promise<DistributorActivationDetailDTO>;
 }

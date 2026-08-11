@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AccountInformation, ActivationStat, type ActiveRequestDTO } from "@my-app/contract";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LiveTimer } from "@/components/shared/LiveTimer";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { ActivationEmailPicker } from "@/components/shared/ActivationEmailPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,7 +28,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
@@ -114,11 +114,14 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
   // Activate — required activation email (Stage-04-fix #2).
   const [activateOpen, setActivateOpen] = useState(false);
   const {
-    register: registerActivate,
+    control: activateControl,
     handleSubmit: handleActivateSubmit,
     reset: resetActivate,
     formState: { errors: activateErrors },
-  } = useForm<ActivateRequestFormValues>({ resolver: zodResolver(activateRequestSchema(t)) });
+  } = useForm<ActivateRequestFormValues>({
+    resolver: zodResolver(activateRequestSchema(t)),
+    defaultValues: { activationEmail: "" },
+  });
   const submitActivate = (data: ActivateRequestFormValues) => {
     activateRequest.mutate(
       { id: req.id, command: data },
@@ -325,20 +328,18 @@ export function ActiveRequestCard({ req, exiting = false }: Props) {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleActivateSubmit(submitActivate)}>
-              <Input
-                type="email"
-                placeholder={t("activator.requests.card.activationEmailPlaceholder")}
-                aria-invalid={!!activateErrors.activationEmail}
-                aria-describedby={
-                  activateErrors.activationEmail ? "activate-email-error" : undefined
-                }
-                {...registerActivate("activationEmail")}
+              <Controller
+                control={activateControl}
+                name="activationEmail"
+                render={({ field }) => (
+                  <ActivationEmailPicker
+                    subscriptionPlanId={req.subscriptionPlanId}
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={activateErrors.activationEmail?.message}
+                  />
+                )}
               />
-              {activateErrors.activationEmail && (
-                <p id="activate-email-error" role="alert" className="mt-1 text-xs text-destructive">
-                  {activateErrors.activationEmail.message}
-                </p>
-              )}
               <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setActivateOpen(false)}>
                   {t("common.actions.cancel")}

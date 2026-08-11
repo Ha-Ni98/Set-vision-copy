@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { GetCardsQuery } from "@my-app/contract";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import type { GetCardsQuery, GetAvailableCardsQuery } from "@my-app/contract";
 import * as cardsService from "@/services/cards.service";
 import { qk } from "@/lib/query-keys";
 
@@ -12,12 +12,18 @@ export function useCards(query: GetCardsQuery) {
 
 // GetAvailableCardsQuery.subscriptionPlanId is required by the contract, so the enabled
 // gate takes the id directly (mirrors useCommunes, Sprint 6) rather than a partial query.
-export function useAvailableCardsForLot(subscriptionPlanId: string | undefined) {
+// keepPreviousData: paging/searching the picker must not flash the group area back to
+// skeletons between requests (set-8-plan §6.2 item 5).
+export function useAvailableCardsForLot(
+  subscriptionPlanId: string | undefined,
+  rest: Omit<GetAvailableCardsQuery, "subscriptionPlanId"> = {},
+) {
+  const query: GetAvailableCardsQuery = { subscriptionPlanId: subscriptionPlanId ?? "", ...rest };
   return useQuery({
-    queryKey: qk.cards.availableForLot({ subscriptionPlanId: subscriptionPlanId ?? "" }),
-    queryFn: ({ signal }) =>
-      cardsService.getAvailableForLot({ subscriptionPlanId: subscriptionPlanId! }, signal),
+    queryKey: qk.cards.availableForLot(query),
+    queryFn: ({ signal }) => cardsService.getAvailableForLot({ ...query }, signal),
     enabled: !!subscriptionPlanId,
+    placeholderData: keepPreviousData,
   });
 }
 

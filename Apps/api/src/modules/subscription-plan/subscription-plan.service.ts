@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { ISubscriptionPlanService } from './subscription-plan.interface';
 import { SubscriptionPlanMapper } from './subscription-plan.mapper';
 import { NotFoundError, ConflictError } from '@common/errors';
@@ -8,9 +9,11 @@ import type {
   CommissionDurationDTO,
   CommissionMatrixDTO,
   CommissionCellDTO,
+  SubscriptionPlanCostDTO,
   GetSubscriptionPlansQuery,
   CreateSubscriptionPlanCommand,
   UpdateCommissionCommand,
+  UpdateSubscriptionPlanCostCommand,
 } from '@my-app/contract';
 
 export class SubscriptionPlanService implements ISubscriptionPlanService {
@@ -100,5 +103,43 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     });
 
     return SubscriptionPlanMapper.toCellDTO(cell);
+  }
+
+  async getCosts(): Promise<SubscriptionPlanCostDTO[]> {
+    const [plans, costs] = await Promise.all([
+      this.prisma.subscriptionPlan.findMany(),
+      this.prisma.subscriptionPlanCost.findMany(),
+    ]);
+
+    const costByPlanId = new Map(costs.map((c) => [c.subscriptionPlanId, c]));
+    return plans.map((plan) => SubscriptionPlanMapper.toCostDTO(plan, costByPlanId.get(plan.id) ?? null));
+  }
+
+  async updateCost(cmd: UpdateSubscriptionPlanCostCommand, actorId: string): Promise<SubscriptionPlanCostDTO> {
+    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: cmd.subscriptionPlanId } });
+    if (!plan) throw new NotFoundError('Subscription plan not found');
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      const upserted = await tx.subscriptionPlanCost.upsert({
+        where: { subscriptionPlanId: cmd.subscriptionPlanId },
+        update: { cost: new Prisma.Decimal(cmd.cost) },
+        create: {
+          subscriptionPlanId: cmd.subscriptionPlanId,
+          cost: new Prisma.Decimal(cmd.cost),
+        },
+      });
+
+      await tx.log.create({
+        data: {
+          actionType: LogActionType.SET_SUBSCRIPTION_PLAN_COST,
+          actionDescription: `Set subscription plan cost for plan ${cmd.subscriptionPlanId} to ${cmd.cost}`,
+          userId: actorId,
+        },
+      });
+
+      return upserted;
+    });
+
+    return SubscriptionPlanMapper.toCostDTO(plan, row);
   }
 }

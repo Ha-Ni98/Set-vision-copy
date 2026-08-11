@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import type { GetSubscriptionPlansQuery, UpdateCommissionCommand } from "@my-app/contract";
+import type {
+  GetSubscriptionPlansQuery,
+  UpdateCommissionCommand,
+  UpdateSubscriptionPlanCostCommand,
+} from "@my-app/contract";
 import * as subscriptionPlansService from "@/services/subscription-plans.service";
 import { qk } from "@/lib/query-keys";
 
@@ -59,5 +63,23 @@ export function useUpdateCommission() {
     mutationFn: (command: UpdateCommissionCommand) =>
       subscriptionPlansService.updateCommission(command),
     onSuccess: () => invalidateCommissions(queryClient),
+  });
+}
+
+export function usePlanCosts() {
+  return useQuery({
+    queryKey: qk.subscriptionPlans.costs(),
+    queryFn: ({ signal }) => subscriptionPlansService.getCosts(signal),
+  });
+}
+
+export function useUpdatePlanCost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (command: UpdateSubscriptionPlanCostCommand) =>
+      subscriptionPlansService.updateCost(command),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans.costs() });
+    },
   });
 }

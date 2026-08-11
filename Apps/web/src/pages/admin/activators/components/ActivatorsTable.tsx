@@ -19,7 +19,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Users, UserPlus } from "lucide-react";
-import { formatDZD, formatTime } from "@/lib/utils";
+import { formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import { ActivatorActionsMenu } from "./ActivatorActionsMenu";
@@ -77,9 +78,7 @@ export function ActivatorsTable({
           <span
             className={`font-mono text-sm ${durationToneClass(row.original.avgActivationTimeSeconds)}`}
           >
-            {row.original.avgActivationTimeSeconds !== null
-              ? formatTime(row.original.avgActivationTimeSeconds)
-              : "—"}
+            {formatDuration(row.original.avgActivationTimeSeconds)}
           </span>
         ),
       },

@@ -11,6 +11,7 @@ import {
   ActivationStat,
   AccountInformation,
   ClientActivationStatus,
+  ClientUpdateKind,
   CardStat,
   LogActionType,
   type KeyVerificationDTO,
@@ -21,6 +22,8 @@ import {
   type RecentActivationDTO,
   type AdminActivationDTO,
   type ActivationDetailDTO,
+  type DistributorActivationDTO,
+  type DistributorActivationDetailDTO,
   type PaginatedResult,
   type VerifyKeyCommand,
   type SubmitActivationCommand,
@@ -30,8 +33,10 @@ import {
   type RequestAdditionalInfoCommand,
   type FreezeRequestCommand,
   type SetActivatorPriceCommand,
+  type SetActivationCostCommand,
   type GetActivationsQuery,
   type GetActivatorHistoryQuery,
+  type GetDistributorActivationsQuery,
   type ActivateActivationCommand,
 } from '@my-app/contract';
 import type { IActivationService } from './activation.interface';
@@ -42,9 +47,11 @@ import {
   type ActivationInfoEntry,
   type ActivationStepEntry,
 } from './activation.mapper';
+import { resolveDistributorScope } from '@common/auth/distributor-scope';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, ForbiddenError } from '@common/errors';
 import { eventBus } from '@common/events/event-bus';
+import { consumeActivationEmailWithin } from '@modules/activation-email/activation-email.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -69,11 +76,37 @@ const CANCELLED_STATS: PrismaActivationStat[] = [
   PrismaActivationStat.CANCELLED_BY_ADMIN,
 ];
 
-const TERMINAL_STATS: PrismaActivationStat[] = [
+// Set 9: the two completion paths (activate/activateByAdmin). setCost() and setPrice() both
+// gate on this same list rather than each declaring their own copy.
+const COMPLETED_STATS: PrismaActivationStat[] = [
   PrismaActivationStat.ACTIVATED,
   PrismaActivationStat.ACTIVATED_BY_ADMIN,
-  ...CANCELLED_STATS,
 ];
+
+const TERMINAL_STATS: PrismaActivationStat[] = [...COMPLETED_STATS, ...CANCELLED_STATS];
+
+// set-12-plan §5.5: update()'s blocked-status message, keyed by the actual status instead of
+// one generic "not awaiting correction" string that reads as "still waiting on you" even for an
+// ACTIVATED or cancelled activation. No entry for PENDING/WRONG_INFORMATION — those are the two
+// writable statuses and never reach this table.
+const UPDATE_BLOCKED_MESSAGE: Partial<Record<PrismaActivationStat, string>> = {
+  [PrismaActivationStat.PROCESSING]:
+    'Your information is being processed and cannot be changed right now.',
+  [PrismaActivationStat.ADDITIONAL_INFORMATION]:
+    'Please answer the verification code request instead.',
+  [PrismaActivationStat.FREEZE]:
+    'This activation is under review. Contact support to make a change.',
+  [PrismaActivationStat.ACTIVATED]:
+    'This activation is already complete and can no longer be changed.',
+  [PrismaActivationStat.ACTIVATED_BY_ADMIN]:
+    'This activation is already complete and can no longer be changed.',
+  [PrismaActivationStat.CANCELLED_BY_ACTIVATOR]:
+    'This activation was cancelled and can no longer be changed.',
+  [PrismaActivationStat.REMOVED_FROM_ACTIVATOR]:
+    'This activation was cancelled and can no longer be changed.',
+  [PrismaActivationStat.CANCELLED_BY_ADMIN]:
+    'This activation was cancelled and can no longer be changed.',
+};
 
 // ─── Full-join include shapes ─────────────────────────────────────────────────
 
@@ -114,16 +147,20 @@ export class ActivationService implements IActivationService {
     }
   }
 
-  private resolveLatestWinsInfo(
+  // ActivationInformation now holds the CURRENT value of every field (kept up to date by
+  // update()'s upsert on a client correction). WrongInformation holds an immutable snapshot of
+  // a value that was REJECTED and must never be overlaid back on top of the current value —
+  // doing so would resurrect a rejected value over its own correction. Only
+  // additionalInformation (OTP) is still step-stored and still overlaid, newest-last, including
+  // overwriting with null so a re-requested OTP invalidates the stale one (Stage-04-fix set 3).
+  private resolveEffectiveInfo(
     base: Array<{ accountInform: string; value: string | null }>,
     steps: Array<{
-      wrongInformation: Array<{ accountInform: string; value: string | null }>;
       additionalInformation: Array<{ accountInform: string; value: string | null }>;
     }>,
   ): ActivationInfoEntry[] {
     const map = new Map<string, string | null>(base.map((i) => [i.accountInform, i.value]));
     for (const step of [...steps].reverse()) {
-      for (const w of step.wrongInformation) map.set(w.accountInform, w.value);
       for (const a of step.additionalInformation) map.set(a.accountInform, a.value);
     }
     return Array.from(map.entries()).map(([accountInform, value]) => ({
@@ -162,6 +199,15 @@ export class ActivationService implements IActivationService {
       : { price: null, tierLabel: null };
   }
 
+  // Set 9 (D10): read INSIDE the completion transaction, not from a pre-transaction include,
+  // so "the cost stamped is the plan cost at the moment of completion" is literally true.
+  // Null plan cost (never configured) resolves to Decimal(0) — never a skipped write, unlike
+  // activationPrice's `...(price && {})` pattern (R10), which must not be copied here.
+  private async resolvePlanCost(tx: Prisma.TransactionClient, subscriptionPlanId: string): Promise<Decimal> {
+    const row = await tx.subscriptionPlanCost.findUnique({ where: { subscriptionPlanId } });
+    return row?.cost ?? new Prisma.Decimal(0);
+  }
+
   private buildDistributorJoin(dist: {
     storeName: string;
     wilaya: { frName: string };
@@ -195,9 +241,9 @@ export class ActivationService implements IActivationService {
     const distributor = this.buildDistributorJoin(activation.card.distributor!);
     // OTP gets its own dedicated `otpValue` field below — drop it from the general fields
     // list so the activator's card doesn't show it twice (Stage-04-fix #3.3). Scoped to this
-    // DTO only: resolveLatestWinsInfo stays untouched since the admin detail view's
+    // DTO only: resolveEffectiveInfo stays untouched since the admin detail view's
     // submittedInformation (a separate DTO) reuses it and has no equivalent dedicated field.
-    const info = this.resolveLatestWinsInfo(activation.information, activation.steps).filter(
+    const info = this.resolveEffectiveInfo(activation.information, activation.steps).filter(
       (i) => i.accountInform !== AccountInformation.OTP,
     );
     const otpValue = this.extractOtpValue(activation.steps);
@@ -280,11 +326,10 @@ export class ActivationService implements IActivationService {
       activationStat: live.activationStat,
     }).status;
 
-    // Latest-wins across the FULL step history (not just the latest step) — a field can be
-    // corrected in an early round and never touched again, so only merging every step's
-    // values (the same helper buildActiveRequestDTO uses for the activator's card) surfaces
-    // the true current value for the client's own Step-2 prefill (Stage-04-fix #4A).
-    const submittedInfo = this.resolveLatestWinsInfo(live.information, live.steps);
+    // Current value of every field (the same helper buildActiveRequestDTO uses for the
+    // activator's card) — surfaces the true current value for the client's own Step-2
+    // prefill (Stage-04-fix #4A).
+    const submittedInfo = this.resolveEffectiveInfo(live.information, live.steps);
     const latestStep = live.steps[0] ?? null;
 
     return ActivationMapper.toKeyVerificationDTO(status, plan, {
@@ -380,57 +425,105 @@ export class ActivationService implements IActivationService {
           where: { activationStat: PrismaActivationStat.WRONG_INFORMATION },
           orderBy: { createdAt: 'desc' },
           take: 1,
+          include: { wrongInformation: { select: { accountInform: true } } },
         },
       },
     });
 
     if (!activation) throw new NotFoundError('Activation not found');
-    if (activation.activationStat !== PrismaActivationStat.WRONG_INFORMATION) {
-      throw new ConflictError('Activation is not awaiting correction');
+
+    // Two windows a client may write into: the pre-pickup PENDING window (no activator has
+    // taken it yet, nothing is flagged, the client owns the whole form) and a post-flag
+    // WRONG_INFORMATION correction (only the fields the activator actually flagged).
+    const isCorrection = activation.activationStat === PrismaActivationStat.WRONG_INFORMATION;
+    const isPreDispatchEdit = activation.activationStat === PrismaActivationStat.PENDING;
+    if (!isCorrection && !isPreDispatchEdit) {
+      // Status-aware message (set-12-plan §5.5) — "not awaiting correction" reads as "we're
+      // still waiting on you" even for an ACTIVATED/cancelled activation, which is misleading.
+      throw new ConflictError(
+        UPDATE_BLOCKED_MESSAGE[activation.activationStat] ?? 'Activation is not awaiting correction',
+      );
     }
 
-    const latestWrongStep = activation.steps[0];
-    if (!latestWrongStep) throw new ConflictError('No wrong information step found');
+    // The client posts every field, not just the flagged ones. Guarding to `flagged` is what
+    // keeps a correction from silently rewriting a field nobody flagged — the same protection
+    // the old updateMany's no-op-on-unflagged behaviour gave for free.
+    let applicable = cmd.accountFields;
+    if (isCorrection) {
+      const latestWrongStep = activation.steps[0];
+      if (!latestWrongStep) throw new ConflictError('No wrong information step found');
+      const flagged = new Set(
+        latestWrongStep.wrongInformation.map((w) => w.accountInform as string),
+      );
+      applicable = cmd.accountFields.filter((f) => flagged.has(f.field as string));
+    }
 
     const now = new Date();
 
     await this.prisma.$transaction(async (tx) => {
-      await Promise.all(
-        cmd.accountFields.map((f) =>
-          tx.wrongInformation.updateMany({
-            where: {
-              activationStepId: latestWrongStep.id,
+      // Sequential, not Promise.all — concurrent upserts on the same [activationId,
+      // accountInform] compound unique can race into P2002 inside one transaction.
+      for (const f of applicable) {
+        await tx.activationInformation.upsert({
+          where: {
+            activationId_accountInform: {
+              activationId,
               accountInform: f.field as unknown as PrismaAccountInformation,
             },
-            data: { value: f.value },
-          }),
-        ),
-      );
+          },
+          update: { value: f.value },
+          create: {
+            activationId,
+            accountInform: f.field as unknown as PrismaAccountInformation,
+            value: f.value,
+          },
+        });
+      }
 
-      await tx.activationStep.create({
-        data: { activationId, activationStat: PrismaActivationStat.PROCESSING },
+      if (isCorrection) {
+        await tx.activationStep.create({
+          data: { activationId, activationStat: PrismaActivationStat.PROCESSING },
+        });
+
+        await tx.activation.update({
+          where: { id: activationId },
+          data: { activationStat: PrismaActivationStat.PROCESSING },
+        });
+      }
+
+      // Contact-detail correction (set-12-plan §5.2): writable ONLY in the PENDING pre-pickup
+      // window — a WRONG_INFORMATION correction ignores them, since the activator has no way
+      // to flag clientFullName/clientPhone (FlagWrongInfoSchema is AccountInformation[] only).
+      if (isPreDispatchEdit && (cmd.fullName !== undefined || cmd.phone !== undefined)) {
+        await tx.activation.update({
+          where: { id: activationId },
+          data: {
+            ...(cmd.fullName !== undefined && { clientFullName: cmd.fullName }),
+            ...(cmd.phone !== undefined && { clientPhone: cmd.phone }),
+          },
+        });
+      }
+    });
+
+    if (isCorrection) {
+      eventBus.emit('activation:client-updated', {
+        activationId,
+        activatorId: activation.activatorId!,
+        kind: ClientUpdateKind.CORRECTION,
+        timestamp: now.toISOString(),
       });
-
-      await tx.activation.update({
-        where: { id: activationId },
-        data: { activationStat: PrismaActivationStat.PROCESSING },
+      eventBus.emit('activation:status-changed', {
+        activationId,
+        status: ClientActivationStatus.PROCESSING,
+        timestamp: now.toISOString(),
       });
-    });
-
-    eventBus.emit('activation:client-updated', {
-      activationId,
-      activatorId: activation.activatorId!,
-      timestamp: now.toISOString(),
-    });
-    eventBus.emit('activation:status-changed', {
-      activationId,
-      status: ClientActivationStatus.PROCESSING,
-      timestamp: now.toISOString(),
-    });
+    }
+    // A PENDING pre-dispatch edit changes no status and has no activator to notify yet — the
+    // pending pool feed carries no account fields, so no other party needs a push for it.
 
     return ActivationMapper.toClientStatusDTO({
       id: activationId,
-      activationStat: PrismaActivationStat.PROCESSING,
+      activationStat: isCorrection ? PrismaActivationStat.PROCESSING : activation.activationStat,
     });
   }
 
@@ -482,6 +575,7 @@ export class ActivationService implements IActivationService {
     eventBus.emit('activation:client-updated', {
       activationId,
       activatorId: activation.activatorId!,
+      kind: ClientUpdateKind.ADDITIONAL,
       timestamp: now.toISOString(),
     });
     eventBus.emit('activation:status-changed', {
@@ -602,6 +696,16 @@ export class ActivationService implements IActivationService {
 
     const now = new Date();
 
+    // Snapshot the CURRENT value of each flagged field before it's overwritten by a
+    // correction — WrongInformation becomes an immutable record of what was rejected, read
+    // from data already in memory (no extra query). See resolveEffectiveInfo above.
+    const effective = new Map(
+      this.resolveEffectiveInfo(activation.information, activation.steps).map((i) => [
+        i.accountInform,
+        i.value,
+      ]),
+    );
+
     await this.prisma.$transaction(async (tx) => {
       const step = await tx.activationStep.create({
         data: { activationId: id, activationStat: PrismaActivationStat.WRONG_INFORMATION },
@@ -611,7 +715,7 @@ export class ActivationService implements IActivationService {
         data: cmd.fields.map((f) => ({
           activationStepId: step.id,
           accountInform: f as unknown as PrismaAccountInformation,
-          value: null,
+          value: effective.get(f) ?? null,
         })),
       });
 
@@ -716,14 +820,23 @@ export class ActivationService implements IActivationService {
     );
 
     await this.prisma.$transaction(async (tx) => {
+      const cost = await this.resolvePlanCost(tx, activation.card.subscriptionPlanId);
+
       await tx.activation.update({
         where: { id },
         data: {
           activationStat: PrismaActivationStat.ACTIVATED,
           completedAt: now,
           activationEmail: cmd.activationEmail,
+          activationCost: cost,
           ...(price && { activationPrice: price }),
         },
+      });
+
+      await consumeActivationEmailWithin(tx, {
+        subscriptionPlanId: activation.card.subscriptionPlanId,
+        email: cmd.activationEmail,
+        now,
       });
 
       await tx.card.update({
@@ -1096,12 +1209,14 @@ export class ActivationService implements IActivationService {
       include: {
         card: {
           include: {
-            set: true,
+            set: { select: { setNumber: true, createdAt: true, printedAt: true } },
             lot: {
-              include: {
+              select: {
+                lotNumber: true,
+                createdAt: true,
                 orderLots: {
                   take: 1,
-                  include: { order: { select: { completedAt: true } } },
+                  select: { order: { select: { completedAt: true } } },
                 },
               },
             },
@@ -1122,9 +1237,8 @@ export class ActivationService implements IActivationService {
 
     if (!activation) throw new NotFoundError('Activation not found');
 
-    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
     const dist = this.buildDistributorJoin(activation.card.distributor!);
-    const latestWinsInfo = this.resolveLatestWinsInfo(activation.information, activation.steps);
+    const effectiveInfo = this.resolveEffectiveInfo(activation.information, activation.steps);
     const cardHistory = this.buildCardHistory(
       activation.card,
       activation.requestedAt,
@@ -1145,10 +1259,128 @@ export class ActivationService implements IActivationService {
       activation,
       dist,
       activation.activator,
-      latestWinsInfo,
+      {
+        key: activation.card.key,
+        set: activation.card.set,
+        lot: activation.card.lot,
+        subscriptionPlan: activation.card.subscriptionPlan as unknown as ActivationPlanJoin,
+      },
+      effectiveInfo,
       activation.steps,
       cardHistory,
       commissionTierLabel,
+    );
+  }
+
+  async getOnMyCards(
+    principalUserId: string,
+    query: GetDistributorActivationsQuery,
+  ): Promise<PaginatedResult<DistributorActivationDTO>> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    // The scope predicate lives inside the SAME `card` object as the card filters — never
+    // spread a separately-built cardWhere over `card`, which risks a future edit overwriting
+    // it wholesale and dropping the scope (Set 7 §4.3).
+    const where = {
+      card: {
+        distributorId: distributor.id,
+        deletedAt: null,
+        ...(query.subscriptionPlanId && { subscriptionPlanId: query.subscriptionPlanId }),
+        ...(query.cardStat && { cardStat: query.cardStat as PrismaCardStat }),
+      },
+      ...(query.state && { activationStat: query.state as PrismaActivationStat }),
+      // Deliberately clientFullName/clientPhone ONLY — never the card key (see the schema
+      // comment on GetDistributorActivationsQuerySchema).
+      ...(query.search && {
+        OR: [
+          { clientFullName: { contains: query.search, mode: 'insensitive' as const } },
+          { clientPhone: { contains: query.search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...((query.dateFrom || query.dateTo) && {
+        requestedAt: {
+          ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
+          ...(query.dateTo && { lte: new Date(query.dateTo) }),
+        },
+      }),
+    };
+
+    const orderBy = [
+      { [query.sortBy ?? 'requestedAt']: query.sortDir ?? 'desc' } as Prisma.ActivationOrderByWithRelationInput,
+      { id: 'asc' as const },
+    ];
+
+    const [activations, total] = await Promise.all([
+      this.prisma.activation.findMany({
+        where,
+        include: {
+          card: {
+            select: {
+              id: true,
+              key: true,
+              cardStat: true,
+              subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+            },
+          },
+        },
+        orderBy,
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.activation.count({ where }),
+    ]);
+
+    const items = activations.map((a) =>
+      ActivationMapper.toDistributorActivationDTO(
+        a,
+        a.card.subscriptionPlan as unknown as ActivationPlanJoin,
+        { id: a.card.id, key: a.card.key, cardStat: a.card.cardStat as CardStat },
+      ),
+    );
+
+    return { items, meta: buildPaginationMeta(page, limit, total) };
+  }
+
+  async getOnMyCardsById(
+    principalUserId: string,
+    id: string,
+  ): Promise<DistributorActivationDetailDTO> {
+    const distributor = await resolveDistributorScope(this.prisma, principalUserId);
+
+    const activation = await this.prisma.activation.findFirst({
+      where: { id, card: { distributorId: distributor.id, deletedAt: null } },
+      include: {
+        card: {
+          select: {
+            id: true,
+            key: true,
+            cardStat: true,
+            lot: { select: { lotNumber: true } },
+            subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+          },
+        },
+        steps: { orderBy: { createdAt: 'asc' as const }, select: { activationStat: true, createdAt: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    const statusHistory = activation.steps.map((s) => ({
+      stat: s.activationStat as unknown as ActivationStat,
+      at: s.createdAt,
+    }));
+
+    return ActivationMapper.toDistributorActivationDetailDTO(
+      activation,
+      activation.card.subscriptionPlan as unknown as ActivationPlanJoin,
+      {
+        id: activation.card.id,
+        key: activation.card.key,
+        cardStat: activation.card.cardStat as CardStat,
+        lot: activation.card.lot,
+      },
+      statusHistory,
     );
   }
 
@@ -1176,15 +1408,26 @@ export class ActivationService implements IActivationService {
       ? this.computeCommission(activation.card.subscriptionPlan.commissions, activation.takenAt, now)
       : { price: null, tierLabel: null };
 
+    let cost: Decimal = new Prisma.Decimal(0);
+
     await this.prisma.$transaction(async (tx) => {
+      cost = await this.resolvePlanCost(tx, activation.card.subscriptionPlanId);
+
       await tx.activation.update({
         where: { id },
         data: {
           activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
           completedAt: now,
           activationEmail: cmd.activationEmail,
+          activationCost: cost,
           ...(price && { activationPrice: price }),
         },
+      });
+
+      await consumeActivationEmailWithin(tx, {
+        subscriptionPlanId: activation.card.subscriptionPlanId,
+        email: cmd.activationEmail,
+        now,
       });
 
       await tx.card.update({
@@ -1228,7 +1471,13 @@ export class ActivationService implements IActivationService {
     });
 
     return ActivationMapper.toAdminActivationDTO(
-      { ...activation, activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN, completedAt: now, activationPrice: price },
+      {
+        ...activation,
+        activationStat: PrismaActivationStat.ACTIVATED_BY_ADMIN,
+        completedAt: now,
+        activationPrice: price,
+        activationCost: cost,
+      },
       plan,
       activation.card.key,
       activation.activator?.fullName ?? null,
@@ -1309,11 +1558,7 @@ export class ActivationService implements IActivationService {
 
     if (!activation) throw new NotFoundError('Activation not found');
 
-    const completedStats: PrismaActivationStat[] = [
-      PrismaActivationStat.ACTIVATED,
-      PrismaActivationStat.ACTIVATED_BY_ADMIN,
-    ];
-    if (!completedStats.includes(activation.activationStat as PrismaActivationStat)) {
+    if (!COMPLETED_STATS.includes(activation.activationStat as PrismaActivationStat)) {
       throw new ConflictError('Activation is not completed');
     }
 
@@ -1346,6 +1591,53 @@ export class ActivationService implements IActivationService {
 
     return ActivationMapper.toAdminActivationDTO(
       { ...activation, activationPrice: new Prisma.Decimal(cmd.amount) },
+      plan,
+      activation.card.key,
+      activation.activator?.fullName ?? null,
+      activation.card.distributor?.storeName ?? '',
+    );
+  }
+
+  // Set 9 (D10): admin edit of a completed activation's stamped cost. Touches ONLY
+  // activationCost + its Log row — no activator earnings/credits delta (cost is a business
+  // expense, not money owed to anyone), no plan-cost write-back, no recomputation, no event.
+  async setCost(id: string, cmd: SetActivationCostCommand, actorId: string): Promise<AdminActivationDTO> {
+    const activation = await this.prisma.activation.findUnique({
+      where: { id },
+      include: {
+        card: { include: { subscriptionPlan: true, distributor: { select: { storeName: true } } } },
+        activator: { select: { id: true, fullName: true } },
+      },
+    });
+
+    if (!activation) throw new NotFoundError('Activation not found');
+
+    if (!COMPLETED_STATS.includes(activation.activationStat as PrismaActivationStat)) {
+      throw new ConflictError('Activation is not completed');
+    }
+
+    const oldCost = activation.activationCost ?? new Prisma.Decimal(0);
+    const newCost = new Prisma.Decimal(cmd.amount);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activation.update({
+        where: { id },
+        data: { activationCost: newCost },
+      });
+
+      await tx.log.create({
+        data: {
+          actionType: LogActionType.CHANGE_ACTIVATION_COST,
+          actionDescription: `Set activation cost to ${cmd.amount} (was ${oldCost.toFixed(2)}) for activation ${id}`,
+          userId: actorId,
+        },
+      });
+    });
+
+    const plan = activation.card.subscriptionPlan as unknown as ActivationPlanJoin;
+
+    return ActivationMapper.toAdminActivationDTO(
+      { ...activation, activationCost: newCost },
       plan,
       activation.card.key,
       activation.activator?.fullName ?? null,

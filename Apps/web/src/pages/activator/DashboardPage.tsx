@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { formatDZD, formatTime } from "@/lib/utils";
+import { formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import {
   ArrowUp,
   CheckCircle2,
@@ -88,11 +89,7 @@ export default function DashboardPage() {
             <StatCard
               icon={<Clock className="h-5 w-5" />}
               label={t("activator.dashboard.avgTime")}
-              value={
-                data.avgActivationTimeSeconds !== null
-                  ? formatTime(data.avgActivationTimeSeconds)
-                  : "—"
-              }
+              value={formatDuration(data.avgActivationTimeSeconds)}
               trend={
                 <span
                   className={`text-xs font-medium ${avgGreen ? "text-success" : "text-warning"}`}

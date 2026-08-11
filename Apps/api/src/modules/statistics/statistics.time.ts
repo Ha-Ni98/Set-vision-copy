@@ -3,6 +3,10 @@ import type { StatisticsPeriod } from '@my-app/contract';
 // Africa/Algiers = UTC+1, no DST
 const ALGIERS_OFFSET_MS = 60 * 60 * 1000;
 
+// Set 11: passed into raw SQL as a bound parameter for `AT TIME ZONE`, so Postgres resolves it
+// against tzdata rather than trusting the +1h constant above a second time. Single source.
+export const REPORTING_TZ = 'Africa/Algiers';
+
 function nowInAlgiers(): Date {
   return new Date(Date.now() + ALGIERS_OFFSET_MS);
 }

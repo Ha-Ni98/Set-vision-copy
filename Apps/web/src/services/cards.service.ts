@@ -3,10 +3,13 @@ import {
   type ApiResponse,
   type CardDTO,
   type CardDetailDTO,
-  type AvailableCardDTO,
+  type AvailableCardsBySetDTO,
+  type DistributorCardDTO,
   type PaginatedCards,
+  type PaginatedDistributorCards,
   type GetCardsQuery,
   type GetAvailableCardsQuery,
+  type GetDistributorCardsQuery,
 } from "@my-app/contract";
 import { api } from "@/lib/axios";
 import { apiPath, withParams } from "@/lib/api-path";
@@ -39,8 +42,8 @@ export async function getAllKeysForSet(setNumber: string, signal?: AbortSignal):
 export async function getAvailableForLot(
   query: GetAvailableCardsQuery,
   signal?: AbortSignal,
-): Promise<AvailableCardDTO[]> {
-  const res = await api.get<ApiResponse<AvailableCardDTO[]>>(
+): Promise<AvailableCardsBySetDTO> {
+  const res = await api.get<ApiResponse<AvailableCardsBySetDTO>>(
     apiPath(CARD_ROUTES.BASE, CARD_ROUTES.GET_AVAILABLE_FOR_LOT),
     { params: query, signal },
   );
@@ -80,6 +83,29 @@ export async function enable(id: string): Promise<CardDTO> {
 export async function revoke(id: string): Promise<CardDTO> {
   const res = await api.post<ApiResponse<CardDTO>>(
     withParams(apiPath(CARD_ROUTES.BASE, CARD_ROUTES.REVOKE), { id }),
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+// ─── Distributor-facing ───────────────────────────────────────────────────────
+
+export async function getMine(
+  query: GetDistributorCardsQuery,
+  signal?: AbortSignal,
+): Promise<PaginatedDistributorCards> {
+  const res = await api.get<ApiResponse<PaginatedDistributorCards>>(
+    apiPath(CARD_ROUTES.BASE, CARD_ROUTES.GET_MINE),
+    { params: query, signal },
+  );
+  if (!res.data.success) throw new Error(res.data.error.message); // defensive
+  return res.data.data;
+}
+
+export async function getMineById(id: string, signal?: AbortSignal): Promise<DistributorCardDTO> {
+  const res = await api.get<ApiResponse<DistributorCardDTO>>(
+    withParams(apiPath(CARD_ROUTES.BASE, CARD_ROUTES.GET_MINE_BY_ID), { id }),
+    { signal },
   );
   if (!res.data.success) throw new Error(res.data.error.message); // defensive
   return res.data.data;

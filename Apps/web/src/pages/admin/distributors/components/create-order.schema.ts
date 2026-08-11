@@ -27,6 +27,9 @@ export function createOrderSchema(t: ReturnType<typeof useTranslation>["t"]) {
       .number()
       .nonnegative(t("common.validation.nonNegativeNumber"))
       .multipleOf(0.01, t("common.validation.invalidAmount")),
+    // D5: the optional selector over approved, unlinked CardOrderRequest rows. `undefined`,
+    // never `""` — an empty string would fail the contract's z.uuid() server-side.
+    orderRequestId: z.string().optional(),
   });
 }
 

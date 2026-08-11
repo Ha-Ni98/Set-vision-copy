@@ -108,10 +108,18 @@ export class AdminService implements IAdminService {
       if (conflict) throw new ConflictError('Username already taken');
     }
 
+    // Optional new password (Set 14) — hashed here and folded into the same user update
+    // below. Absent = leave the password untouched.
+    const hashedPassword = cmd.password ? await hashPassword(cmd.password) : undefined;
+    const userData = {
+      ...(username !== undefined && { username }),
+      ...(hashedPassword !== undefined && { password: hashedPassword }),
+    };
+
     const [updatedUser, updatedAdmin] = await this.prisma.$transaction(async (tx) => {
       const user =
-        username !== undefined
-          ? await tx.user.update({ where: { id: result.userId }, data: { username } })
+        Object.keys(userData).length > 0
+          ? await tx.user.update({ where: { id: result.userId }, data: userData })
           : result.user;
 
       const admin =
@@ -121,8 +129,12 @@ export class AdminService implements IAdminService {
 
       await tx.log.create({
         data: {
-          actionType: LogActionType.CHANGE_USER_INFORMATION,
-          actionDescription: `Updated admin information: ${user.username}`,
+          actionType: hashedPassword
+            ? LogActionType.CHANGE_USER_PASSWORD
+            : LogActionType.CHANGE_USER_INFORMATION,
+          actionDescription: hashedPassword
+            ? `Updated admin information (incl. password): ${user.username}`
+            : `Updated admin information: ${user.username}`,
           userId: actorId,
         },
       });

@@ -14,6 +14,7 @@ generator client {
 enum UserRole {
   ADMIN
   ACTIVATOR
+  DISTRIBUTOR
 }
 
 enum SubscriptionType {
@@ -61,6 +62,28 @@ enum OrderStat {
   RETURNED
 }
 
+// D11: the request's own review states, PLUS a mirror of every OrderStat value. Once a
+// request is linked to an Order (CardOrderRequest.orderId), the order's status propagates
+// here on every change; unlinking reverts it to APPROVED. Kept as its own enum (not a union
+// of two) because Postgres enums cannot be composed and the contract mirrors this 1:1.
+enum OrderRequestStat {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  PENDING_DELIVERY
+  IN_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum RevocationRequestStat {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum ActivationStat {
   PENDING
   PROCESSING
@@ -103,6 +126,47 @@ enum LogActionType {
   REMOVE_SET
   REMOVE_CARD
   REVOKE_CARD
+  LINK_USER_ACCOUNT
+  UNLINK_USER_ACCOUNT
+  CHANGE_ORDER_REQUEST_STAT
+  CHANGE_REVOCATION_REQUEST_STAT
+  GENERATE_TELEGRAM_TOKEN
+  UNLINK_TELEGRAM
+  SET_SUBSCRIPTION_PLAN_COST
+  CHANGE_ACTIVATION_COST
+  ADD_ACTIVATION_EMAIL
+  DELETE_ACTIVATION_EMAIL
+}
+
+// Set 6: the delivery channel. Only TELEGRAM has a real provider; EMAIL/WHATSAPP exist so the
+// provider interface has more than one implementation and the stubs are type-checked.
+enum NotificationChannel {
+  TELEGRAM
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStat {
+  PENDING
+  SENT
+  FAILED
+}
+
+// One value per template. Record<NotificationType, …> in notification.templates.ts is
+// exhaustive, so an unmapped value fails tsc — this is the "no magic strings" guarantee for
+// notification copy. Only TELEGRAM_LINKED has a real template in Set 6a; the other nine are
+// declared now (Q11) so 6b needs no second ALTER TYPE migration.
+enum NotificationType {
+  TELEGRAM_LINKED
+  ACTIVATION_CREATED
+  ACTIVATION_INFORMATION_UPDATED
+  ACTIVATION_OTP_RECEIVED
+  ACTIVATION_STATUS_CHANGED
+  ACTIVATION_FROZEN
+  ORDER_REQUEST_CREATED
+  REVOCATION_REQUEST_CREATED
+  ORDER_CREATED
+  REVOCATION_APPROVED
 }
 
 // ============================================================
@@ -120,10 +184,13 @@ model User {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  admin         Admin?
-  activator     Activator?
-  refreshTokens RefreshToken[]
-  logs          Log[]
+  admin                      Admin?
+  activator                  Activator?
+  distributor                Distributor?
+  refreshTokens              RefreshToken[]
+  logs                       Log[]
+  reviewedOrderRequests      CardOrderRequest[]
+  reviewedRevocationRequests CardRevocationRequest[]
 
   @@index([role])
   @@index([isEnabled])
@@ -136,6 +203,12 @@ model Admin {
   fullName  String
   phone     String
   isEnabled Boolean @default(true)
+
+  // Telegram delivery (Set 6 / D7). All three nullable; @unique on a nullable column is
+  // correct in Postgres — unlimited NULLs never collide, so unlinked rows don't conflict.
+  telegramChatId    String? // Telegram chat id, stored as text: ids exceed 2^31 and are opaque
+  telegramLinkToken String? @unique // one-time deep-link payload; cleared the moment it is used
+  telegramLinkedAt  DateTime?
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments Payment[]
@@ -150,6 +223,11 @@ model Activator {
   credits                  Decimal @default(0) @db.Decimal(12, 2)
   nbOfActivation           Int     @default(0)
   nbOfSuccessfulActivation Int     @default(0)
+
+  // Telegram delivery (Set 6 / D7) — see Admin above for the field-by-field rationale.
+  telegramChatId    String?
+  telegramLinkToken String? @unique
+  telegramLinkedAt  DateTime?
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments    Payment[]
@@ -213,12 +291,53 @@ model SubscriptionPlan {
   subscriptionDuration SubscriptionDuration
   isActive             Boolean              @default(true)
 
-  commissions SubscriptionPlanCommission[]
-  sets        Set[]
-  lots        Lot[]
-  cards       Card[]
+  commissions       SubscriptionPlanCommission[]
+  sets              Set[]
+  lots              Lot[]
+  cards             Card[]
+  cardOrderRequests CardOrderRequest[]
+  cost              SubscriptionPlanCost?
+  activationEmails  ActivationEmail[]
 
   @@unique([subscriptionType, subscriptionDuration])
+}
+
+// Set 10 (D13). A pool of addresses the activator/admin picks from when completing an
+// activation. Scoped PER PLAN: the same address may serve several plans, each with its own
+// counter — hence the compound unique, not a unique on `email`.
+// Activation.activationEmail stays a PLAIN STRING with no FK to this table: an activation
+// records the address that was actually used, which may be free-typed and may later be
+// soft-deleted here. This table counts usage; it does not own the historical value.
+model ActivationEmail {
+  id                 String    @id @default(uuid())
+  subscriptionPlanId String
+  email              String // stored normalized: trimmed + lowercased (see the match rule)
+  nbOfActivation     Int       @default(0)
+  lastUsedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionPlanId, email])
+  @@index([subscriptionPlanId, isDeleted, lastUsedAt])
+}
+
+// Set 9 (D10). NOT the same thing as SubscriptionPlanCommission above, despite the similar
+// name: `commission` is what the business PAYS THE ACTIVATOR for an activation (a function of
+// plan × elapsed-time tier); `cost` here is what the subscription itself COSTS THE BUSINESS
+// per activation on this plan. One row per plan, one nullable cost, no tier axis.
+// Activation.activationCost is a SNAPSHOT of this value taken at completion — editing a row
+// here never rewrites a completed activation.
+model SubscriptionPlanCost {
+  id                 String   @id @default(uuid())
+  subscriptionPlanId String   @unique
+  cost               Decimal? @db.Decimal(12, 2) // null = never configured (renders "—")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
 }
 
 model CommissionDuration {
@@ -300,17 +419,47 @@ model Order {
   createdAt           DateTime     @default(now())
   completedAt         DateTime?
 
-  distributor     Distributor     @relation(fields: [distributorId], references: [id])
-  wilaya          Wilaya          @relation(fields: [wilayaId], references: [id])
-  commune         Commune         @relation(fields: [communeId], references: [id])
-  deliveryCompany DeliveryCompany @relation(fields: [deliveryCompanyId], references: [id])
-  orderLots       OrderLot[]
+  distributor      Distributor       @relation(fields: [distributorId], references: [id])
+  wilaya           Wilaya            @relation(fields: [wilayaId], references: [id])
+  commune          Commune           @relation(fields: [communeId], references: [id])
+  deliveryCompany  DeliveryCompany   @relation(fields: [deliveryCompanyId], references: [id])
+  orderLots        OrderLot[]
+  cardOrderRequest CardOrderRequest? // D5: virtual back-reference only — no column on Order.
 
   @@index([distributorId])
   @@index([orderStat])
   @@index([wilayaId])
   @@index([deliveryCompanyId])
   @@index([createdAt])
+  // Set 11 (D9): the cash-in predicate is `orderStat = DELIVERED AND completedAt BETWEEN …`.
+  // Equality column first, range column second — the only ordering a btree can serve as a range scan.
+  @@index([orderStat, completedAt])
+}
+
+// Distributor-submitted, admin-managed request for a batch of cards. The FK to Order lives
+// here (D5) — Order itself is never modified beyond the virtual back-reference above.
+model CardOrderRequest {
+  id                 String           @id @default(uuid())
+  distributorId      String
+  subscriptionPlanId String
+  nbOfCards          Int
+  note               String?
+  stat               OrderRequestStat @default(PENDING)
+  adminNote          String?
+  reviewedByUserId   String?
+  orderId            String?          @unique
+  createdAt          DateTime         @default(now())
+  reviewedAt         DateTime?
+
+  distributor      Distributor      @relation(fields: [distributorId], references: [id])
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
+  reviewedBy       User?            @relation(fields: [reviewedByUserId], references: [id])
+  order            Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([distributorId, stat])
+  @@index([stat])
+  @@index([createdAt])
+  @@index([subscriptionPlanId])
 }
 
 model OrderLot {
@@ -341,11 +490,12 @@ model Card {
   updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
 
-  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
-  set              Set              @relation(fields: [setId], references: [id])
-  lot              Lot?             @relation(fields: [lotId], references: [id])
-  distributor      Distributor?     @relation(fields: [distributorId], references: [id])
-  activations      Activation[]
+  subscriptionPlan   SubscriptionPlan        @relation(fields: [subscriptionPlanId], references: [id])
+  set                Set                     @relation(fields: [setId], references: [id])
+  lot                Lot?                    @relation(fields: [lotId], references: [id])
+  distributor        Distributor?            @relation(fields: [distributorId], references: [id])
+  activations        Activation[]
+  revocationRequests CardRevocationRequest[]
 
   @@index([cardStat])
   @@index([distributorId])
@@ -369,28 +519,67 @@ model Activation {
   clientEmail     String?
   activationEmail String?
   activationPrice Decimal?       @db.Decimal(12, 2)
+  // Set 9 (D10): the plan's cost STAMPED at completion. Written unconditionally by both
+  // completion paths (never the `...(x && {})` spread that leaves activationPrice null) and
+  // thereafter changed only by an explicit admin edit. Not recomputed, ever.
+  activationCost  Decimal?       @default(0) @db.Decimal(12, 2)
   freezReason     String?
   requestedAt     DateTime       @default(now())
   takenAt         DateTime?
   completedAt     DateTime?
 
-  card        Card                    @relation(fields: [cardId], references: [id])
-  activator   Activator?              @relation(fields: [activatorId], references: [id])
-  information ActivationInformation[]
-  steps       ActivationStep[]
+  card               Card                    @relation(fields: [cardId], references: [id])
+  activator          Activator?              @relation(fields: [activatorId], references: [id])
+  information        ActivationInformation[]
+  steps              ActivationStep[]
+  revocationRequests CardRevocationRequest[]
 
   @@index([cardId])
   @@index([activatorId])
   @@index([activationStat])
   @@index([requestedAt])
   @@index([completedAt])
+  // Set 11 (D9): the cash-out predicate is `activationStat IN (2) AND completedAt BETWEEN …`.
+  // Also covers the existing COMPLETED_STATS + completedAt reads in dashboard() /
+  // activationsSummary() / overview().
+  @@index([activationStat, completedAt])
+}
+
+// Distributor-submitted, admin-managed request to revoke one of the distributor's own
+// ACTIVATION_FAILED cards. Approval reuses the same code path as the direct admin revoke
+// (card.service.ts's revokeCardWithin) — this table only records the request/decision.
+model CardRevocationRequest {
+  id               String                @id @default(uuid())
+  cardId           String
+  activationId     String?
+  distributorId    String
+  reason           String
+  stat             RevocationRequestStat @default(PENDING)
+  adminNote        String?
+  reviewedByUserId String?
+  createdAt        DateTime              @default(now())
+  reviewedAt       DateTime?
+
+  card        Card        @relation(fields: [cardId], references: [id])
+  activation  Activation? @relation(fields: [activationId], references: [id])
+  distributor Distributor @relation(fields: [distributorId], references: [id])
+  reviewedBy  User?       @relation(fields: [reviewedByUserId], references: [id])
+
+  @@index([cardId, stat])
+  @@index([distributorId, stat])
+  @@index([stat])
+  @@index([createdAt])
 }
 
 model ActivationInformation {
   id            String             @id @default(uuid())
   activationId  String
   accountInform AccountInformation
-  value         String? // SENSITIVE: may hold password/OTP — activator-only exposure
+  value         String? // SENSITIVE: may hold password/OTP. THE CURRENT value of the field —
+  // updated by ActivationService.update() on every client correction.
+  // Exposure: activator, client (key-gated), admin (D3), and — since Set 6 — the assigned
+  // activator's Telegram chat via notification.subscribers.ts's ACTIVATION_INFORMATION_UPDATED
+  // template, unmasked, same reasoning as D3 (Set 6 plan §6.5).
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
 
@@ -415,7 +604,11 @@ model WrongInformation {
   id               String             @id @default(uuid())
   activationStepId String
   accountInform    AccountInformation
-  value            String? // SENSITIVE: may hold a corrected password — activator-only exposure
+  value            String? // SENSITIVE: may hold a password. The value that was REJECTED,
+  // snapshotted at flagWrong() time. Immutable history — never
+  // overlaid onto the current value, which lives in
+  // ActivationInformation. Exposure: activator, client (key-gated),
+  // admin (D3).
 
   activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
 
@@ -426,7 +619,9 @@ model AdditionalInformation {
   id               String             @id @default(uuid())
   activationStepId String
   accountInform    AccountInformation
-  value            String? // SENSITIVE: may hold an OTP — activator-only exposure
+  value            String? // SENSITIVE: may hold an OTP. Exposure: activator, client
+  // (key-gated), admin (D3), and — since Set 6 — the assigned activator's Telegram chat via
+  // notification.subscribers.ts's ACTIVATION_OTP_RECEIVED template, unmasked (Set 6 plan §6.5).
 
   activationStep ActivationStep @relation(fields: [activationStepId], references: [id], onDelete: Cascade)
 
@@ -477,6 +672,7 @@ model DeliveryCompany {
 
 model Distributor {
   id              String    @id @default(uuid())
+  userId          String?   @unique // nullable: inventory-only distributors have no login
   fullName        String
   storeName       String
   phone           String?
@@ -489,13 +685,61 @@ model Distributor {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  wilaya  Wilaya  @relation(fields: [wilayaId], references: [id])
-  commune Commune @relation(fields: [communeId], references: [id])
-  cards   Card[]
-  orders  Order[]
+  // Telegram delivery (Set 6 / D7) — see Admin above for the field-by-field rationale.
+  // Crucially this makes an ACCOUNT-LESS distributor (userId null) still reachable: linking
+  // is per-profile, not per-User.
+  telegramChatId    String?
+  telegramLinkToken String? @unique
+  telegramLinkedAt  DateTime?
+
+  user               User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  wilaya             Wilaya                  @relation(fields: [wilayaId], references: [id])
+  commune            Commune                 @relation(fields: [communeId], references: [id])
+  cards              Card[]
+  orders             Order[]
+  cardOrderRequests  CardOrderRequest[]
+  revocationRequests CardRevocationRequest[]
 
   @@index([wilayaId])
   @@index([communeId])
   @@index([isEnabled])
 }
 
+// ============================================================
+// Notifications (Set 6)
+// ============================================================
+
+// Outbox + audit trail for every notification the system attempted. One row per
+// (recipient × event) — a fan-out to 5 activators writes 5 rows.
+//
+// Deliberately NOT related to User: the recipient is a PROFILE (an account-less
+// Distributor is a legal recipient, see Distributor above). recipientRole +
+// recipientProfileId is a polymorphic pointer; Prisma cannot express "exactly one of three
+// FKs is set", and three nullable FKs would need a CHECK constraint this schema has no
+// precedent for. The row is an immutable record for the admin log page, not a graph to
+// traverse.
+model Notification {
+  id      String              @id @default(uuid())
+  channel NotificationChannel
+  type    NotificationType
+  stat    NotificationStat    @default(PENDING)
+
+  recipientRole      UserRole
+  recipientProfileId String // Admin.id | Activator.id | Distributor.id — never User.id
+  recipientName      String // snapshot of fullName/storeName at send time, for the log table
+  recipientAddress   String // snapshot of the chat id used. Resend re-resolves it.
+
+  // The rendered message, exactly as sent. MAY contain the client's Snapchat password and
+  // OTP (D3 / Set 6 scope note). MUST NEVER contain User.password, a refresh-token hash, a
+  // JWT, or a telegramLinkToken.
+  body      String
+  error     String? // provider failure, truncated to 500 chars by the service
+  attempts  Int      @default(0)
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([stat])
+  @@index([createdAt])
+  @@index([recipientRole, recipientProfileId])
+  @@index([type])
+}

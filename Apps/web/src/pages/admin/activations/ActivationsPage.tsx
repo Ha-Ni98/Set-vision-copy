@@ -13,12 +13,14 @@ import {
   useActivateByAdmin,
   useCancelByAdmin,
   useSetActivationPrice,
+  useSetActivationCost,
 } from "@/hooks/useAdminActivations";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useActivators } from "@/hooks/useActivators";
 import { useDistributors } from "@/hooks/useDistributors";
 import { useWilayas, useCommunes } from "@/hooks/useGeography";
-import { formatTime, formatDZD } from "@/lib/utils";
+import { formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { StatsRow, type DashboardStatCardData } from "../components/StatsRow";
 import { ByStateDonut } from "./components/ByStateDonut";
 import { ActivationsFilters } from "./components/ActivationsFilters";
@@ -70,8 +72,12 @@ export default function ActivationsPage() {
   const activateByAdmin = useActivateByAdmin();
   const cancelByAdmin = useCancelByAdmin();
   const setActivationPrice = useSetActivationPrice();
+  const setActivationCost = useSetActivationCost();
   const isMutating =
-    activateByAdmin.isPending || cancelByAdmin.isPending || setActivationPrice.isPending;
+    activateByAdmin.isPending ||
+    cancelByAdmin.isPending ||
+    setActivationPrice.isPending ||
+    setActivationCost.isPending;
 
   const hasFilters =
     search.length > 0 ||
@@ -118,12 +124,7 @@ export default function ActivationsPage() {
       key: "avgDuration",
       icon: <Clock3 className="h-5 w-5" />,
       labelKey: "admin.activations.stats.avgDuration.title",
-      value:
-        summary.data && summary.data.avgDurationSeconds != null
-          ? formatTime(summary.data.avgDurationSeconds)
-          : summary.data
-            ? "—"
-            : null,
+      value: summary.data ? formatDuration(summary.data.avgDurationSeconds) : null,
       isLoading: summary.isLoading,
       isError: summary.isError,
       onRetry: summary.refetch,
@@ -230,6 +231,9 @@ export default function ActivationsPage() {
         onCancel={(activation) => cancelByAdmin.mutate(activation.id)}
         onSetPrice={(activation, amount) =>
           setActivationPrice.mutate({ id: activation.id, command: { amount } })
+        }
+        onSetCost={(activation, amount) =>
+          setActivationCost.mutate({ id: activation.id, command: { amount } })
         }
         isMutating={isMutating}
       />

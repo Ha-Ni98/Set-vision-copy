@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
-import { formatTime, formatDateTime, formatDZD } from "@/lib/utils";
+import { formatDateTime, formatDZD } from "@/lib/utils";
+import { formatDuration } from "@/lib/duration";
 import { ActivationActionsMenu } from "./ActivationActionsMenu";
 import { ResolveFreezeDialog } from "../../components/ResolveFreezeDialog";
 import { SetActivatorPriceModal } from "./SetActivatorPriceModal";
+import { SetActivationCostModal } from "./SetActivationCostModal";
 
 interface Props {
   data?: AdminActivationDTO[];
@@ -26,6 +28,7 @@ interface Props {
   onActivate: (activation: AdminActivationDTO, command: ActivateActivationCommand) => void;
   onCancel: (activation: AdminActivationDTO) => void;
   onSetPrice: (activation: AdminActivationDTO, amount: number) => void;
+  onSetCost: (activation: AdminActivationDTO, amount: number) => void;
   isMutating?: boolean;
 }
 
@@ -40,6 +43,7 @@ export function ActivationsTable({
   onActivate,
   onCancel,
   onSetPrice,
+  onSetCost,
   isMutating,
 }: Props) {
   const { t } = useTranslation();
@@ -49,6 +53,7 @@ export function ActivationsTable({
     action: "activate" | "cancel";
   } | null>(null);
   const [priceRow, setPriceRow] = useState<AdminActivationDTO | null>(null);
+  const [costRow, setCostRow] = useState<AdminActivationDTO | null>(null);
 
   const columns = useMemo<ColumnDef<AdminActivationDTO>[]>(
     () => [
@@ -71,7 +76,7 @@ export function ActivationsTable({
         header: t("admin.activations.table.duration"),
         cell: ({ row }) => {
           const activation = row.original;
-          if (activation.durationSeconds != null) return formatTime(activation.durationSeconds);
+          if (activation.durationSeconds != null) return formatDuration(activation.durationSeconds);
           if (activation.takenAt) return <LiveTimer since={activation.takenAt} mode="elapsed" />;
           return "—";
         },
@@ -81,6 +86,12 @@ export function ActivationsTable({
         header: t("admin.activations.table.price"),
         accessorFn: (row) =>
           row.activationPrice != null ? formatDZD(row.activationPrice, language) : "—",
+      },
+      {
+        id: "cost",
+        header: t("admin.activations.table.cost"),
+        accessorFn: (row) =>
+          row.activationCost != null ? formatDZD(row.activationCost, language) : "—",
       },
       {
         id: "createdAt",
@@ -95,6 +106,7 @@ export function ActivationsTable({
             activation={row.original}
             onRequestResolve={(activation, action) => setResolveRow({ row: activation, action })}
             onRequestSetPrice={setPriceRow}
+            onRequestSetCost={setCostRow}
           />
         ),
       },
@@ -102,7 +114,7 @@ export function ActivationsTable({
     [t, language],
   );
 
-  if (isLoading) return <TableSkeleton rows={5} columns={9} />;
+  if (isLoading) return <TableSkeleton rows={5} columns={10} />;
   if (isError) {
     return (
       <NotFoundState
@@ -156,6 +168,7 @@ export function ActivationsTable({
         open={resolveRow !== null}
         action={resolveRow?.action ?? "activate"}
         reason={resolveRow?.row.freezeReason}
+        subscriptionPlanId={resolveRow?.row.subscriptionPlanId ?? ""}
         onOpenChange={(open) => !open && setResolveRow(null)}
         onConfirm={(command) => {
           if (!resolveRow) return;
@@ -173,6 +186,17 @@ export function ActivationsTable({
         onSubmit={(values) => {
           if (priceRow) onSetPrice(priceRow, values.amount);
           setPriceRow(null);
+        }}
+      />
+
+      <SetActivationCostModal
+        open={costRow !== null}
+        onOpenChange={(open) => !open && setCostRow(null)}
+        isPending={isMutating}
+        currentAmount={costRow?.activationCost}
+        onSubmit={(values) => {
+          if (costRow) onSetCost(costRow, values.amount);
+          setCostRow(null);
         }}
       />
     </>
