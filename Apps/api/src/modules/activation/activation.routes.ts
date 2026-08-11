@@ -23,6 +23,7 @@ import {
 import { prisma } from '@common/db/prisma';
 import { requireAuth } from '@common/middlewares/auth.middleware';
 import { validateRequest } from '@common/middlewares/validate-request.middleware';
+import { publicKeyRateLimiter } from '@common/middlewares/rate-limit.middleware';
 import { ActivationService } from './activation.service';
 import { ActivationController } from './activation.controller';
 
@@ -41,8 +42,14 @@ const activatorOrAdmin = requireAuth({ roles: [UserRole.ACTIVATOR, UserRole.ADMI
 
 export const keyRouter = Router();
 
+// publicKeyRateLimiter on VERIFY/UPDATE/ADDITIONAL (set-12-plan §6.4.1): this whole router is
+// unauthenticated, and it is the only mitigation for R19 that doesn't need the declined
+// key-check contract change. SUBMIT and STATUS are left unlimited — SUBMIT already requires a
+// real, active card key to do anything (verify() is the actual guess-surface), and STATUS
+// leaks nothing (activationId + status only).
 keyRouter.post(
   KEY_ROUTES.VERIFY,
+  publicKeyRateLimiter,
   validateRequest({ body: VerifyKeySchema }),
   controller.verify,
 );
@@ -55,12 +62,14 @@ keyRouter.post(
 
 keyRouter.post(
   KEY_ROUTES.UPDATE,
+  publicKeyRateLimiter,
   validateRequest({ params: ActivationIdParamsSchema, body: UpdateActivationSchema }),
   controller.update,
 );
 
 keyRouter.post(
   KEY_ROUTES.ADDITIONAL,
+  publicKeyRateLimiter,
   validateRequest({ params: ActivationIdParamsSchema, body: SubmitAdditionalInfoSchema }),
   controller.additional,
 );

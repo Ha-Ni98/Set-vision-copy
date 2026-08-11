@@ -3,7 +3,7 @@ import {
   type ApiResponse,
   type CardDTO,
   type CardDetailDTO,
-  type AvailableCardDTO,
+  type AvailableCardsBySetDTO,
   type DistributorCardDTO,
   type PaginatedCards,
   type PaginatedDistributorCards,
@@ -42,8 +42,8 @@ export async function getAllKeysForSet(setNumber: string, signal?: AbortSignal):
 export async function getAvailableForLot(
   query: GetAvailableCardsQuery,
   signal?: AbortSignal,
-): Promise<AvailableCardDTO[]> {
-  const res = await api.get<ApiResponse<AvailableCardDTO[]>>(
+): Promise<AvailableCardsBySetDTO> {
+  const res = await api.get<ApiResponse<AvailableCardsBySetDTO>>(
     apiPath(CARD_ROUTES.BASE, CARD_ROUTES.GET_AVAILABLE_FOR_LOT),
     { params: query, signal },
   );

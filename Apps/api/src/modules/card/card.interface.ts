@@ -1,7 +1,7 @@
 import type {
   CardDTO,
   CardDetailDTO,
-  AvailableCardDTO,
+  AvailableCardsBySetDTO,
   DistributorCardDTO,
   GetCardsQuery,
   GetAvailableCardsQuery,
@@ -11,7 +11,7 @@ import type {
 
 export interface ICardService {
   getAll(query: GetCardsQuery): Promise<PaginatedResult<CardDTO>>;
-  getAvailableForLot(query: GetAvailableCardsQuery): Promise<AvailableCardDTO[]>;
+  getAvailableForLot(query: GetAvailableCardsQuery): Promise<AvailableCardsBySetDTO>;
   getById(id: string): Promise<CardDetailDTO>;
   delete(id: string, actorId: string): Promise<void>;
   disable(id: string): Promise<CardDTO>;

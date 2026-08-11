@@ -2,12 +2,13 @@ import type { Card } from '@prisma/client';
 import {
   CardResponseSchema,
   CardDetailResponseSchema,
-  AvailableCardResponseSchema,
+  AvailableCardsBySetSchema,
   DistributorCardResponseSchema,
   type CardDTO,
   type CardDetailDTO,
-  type AvailableCardDTO,
+  type AvailableCardsBySetDTO,
   type DistributorCardDTO,
+  type PaginationMeta,
   CardStat,
   type SubscriptionType,
   type SubscriptionDuration,
@@ -95,16 +96,28 @@ export class CardMapper {
     return CardDetailResponseSchema.parse(dto);
   }
 
-  static toAvailableDTO(
-    card: Pick<Card, 'id' | 'key'>,
-    plan: { subscriptionType: SubscriptionType; subscriptionDuration: SubscriptionDuration },
-  ): AvailableCardDTO {
-    const dto: AvailableCardDTO = {
-      id: card.id,
-      key: card.key,
-      subscriptionLabel: composeSubscriptionLabel(plan),
+  static toAvailableCardsBySetDTO(
+    sets: Array<{
+      id: string;
+      setNumber: string;
+      createdAt: Date;
+      cards: Array<Pick<Card, 'id' | 'key'>>;
+    }>,
+    totalAvailableCards: number,
+    meta: PaginationMeta,
+  ): AvailableCardsBySetDTO {
+    const dto: AvailableCardsBySetDTO = {
+      groups: sets.map((s) => ({
+        setId: s.id,
+        setNumber: s.setNumber,
+        setCreatedAt: s.createdAt.toISOString(),
+        availableCount: s.cards.length,
+        cards: s.cards.map((c) => ({ id: c.id, key: c.key })),
+      })),
+      meta,
+      totalAvailableCards,
     };
-    return AvailableCardResponseSchema.parse(dto);
+    return AvailableCardsBySetSchema.parse(dto);
   }
 
   static toDistributorDTO(card: Card, joins: DistributorCardJoins): DistributorCardDTO {

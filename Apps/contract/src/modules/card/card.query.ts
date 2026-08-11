@@ -14,8 +14,13 @@ export const GetCardsQuerySchema = z.object({
 });
 export type GetCardsQuery = z.infer<typeof GetCardsQuerySchema>;
 
+// `page`/`limit` page over SETS, not cards — a page carries every eligible card of every set on
+// it (set-8-plan §2.5/§3.1), so `limit` is capped low: it is a payload bound, not a UI preference.
 export const GetAvailableCardsQuerySchema = z.object({
   subscriptionPlanId: z.uuid(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().min(1).max(100).default(1).optional(),
+  limit: z.coerce.number().int().min(1).max(20).default(5).optional(),
 });
 export type GetAvailableCardsQuery = z.infer<typeof GetAvailableCardsQuerySchema>;
 

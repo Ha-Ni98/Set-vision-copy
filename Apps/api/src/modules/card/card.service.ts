@@ -1,10 +1,10 @@
 import type { PrismaClient, Prisma, Card } from '@prisma/client';
 import { CardStat as PrismaCardStat } from '@prisma/client';
-import { LogActionType, CardStat, CardFlag } from '@my-app/contract';
+import { LogActionType, CardStat, CardFlag, CARD_KEY_PATTERN } from '@my-app/contract';
 import type {
   CardDTO,
   CardDetailDTO,
-  AvailableCardDTO,
+  AvailableCardsBySetDTO,
   DistributorCardDTO,
   GetCardsQuery,
   GetAvailableCardsQuery,
@@ -18,9 +18,20 @@ import {
   type DistributionTimelineEntry,
   type DistributorCardJoins,
 } from './card.mapper';
+import { lotEligibleCardWhere } from './card.eligibility';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError } from '@common/errors';
 import { resolveDistributorScope } from '@common/auth/distributor-scope';
+
+// The only place card-key search is interpreted (set-8-plan §4.1). Card.key is always 8
+// uppercase alphanumerics (CARD_KEY_PATTERN) — a full key is an equality (can use the @unique
+// btree), anything else is a prefix (the only pattern form a btree could ever serve).
+function buildKeySearch(search?: string): Prisma.CardWhereInput {
+  const term = search?.trim().toUpperCase();
+  if (!term) return {};
+  if (CARD_KEY_PATTERN.test(term)) return { key: term };
+  return { key: { startsWith: term } };
+}
 
 // Set 5 §3.2 refactor: extracted from CardService.revoke() so the card-revocation-request
 // module's APPROVE path can join the SAME transaction — this is now THE ONLY place that
@@ -106,21 +117,36 @@ export class CardService implements ICardService {
     return { items, meta: buildPaginationMeta(page, limit, total) };
   }
 
-  async getAvailableForLot(query: GetAvailableCardsQuery): Promise<AvailableCardDTO[]> {
-    const cards = await this.prisma.card.findMany({
-      where: {
-        cardStat: PrismaCardStat.PRINTED,
-        subscriptionPlanId: query.subscriptionPlanId,
-        lotId: null,
-        isDisabled: false,
-        deletedAt: null,
-      },
-      include: { subscriptionPlan: true },
-      orderBy: { createdAt: 'asc' },
-    });
+  async getAvailableForLot(query: GetAvailableCardsQuery): Promise<AvailableCardsBySetDTO> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 5;
 
-    return cards.map((c) =>
-      CardMapper.toAvailableDTO(c, c.subscriptionPlan as unknown as CardJoins['subscriptionPlan']),
+    const cardWhere: Prisma.CardWhereInput = {
+      ...lotEligibleCardWhere(query.subscriptionPlanId),
+      ...buildKeySearch(query.search),
+    };
+
+    const [sets, totalSets, totalAvailableCards] = await Promise.all([
+      this.prisma.set.findMany({
+        where: { cards: { some: cardWhere } },
+        include: {
+          cards: {
+            where: cardWhere,
+            orderBy: { key: 'asc' },
+            select: { id: true, key: true },
+          },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        ...toSkipTake({ page, limit }),
+      }),
+      this.prisma.set.count({ where: { cards: { some: cardWhere } } }),
+      this.prisma.card.count({ where: cardWhere }),
+    ]);
+
+    return CardMapper.toAvailableCardsBySetDTO(
+      sets,
+      totalAvailableCards,
+      buildPaginationMeta(page, limit, totalSets),
     );
   }
 

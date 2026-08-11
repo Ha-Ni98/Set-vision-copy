@@ -85,6 +85,29 @@ const COMPLETED_STATS: PrismaActivationStat[] = [
 
 const TERMINAL_STATS: PrismaActivationStat[] = [...COMPLETED_STATS, ...CANCELLED_STATS];
 
+// set-12-plan §5.5: update()'s blocked-status message, keyed by the actual status instead of
+// one generic "not awaiting correction" string that reads as "still waiting on you" even for an
+// ACTIVATED or cancelled activation. No entry for PENDING/WRONG_INFORMATION — those are the two
+// writable statuses and never reach this table.
+const UPDATE_BLOCKED_MESSAGE: Partial<Record<PrismaActivationStat, string>> = {
+  [PrismaActivationStat.PROCESSING]:
+    'Your information is being processed and cannot be changed right now.',
+  [PrismaActivationStat.ADDITIONAL_INFORMATION]:
+    'Please answer the verification code request instead.',
+  [PrismaActivationStat.FREEZE]:
+    'This activation is under review. Contact support to make a change.',
+  [PrismaActivationStat.ACTIVATED]:
+    'This activation is already complete and can no longer be changed.',
+  [PrismaActivationStat.ACTIVATED_BY_ADMIN]:
+    'This activation is already complete and can no longer be changed.',
+  [PrismaActivationStat.CANCELLED_BY_ACTIVATOR]:
+    'This activation was cancelled and can no longer be changed.',
+  [PrismaActivationStat.REMOVED_FROM_ACTIVATOR]:
+    'This activation was cancelled and can no longer be changed.',
+  [PrismaActivationStat.CANCELLED_BY_ADMIN]:
+    'This activation was cancelled and can no longer be changed.',
+};
+
 // ─── Full-join include shapes ─────────────────────────────────────────────────
 
 const ACTIVE_REQUEST_INCLUDE = {
@@ -415,7 +438,11 @@ export class ActivationService implements IActivationService {
     const isCorrection = activation.activationStat === PrismaActivationStat.WRONG_INFORMATION;
     const isPreDispatchEdit = activation.activationStat === PrismaActivationStat.PENDING;
     if (!isCorrection && !isPreDispatchEdit) {
-      throw new ConflictError('Activation is not awaiting correction');
+      // Status-aware message (set-12-plan §5.5) — "not awaiting correction" reads as "we're
+      // still waiting on you" even for an ACTIVATED/cancelled activation, which is misleading.
+      throw new ConflictError(
+        UPDATE_BLOCKED_MESSAGE[activation.activationStat] ?? 'Activation is not awaiting correction',
+      );
     }
 
     // The client posts every field, not just the flagged ones. Guarding to `flagged` is what
@@ -461,6 +488,19 @@ export class ActivationService implements IActivationService {
         await tx.activation.update({
           where: { id: activationId },
           data: { activationStat: PrismaActivationStat.PROCESSING },
+        });
+      }
+
+      // Contact-detail correction (set-12-plan §5.2): writable ONLY in the PENDING pre-pickup
+      // window — a WRONG_INFORMATION correction ignores them, since the activator has no way
+      // to flag clientFullName/clientPhone (FlagWrongInfoSchema is AccountInformation[] only).
+      if (isPreDispatchEdit && (cmd.fullName !== undefined || cmd.phone !== undefined)) {
+        await tx.activation.update({
+          where: { id: activationId },
+          data: {
+            ...(cmd.fullName !== undefined && { clientFullName: cmd.fullName }),
+            ...(cmd.phone !== undefined && { clientPhone: cmd.phone }),
+          },
         });
       }
     });

@@ -1,8 +1,12 @@
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CreditCard } from "lucide-react";
-import type { CreateLotCommand } from "@my-app/contract";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { Loader2, AlertTriangle } from "lucide-react";
+import {
+  LotCreationConflictDetailsSchema,
+  CardUnavailableReason,
+  type CreateLotCommand,
+  type UnavailableCardDTO,
+} from "@my-app/contract";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -21,171 +23,171 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
-import { useAvailableCardsForLot } from "@/hooks/useCards";
-import { createLotSchema, type CreateLotFormValues } from "./create-lot.schema";
-
-const DEFAULT_VALUES: CreateLotFormValues = { subscriptionPlanId: "", cardIds: [] };
+import { CardPicker } from "./CardPicker";
+import { createLotSchema } from "./create-lot.schema";
+import type { SelectedCard } from "./card-picker.types";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (command: CreateLotCommand) => void;
   isPending?: boolean;
+  /** The create mutation's error — a 409 carries error.details.unavailableCards (set-8-plan §5). */
+  createError?: unknown;
 }
 
-// Calls its own useSubscriptionPlans + useAvailableCardsForLot(watched plan) — no
-// page-level data props (mirrors CreateSetModal/CreateOrderModal's Sprint 3/4 architecture).
-export function CreateLotModal({ open, onOpenChange, onSubmit, isPending }: Props) {
+const REASON_LABEL_KEY: Record<CardUnavailableReason, string> = {
+  [CardUnavailableReason.NOT_FOUND]: "admin.setsLots.lots.create.picker.reason.notFound",
+  [CardUnavailableReason.ALREADY_IN_LOT]: "admin.setsLots.lots.create.picker.reason.alreadyInLot",
+  [CardUnavailableReason.NOT_PRINTED]: "admin.setsLots.lots.create.picker.reason.notPrinted",
+  [CardUnavailableReason.WRONG_PLAN]: "admin.setsLots.lots.create.picker.reason.wrongPlan",
+  [CardUnavailableReason.DISABLED]: "admin.setsLots.lots.create.picker.reason.disabled",
+  [CardUnavailableReason.REVOKED]: "admin.setsLots.lots.create.picker.reason.revoked",
+};
+
+// A create conflict (409) returns exactly which cards failed and why (error.details), typed —
+// the same job CreateSetModal's ad-hoc `{ takenKeys }` parse does today, typed instead of
+// guessed (set-8-plan §5.5).
+function extractUnavailableCards(error: unknown): UnavailableCardDTO[] {
+  if (axios.isAxiosError(error)) {
+    const details = (error.response?.data as { error?: { details?: unknown } })?.error?.details;
+    const parsed = LotCreationConflictDetailsSchema.safeParse(details);
+    if (parsed.success) return parsed.data.unavailableCards;
+  }
+  return [];
+}
+
+// Self-contained (calls its own useSubscriptionPlans) — the page passes no data props, only
+// the submit handler and the create error, mirroring CreateSetModal's architecture.
+export function CreateLotModal({ open, onOpenChange, onSubmit, isPending, createError }: Props) {
   const { t } = useTranslation();
   const plansQuery = useSubscriptionPlans({ active: true });
-  const {
-    handleSubmit,
-    control,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<CreateLotFormValues>({
-    resolver: zodResolver(createLotSchema(t)),
-    defaultValues: DEFAULT_VALUES,
-  });
-  const subscriptionPlanId = watch("subscriptionPlanId");
-  const cardIds = watch("cardIds");
-  const candidatesQuery = useAvailableCardsForLot(subscriptionPlanId || undefined);
-  const cards = candidatesQuery.data ?? [];
+  const [subscriptionPlanId, setSubscriptionPlanId] = useState("");
+  const [selected, setSelected] = useState<Map<string, SelectedCard>>(new Map());
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) reset(DEFAULT_VALUES);
-  }, [open, reset]);
+    if (!open) {
+      setSubscriptionPlanId("");
+      setSelected(new Map());
+      setFormError(null);
+    }
+  }, [open]);
 
-  const toggleCard = (id: string) => {
-    const next = cardIds.includes(id) ? cardIds.filter((c) => c !== id) : [...cardIds, id];
-    setValue("cardIds", next, { shouldValidate: true });
+  const unavailableCards = useMemo(() => extractUnavailableCards(createError), [createError]);
+
+  // A 409 removes exactly the failed cards from the live selection (set-8-plan §5.5) — the
+  // admin's remaining, still-valid selection survives and Create can be pressed again immediately.
+  useEffect(() => {
+    if (unavailableCards.length === 0) return;
+    setSelected((prev) => {
+      const next = new Map(prev);
+      for (const c of unavailableCards) next.delete(c.cardId);
+      return next;
+    });
+    // Only when a fresh conflict arrives, never on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createError]);
+
+  const submit = () => {
+    const parsed = createLotSchema(t).safeParse({
+      subscriptionPlanId,
+      cardIds: [...selected.keys()],
+    });
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? null);
+      return;
+    }
+    setFormError(null);
+    onSubmit(parsed.data);
   };
-
-  const submit = handleSubmit((values) => onSubmit(values));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("admin.setsLots.lots.create.title")}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="flex flex-col gap-4">
+
+        <div className="flex flex-col gap-4">
           <div className="space-y-2">
             <Label>{t("admin.setsLots.lots.create.plan")}</Label>
-            <Controller
-              control={control}
-              name="subscriptionPlanId"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v);
-                    setValue("cardIds", []);
-                  }}
-                  disabled={plansQuery.isLoading || plansQuery.isError}
-                >
-                  <SelectTrigger>
-                    {plansQuery.isLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                    ) : (
-                      <SelectValue placeholder={t("admin.setsLots.lots.create.planPlaceholder")} />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(plansQuery.data ?? []).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.subscriptionPlanId && (
-              <p className="text-sm text-destructive">{errors.subscriptionPlanId.message}</p>
-            )}
+            <Select
+              value={subscriptionPlanId}
+              onValueChange={(v) => {
+                setSubscriptionPlanId(v);
+                setSelected(new Map()); // a different plan invalidates every prior selection
+              }}
+              disabled={plansQuery.isLoading || plansQuery.isError}
+            >
+              <SelectTrigger>
+                {plansQuery.isLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <SelectValue placeholder={t("admin.setsLots.lots.create.planPlaceholder")} />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                {(plansQuery.data ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {candidatesQuery.isLoading && (
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 4 }, (_, i) => (
-                <Skeleton key={i} className="h-10 w-full rounded-lg" />
-              ))}
-            </div>
+          {!subscriptionPlanId && (
+            <p className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              {t("admin.setsLots.lots.create.picker.choosePlanFirst")}
+            </p>
           )}
 
-          {!candidatesQuery.isLoading && !!subscriptionPlanId && cards.length === 0 && (
-            <EmptyState
-              icon={<CreditCard className="h-6 w-6" />}
-              title={t("admin.setsLots.lots.create.noCandidates")}
-              body=""
+          {subscriptionPlanId && (
+            <CardPicker
+              subscriptionPlanId={subscriptionPlanId}
+              selected={selected}
+              setSelected={setSelected}
             />
           )}
 
-          {!candidatesQuery.isLoading && cards.length > 0 && (
-            <>
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto p-0 text-sm"
-                  onClick={() =>
-                    setValue(
-                      "cardIds",
-                      cards.map((c) => c.id),
-                      { shouldValidate: true },
-                    )
-                  }
-                >
-                  {t("common.actions.selectAll")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto p-0 text-sm"
-                  onClick={() => setValue("cardIds", [], { shouldValidate: true })}
-                >
-                  {t("common.actions.deselectAll")}
-                </Button>
-              </div>
-              <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
-                {cards.map((card) => (
-                  <label
-                    key={card.id}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-2 text-sm hover:bg-accent"
-                  >
-                    <Checkbox
-                      checked={cardIds.includes(card.id)}
-                      onCheckedChange={() => toggleCard(card.id)}
-                    />
-                    <span className="font-mono">{card.key}</span>
-                  </label>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {t("admin.setsLots.lots.create.selectedCount", {
-                  count: cardIds.length,
-                  total: cards.length,
-                })}
-              </p>
-            </>
-          )}
-          {errors.cardIds && <p className="text-sm text-destructive">{errors.cardIds.message}</p>}
+          {formError && <p className="text-sm text-destructive">{formError}</p>}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("common.actions.cancel")}
-            </Button>
-            <Button type="submit" disabled={isPending || cardIds.length === 0}>
-              {t("common.actions.add")}
-            </Button>
-          </DialogFooter>
-        </form>
+          {unavailableCards.length > 0 && (
+            <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+              <div className="flex items-center gap-1.5 font-medium text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {t("admin.setsLots.lots.create.picker.conflictTitle")}
+              </div>
+              <ul className="list-inside list-disc space-y-0.5 text-destructive">
+                {unavailableCards.map((c) => (
+                  <li key={c.cardId} className="font-mono">
+                    {c.key ?? t("admin.setsLots.lots.create.picker.reason.unknownCard")} —{" "}
+                    {t(REASON_LABEL_KEY[c.reason])}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t("common.actions.cancel")}
+          </Button>
+          <Button type="button" onClick={submit} disabled={isPending || selected.size === 0}>
+            {isPending ? (
+              <>
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                {t("common.actions.submitting")}
+              </>
+            ) : (
+              t("admin.setsLots.lots.create.submitWithCount", { count: selected.size })
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

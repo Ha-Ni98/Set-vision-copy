@@ -7,6 +7,7 @@ import { StepIndicator } from "@/components/sections/landing/StepIndicator";
 import { CompletedStep } from "@/components/sections/landing/CompletedStep";
 import { FailedStep } from "@/components/sections/landing/FailedStep";
 import { UnderReviewStep } from "@/components/sections/landing/UnderReviewStep";
+import { SupportBanner } from "@/components/sections/landing/SupportBanner";
 import { CheckAnotherKeyButton } from "@/components/sections/landing/CheckAnotherKeyButton";
 import { StatsRow } from "@/components/sections/landing/StatsRow";
 import { WhoWeAre } from "@/components/sections/landing/WhoWeAre";
@@ -89,6 +90,12 @@ export default function LandingPage() {
   );
   const currentStep = STEP_FOR_VIEW[view];
   const isInvalid = activation?.status === ClientActivationStatus.INVALID;
+  // Shown once a REAL key is accepted, on every view except Finish (set-12-plan §1.2/§1.3).
+  //  · activation !== null   → nothing has been verified yet (first load, or after a reset)
+  //  · status !== INVALID    → verify() returns 200/INVALID for an unknown/inactive card, so a
+  //                           non-null activation is NOT proof of a valid key
+  //  · view !== "activated"  → CompletedStep is the Finish step
+  const showSupportBanner = activation !== null && !isInvalid && view !== "activated";
   const { FormComponent, AdditionalInfoComponent } = useMemo(
     () => getPlanForm(activation?.planKey),
     [activation?.planKey],
@@ -282,6 +289,8 @@ export default function LandingPage() {
           {view === "activated" && <CompletedStep username={activation?.accountUsername} />}
           {view === "failed" && <FailedStep />}
         </div>
+
+        {showSupportBanner && <SupportBanner />}
 
         <div className="mt-6 text-center">
           <CheckAnotherKeyButton />

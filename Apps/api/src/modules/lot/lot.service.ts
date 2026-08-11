@@ -1,18 +1,49 @@
 import type { PrismaClient } from '@prisma/client';
 import { LotStat as PrismaLotStat, CardStat } from '@prisma/client';
-import { LogActionType, LotStat } from '@my-app/contract';
+import { LogActionType, LotStat, CardUnavailableReason } from '@my-app/contract';
 import type {
   LotDTO,
   CreateLotCommand,
   GetLotsQuery,
   GetAvailableLotsQuery,
   PaginatedResult,
+  UnavailableCardDTO,
 } from '@my-app/contract';
 import type { ILotService } from './lot.interface';
 import { LotMapper } from './lot.mapper';
 import { generateLotNumber } from './lot.util';
+import { lotEligibleCardWhere } from '@modules/card/card.eligibility';
 import { buildPaginationMeta, toSkipTake } from '@common/http/pagination';
 import { NotFoundError, ConflictError, BadRequestError } from '@common/errors';
+
+// One reason per card, ordered most-likely-first (set-8-plan §5.1/§5.3). This is a DIAGNOSTIC
+// classification only — the actual eligibility decision at write time is lotEligibleCardWhere,
+// re-asserted inside the transaction (§5.3's step (c)); this only exists to explain a failure.
+type CardDiagnosticRow = {
+  id: string;
+  key: string;
+  cardStat: CardStat;
+  subscriptionPlanId: string;
+  lotId: string | null;
+  isDisabled: boolean;
+  isRevoked: boolean;
+  deletedAt: Date | null;
+};
+
+function classifyCard(
+  cardId: string,
+  card: CardDiagnosticRow | undefined,
+  subscriptionPlanId: string,
+): UnavailableCardDTO | null {
+  if (!card) return { cardId, key: null, reason: CardUnavailableReason.NOT_FOUND };
+  if (card.deletedAt) return { cardId, key: card.key, reason: CardUnavailableReason.NOT_FOUND };
+  if (card.lotId !== null) return { cardId, key: card.key, reason: CardUnavailableReason.ALREADY_IN_LOT };
+  if (card.cardStat !== CardStat.PRINTED) return { cardId, key: card.key, reason: CardUnavailableReason.NOT_PRINTED };
+  if (card.subscriptionPlanId !== subscriptionPlanId) return { cardId, key: card.key, reason: CardUnavailableReason.WRONG_PLAN };
+  if (card.isDisabled) return { cardId, key: card.key, reason: CardUnavailableReason.DISABLED };
+  if (card.isRevoked) return { cardId, key: card.key, reason: CardUnavailableReason.REVOKED };
+  return null;
+}
 
 export class LotService implements ILotService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -77,30 +108,38 @@ export class LotService implements ILotService {
       throw new BadRequestError('Subscription plan not found or inactive');
     }
 
-    const cards = await this.prisma.card.findMany({
-      where: { id: { in: cmd.cardIds } },
-      select: { id: true, cardStat: true, subscriptionPlanId: true, lotId: true },
-    });
-
-    if (cards.length !== cmd.cardIds.length) {
-      throw new BadRequestError('One or more card IDs not found');
-    }
-
-    for (const card of cards) {
-      if (card.lotId !== null) {
-        throw new ConflictError(`Card ${card.id} is already assigned to a lot`);
-      }
-      if (card.cardStat !== CardStat.PRINTED) {
-        throw new BadRequestError(`Card ${card.id} is not in PRINTED state`);
-      }
-      if (card.subscriptionPlanId !== cmd.subscriptionPlanId) {
-        throw new BadRequestError(`Card ${card.id} belongs to a different subscription plan`);
-      }
-    }
-
     const lotNumber = await this.uniqueLotNumber();
 
     const lot = await this.prisma.$transaction(async (tx) => {
+      // (a) DIAGNOSTIC read — inside the transaction, so it sees a consistent snapshot. Its
+      //     only job is to produce a human-readable failure list; correctness comes from (c).
+      const rows = await tx.card.findMany({
+        where: { id: { in: cmd.cardIds } },
+        select: {
+          id: true,
+          key: true,
+          cardStat: true,
+          subscriptionPlanId: true,
+          lotId: true,
+          isDisabled: true,
+          isRevoked: true,
+          deletedAt: true,
+        },
+      });
+      const byId = new Map(rows.map((c) => [c.id, c]));
+
+      const unavailableCards = cmd.cardIds
+        .map((id) => classifyCard(id, byId.get(id), cmd.subscriptionPlanId))
+        .filter((x): x is UnavailableCardDTO => x !== null);
+
+      if (unavailableCards.length > 0) {
+        throw new ConflictError(
+          `${unavailableCards.length} of the ${cmd.cardIds.length} selected cards are no longer available`,
+          { unavailableCards },
+        );
+      }
+
+      // (b) The lot.
       const created = await tx.lot.create({
         data: {
           lotNumber,
@@ -111,10 +150,20 @@ export class LotService implements ILotService {
         include: { subscriptionPlan: true },
       });
 
-      await tx.card.updateMany({
-        where: { id: { in: cmd.cardIds } },
+      // (c) THE CORRECTNESS GUARD. The where clause re-asserts eligibility AT WRITE TIME, so a
+      //     concurrent transaction that took one of these cards between (a) and here loses it
+      //     from the match set and the count assertion below rolls us back. Without this, (a)
+      //     alone is a check-then-act race — findMany takes no row locks.
+      const assigned = await tx.card.updateMany({
+        where: { id: { in: cmd.cardIds }, ...lotEligibleCardWhere(cmd.subscriptionPlanId) },
         data: { cardStat: CardStat.IN_LOT, lotId: created.id },
       });
+
+      if (assigned.count !== cmd.cardIds.length) {
+        // Reachable only in the (a)→(c) window. Rare, so it does not get a per-card breakdown —
+        // the client refetches and retries, and the second attempt gets the precise list from (a).
+        throw new ConflictError('Some selected cards were taken by another lot — refresh and retry');
+      }
 
       return created;
     });

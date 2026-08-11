@@ -158,6 +158,8 @@ export const qk = {
   cards: {
     all: () => ["cards"] as const,
     list: (query: GetCardsQuery) => ["cards", "list", query] as const,
+    // Full query (plan, search, page, limit) — set-8-plan §7. Paging/searching the picker never
+    // needs to invalidate this; only a lot create/delete does, via cards.all().
     availableForLot: (query: GetAvailableCardsQuery) =>
       ["cards", "available-for-lot", query] as const,
     detail: (id: string) => ["cards", "detail", id] as const,

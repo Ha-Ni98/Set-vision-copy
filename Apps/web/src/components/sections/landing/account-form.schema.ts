@@ -82,8 +82,12 @@ export function toSubmitCommand(key: string, values: AccountFormValues): SubmitA
   };
 }
 
+// fullName/phone are sent on every update; the server only WRITES them in the PENDING
+// pre-pickup window and silently ignores them during a WRONG_INFORMATION correction
+// (set-12-plan §5.2) — the same server-side gate `applicable` already applies to account
+// fields, so the form doesn't need to know which window it's in to build this command.
 export function toUpdateCommand(values: AccountFormValues): UpdateActivationCommand {
-  return { accountFields: toAccountFields(values) };
+  return { accountFields: toAccountFields(values), fullName: values.fullName, phone: values.phone };
 }
 
 // Compile-time guards — fail to compile if either mapping drifts from its contract Command.
