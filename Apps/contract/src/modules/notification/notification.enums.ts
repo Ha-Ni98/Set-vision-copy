@@ -24,4 +24,8 @@ export enum NotificationType {
   REVOCATION_REQUEST_CREATED = 'REVOCATION_REQUEST_CREATED',
   ORDER_CREATED = 'ORDER_CREATED',
   REVOCATION_APPROVED = 'REVOCATION_APPROVED',
+  // All admins + the owning distributor, on ACTIVATED / ACTIVATED_BY_ADMIN only. Distinct
+  // from ACTIVATION_STATUS_CHANGED, which is the activator's own commission receipt — this
+  // one carries no money and fans out to a different audience entirely.
+  ACTIVATION_COMPLETED = 'ACTIVATION_COMPLETED',
 }

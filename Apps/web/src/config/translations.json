@@ -1092,6 +1092,7 @@
   "enums.notificationType.REVOCATION_REQUEST_CREATED": { "en": "Revocation Request Created", "fr": "Demande de révocation créée", "ar": "" },
   "enums.notificationType.ORDER_CREATED": { "en": "Order Created", "fr": "Commande créée", "ar": "" },
   "enums.notificationType.REVOCATION_APPROVED": { "en": "Revocation Approved", "fr": "Révocation approuvée", "ar": "" },
+  "enums.notificationType.ACTIVATION_COMPLETED": { "en": "Activation Completed", "fr": "Activation terminée", "ar": "" },
   "common.roles.ADMIN": { "en": "Admin", "fr": "Administrateur", "ar": "" },
   "common.roles.ACTIVATOR": { "en": "Activator", "fr": "Activateur", "ar": "" },
   "common.roles.DISTRIBUTOR": { "en": "Distributor", "fr": "Distributeur", "ar": "" },
