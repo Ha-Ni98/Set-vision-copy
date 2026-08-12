@@ -1,4 +1,10 @@
-import { NotificationType, UserRole, AccountInformation } from '@my-app/contract';
+import {
+  NotificationType,
+  UserRole,
+  AccountInformation,
+  SubscriptionType,
+  SubscriptionDuration,
+} from '@my-app/contract';
 
 // French, hard-coded, one file — see Set 6 plan §6.1. There is no i18n infrastructure on the
 // backend, and Telegram's audience is homogeneous internal staff. Not translated via
@@ -22,6 +28,38 @@ export const FIELD_LABEL_FR: Record<AccountInformation, string> = {
   [AccountInformation.BIRTHDAY]: 'Date de naissance',
   [AccountInformation.PASSWORD]: 'Mot de passe',
 };
+
+// French subscription label — a separate small duplicate of set.mapper.ts's
+// composeSubscriptionLabel (English, "Snapchat Plus — 01 Month"), for the same reason
+// FIELD_LABEL_FR duplicates activation.mapper.ts's FIELD_LABEL: modules/ is off-limits from
+// common/, and the audience here needs French anyway.
+const SUBSCRIPTION_TYPE_LABEL_FR: Record<SubscriptionType, string> = {
+  [SubscriptionType.SNAPCHAT_PLUS]: 'Snapchat Plus',
+};
+
+const SUBSCRIPTION_DURATION_LABEL_FR: Record<SubscriptionDuration, string> = {
+  [SubscriptionDuration.ONE_DAY]: '1 jour',
+  [SubscriptionDuration.ONE_WEEK]: '1 semaine',
+  [SubscriptionDuration.TWO_WEEK]: '2 semaines',
+  [SubscriptionDuration.ONE_MONTH]: '1 mois',
+  [SubscriptionDuration.THREE_MONTH]: '3 mois',
+  [SubscriptionDuration.SIXTH_MONTH]: '6 mois',
+  [SubscriptionDuration.ONE_YEAR]: '1 an',
+  [SubscriptionDuration.UNLIMITED]: 'Illimité',
+};
+
+// Accepts the Prisma-shaped read directly (plain string literals, not the contract enum) and
+// casts internally — the same idiom set.mapper.ts's composeSubscriptionLabel uses.
+export function composeSubscriptionLabelFR(plan: {
+  subscriptionType: string;
+  subscriptionDuration: string;
+}): string {
+  const type = SUBSCRIPTION_TYPE_LABEL_FR[plan.subscriptionType as SubscriptionType] ?? plan.subscriptionType;
+  const duration =
+    SUBSCRIPTION_DURATION_LABEL_FR[plan.subscriptionDuration as SubscriptionDuration] ??
+    plan.subscriptionDuration;
+  return `${type} — ${duration}`;
+}
 
 // fr-FR, no explicit fraction options — mirrors Apps/web/src/lib/utils.ts formatDZD's shape
 // (Intl.NumberFormat(locale).format(amount) + " DZD"), just without the language parameter
@@ -102,6 +140,16 @@ export type TemplateVars = {
   [NotificationType.REVOCATION_APPROVED]: {
     cardKey: string;
     adminNote: string | null;
+  };
+
+  // All admins + the owning distributor, ACTIVATED / ACTIVATED_BY_ADMIN only. No money —
+  // that's ACTIVATION_STATUS_CHANGED's job, sent to the activator alone.
+  [NotificationType.ACTIVATION_COMPLETED]: {
+    cardKey: string;
+    subscriptionLabel: string;
+    clientFullName: string;
+    distributorName: string;
+    activatorName: string;
   };
 };
 
@@ -200,6 +248,15 @@ export const TEMPLATES: { [K in NotificationType]: (vars: TemplateVars[K]) => st
       `Carte : ${vars.cardKey}`,
       'La carte est de nouveau disponible dans votre stock.',
       ...(vars.adminNote ? [`Note de l'administrateur : ${vars.adminNote}`] : []),
+    ].join('\n'),
+
+  [NotificationType.ACTIVATION_COMPLETED]: (vars) =>
+    [
+      '✅ Nouvelle activation terminée',
+      `Carte : ${vars.cardKey} (${vars.subscriptionLabel})`,
+      `Client : ${vars.clientFullName}`,
+      `Distributeur : ${vars.distributorName}`,
+      `Activateur : ${vars.activatorName}`,
     ].join('\n'),
 };
 

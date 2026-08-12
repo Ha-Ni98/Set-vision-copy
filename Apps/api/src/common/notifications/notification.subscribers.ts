@@ -11,7 +11,7 @@ import { logger } from '../config/logger';
 import { formatDuration } from '../utils/duration.utils';
 import type { INotificationService, NotificationRequest } from './notification.types';
 import { allActivators, oneActivator, allAdmins, oneDistributor } from './notification.recipients';
-import { render, FIELD_LABEL_FR, formatMoney } from './notification.templates';
+import { render, FIELD_LABEL_FR, formatMoney, composeSubscriptionLabelFR } from './notification.templates';
 
 // Deferral off the synchronous emit path (layer 1 of 3, Set 6 plan §9.3): eventBus.emit() is
 // synchronous and un-caught inside domain services, so a throwing subscriber would otherwise
@@ -136,40 +136,74 @@ async function onActivationStatusChanged(
       takenAt: true,
       completedAt: true,
       activationPrice: true,
-      card: { select: { key: true } },
+      card: {
+        select: {
+          key: true,
+          distributorId: true,
+          subscriptionPlan: { select: { subscriptionType: true, subscriptionDuration: true } },
+        },
+      },
+      activator: { select: { fullName: true } },
     },
   });
   if (!activation) return;
 
   const templateType = STATUS_TEMPLATE[activation.activationStat as ActivationStat];
   if (!templateType) return; // the activator's own action, or no recipient — §5.4.2
-  if (!activation.activatorId) return; // defensive — these three stats always carry one
 
-  const recipient = await oneActivator(prisma, activation.activatorId);
-  if (!recipient) return;
+  const outcome = activation.activationStat as
+    | ActivationStat.ACTIVATED
+    | ActivationStat.ACTIVATED_BY_ADMIN
+    | ActivationStat.CANCELLED_BY_ADMIN;
 
   const seconds =
     activation.takenAt && activation.completedAt
       ? Math.round((activation.completedAt.getTime() - activation.takenAt.getTime()) / 1000)
       : null;
 
-  const outcome = activation.activationStat as
-    | ActivationStat.ACTIVATED
-    | ActivationStat.ACTIVATED_BY_ADMIN
-    | ActivationStat.CANCELLED_BY_ADMIN;
-  const commission =
-    outcome === ActivationStat.CANCELLED_BY_ADMIN || activation.activationPrice == null
-      ? null
-      : formatMoney(Number(activation.activationPrice));
+  // The activator's own commission receipt — unchanged behaviour, independent of the
+  // admin/distributor fanout below (an unlinked activator must not suppress it, and vice versa).
+  if (activation.activatorId) {
+    const recipient = await oneActivator(prisma, activation.activatorId);
+    if (recipient) {
+      const commission =
+        outcome === ActivationStat.CANCELLED_BY_ADMIN || activation.activationPrice == null
+          ? null
+          : formatMoney(Number(activation.activationPrice));
 
-  const body = render(NotificationType.ACTIVATION_STATUS_CHANGED, {
-    cardKey: activation.card.key,
-    clientFullName: activation.clientFullName,
-    durationText: formatDuration(seconds),
-    outcome,
-    commission,
-  });
-  await svc.dispatch(toRequest(NotificationType.ACTIVATION_STATUS_CHANGED, recipient, body));
+      const body = render(NotificationType.ACTIVATION_STATUS_CHANGED, {
+        cardKey: activation.card.key,
+        clientFullName: activation.clientFullName,
+        durationText: formatDuration(seconds),
+        outcome,
+        commission,
+      });
+      await svc.dispatch(toRequest(NotificationType.ACTIVATION_STATUS_CHANGED, recipient, body));
+    }
+  }
+
+  // All admins + the owning distributor, ACTIVATED / ACTIVATED_BY_ADMIN only — a cancelled
+  // freeze resolution is not "done" from their point of view.
+  if (outcome !== ActivationStat.CANCELLED_BY_ADMIN) {
+    const [admins, distributor] = await Promise.all([
+      allAdmins(prisma),
+      activation.card.distributorId ? oneDistributor(prisma, activation.card.distributorId) : null,
+    ]);
+
+    const completionRecipients = distributor ? [...admins, distributor] : admins;
+    if (completionRecipients.length > 0) {
+      const body = render(NotificationType.ACTIVATION_COMPLETED, {
+        cardKey: activation.card.key,
+        subscriptionLabel: composeSubscriptionLabelFR(activation.card.subscriptionPlan),
+        clientFullName: activation.clientFullName,
+        distributorName: distributor?.name ?? '—',
+        activatorName: activation.activator?.fullName ?? '—',
+      });
+      await svc.dispatchAll(
+        completionRecipients.map((r) => toRequest(NotificationType.ACTIVATION_COMPLETED, r, body)),
+      );
+    }
+  }
 }
 
 // ─── Row 5: activation:frozen → all linked admins ──────────────────────────────────────────
