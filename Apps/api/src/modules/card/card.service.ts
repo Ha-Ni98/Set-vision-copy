@@ -66,12 +66,14 @@ export async function revokeCardWithin(
     data: { isRevoked: true, isActive: true, cardStat: PrismaCardStat.AT_DISTRIBUTOR },
   });
 
-  if (card.distributorId) {
-    await tx.distributor.update({
-      where: { id: card.distributorId },
-      data: { nbOfActiveCards: { increment: 1 } },
-    });
-  }
+  // When the card is revoked, it is already counted in the distributor nb of active cards, so we don't need to increment it again. The following code is commented out to avoid double counting.
+  
+  // if (card.distributorId) {
+  //   await tx.distributor.update({
+  //     where: { id: card.distributorId },
+  //     data: { nbOfActiveCards: { increment: 1 } },
+  //   });
+  // }
 
   await tx.log.create({
     data: {
