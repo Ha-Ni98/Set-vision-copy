@@ -69,6 +69,17 @@ export default {
           ring: "oklch(var(--sidebar-ring) / <alpha-value>)",
         },
       },
+      // Indeterminate progress bar for the client-portal pending overlay — signals "work is
+      // happening" without claiming a real elapsed time or percentage.
+      keyframes: {
+        "indeterminate-bar": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(400%)" },
+        },
+      },
+      animation: {
+        "indeterminate-bar": "indeterminate-bar 1.6s ease-in-out infinite",
+      },
     },
   },
   plugins: [tailwindcssAnimate],

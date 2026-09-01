@@ -7,7 +7,6 @@ import {
   type ClientActivationStatusDTO,
 } from "@my-app/contract";
 import type { KeyLookupResult } from "@/types/key-flow";
-import { SOCIAL_LINKS } from "@/config/social-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, AlertTriangle, Eye, EyeOff, MessageCircle, ShieldAlert } from "lucide-react";
+import { AlertCircle, AlertTriangle, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSubmitActivation } from "@/hooks/useSubmitActivation";
 import { useUpdateActivation } from "@/hooks/useUpdateActivation";
+import { PendingOverlay, PendingRevealedStrip } from "./PendingOverlay";
 import {
   createAccountFormSchema,
   toSubmitCommand,
@@ -62,6 +62,10 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
   const [editing, setEditing] = useState(!isReadonlyStatus);
   const [showPwd, setShowPwd] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
+  // Fields stay hidden behind PendingOverlay's scrim by default while waiting (pending-step2-
+  // ux-plan §2). SUBMITTED and PROCESSING get identical treatment — both are `isReadonlyStatus`.
+  const [showInfo, setShowInfo] = useState(false);
+  const isPending = isReadonlyStatus && !editing;
 
   const submitActivation = useSubmitActivation();
   const updateActivation = useUpdateActivation();
@@ -139,182 +143,165 @@ export function AccountForm({ keyData, onSubmitted }: Props) {
         </div>
       )}
 
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-semibold text-foreground">
-          {t("public.landing.form.personalInfo")}
-        </legend>
-        <Field
-          label={t("public.landing.form.fullName")}
-          id="fullName"
-          error={errors.fullName?.message}
-        >
-          <Input
-            id="fullName"
-            disabled={readonly}
-            aria-invalid={!!errors.fullName}
-            aria-describedby={errors.fullName ? "fullName-error" : undefined}
-            {...register("fullName")}
-          />
-        </Field>
-        <Field label={t("public.landing.form.phone")} id="phone" error={errors.phone?.message}>
-          <Input
-            id="phone"
-            disabled={readonly}
-            aria-invalid={!!errors.phone}
-            aria-describedby={errors.phone ? "phone-error" : undefined}
-            {...register("phone")}
-          />
-        </Field>
-      </fieldset>
+      {isPending && showInfo && <PendingRevealedStrip onHide={() => setShowInfo(false)} />}
 
-      <fieldset className="space-y-4 rounded-lg border border-border bg-surface p-4">
-        <legend className="px-1 text-sm font-semibold text-foreground">
-          {t("public.landing.form.snapAccount")}
-        </legend>
-        <Field
-          label={t("public.landing.form.username")}
-          id="username"
-          error={errors.username?.message}
-          flagged={isFlagged(AccountInformation.USERNAME)}
-        >
-          <Input
-            id="username"
-            disabled={readonly}
-            className={cn(isFlagged(AccountInformation.USERNAME) && "border-destructive")}
-            aria-invalid={!!errors.username || isFlagged(AccountInformation.USERNAME)}
-            aria-describedby={
-              errors.username || isFlagged(AccountInformation.USERNAME)
-                ? "username-error"
-                : undefined
-            }
-            {...register("username")}
-          />
-        </Field>
-        <Field
-          label={t("public.landing.form.email")}
-          id="email"
-          error={errors.email?.message}
-          flagged={isFlagged(AccountInformation.EMAIL)}
-        >
-          <Input
-            id="email"
-            type="email"
-            disabled={readonly}
-            className={cn(isFlagged(AccountInformation.EMAIL) && "border-destructive")}
-            aria-invalid={!!errors.email || isFlagged(AccountInformation.EMAIL)}
-            aria-describedby={
-              errors.email || isFlagged(AccountInformation.EMAIL) ? "email-error" : undefined
-            }
-            {...register("email")}
-          />
-        </Field>
-        <Field
-          label={t("public.landing.form.snapPhone")}
-          id="snapchatPhone"
-          error={errors.snapchatPhone?.message}
-        >
-          <Input
-            id="snapchatPhone"
-            disabled={readonly}
-            aria-invalid={!!errors.snapchatPhone}
-            aria-describedby={errors.snapchatPhone ? "snapchatPhone-error" : undefined}
-            {...register("snapchatPhone")}
-          />
-        </Field>
-        <Field
-          label={t("public.landing.form.password")}
-          id="password"
-          error={errors.password?.message}
-          flagged={isFlagged(AccountInformation.PASSWORD)}
-        >
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPwd ? "text" : "password"}
-              disabled={readonly}
-              className={cn(
-                "pe-10",
-                isFlagged(AccountInformation.PASSWORD) && "border-destructive",
-              )}
-              aria-invalid={!!errors.password || isFlagged(AccountInformation.PASSWORD)}
-              aria-describedby={
-                errors.password || isFlagged(AccountInformation.PASSWORD)
-                  ? "password-error"
-                  : undefined
-              }
-              {...register("password")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPwd((v) => !v)}
-              className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              tabIndex={-1}
-              aria-label={t(showPwd ? "auth.login.hidePassword" : "auth.login.showPassword")}
+      <div className="relative min-h-[22rem]" aria-hidden={isPending && !showInfo}>
+        <div className="space-y-6">
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-semibold text-foreground">
+              {t("public.landing.form.personalInfo")}
+            </legend>
+            <Field
+              label={t("public.landing.form.fullName")}
+              id="fullName"
+              error={errors.fullName?.message}
             >
-              {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </Field>
-        {editing && (
-          <Field
-            label={t("public.landing.form.confirmPassword")}
-            id="confirmPassword"
-            error={errors.confirmPassword?.message}
-          >
-            <div className="relative">
               <Input
-                id="confirmPassword"
-                type={showPwd2 ? "text" : "password"}
-                className="pe-10"
-                aria-invalid={!!errors.confirmPassword}
-                aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-                {...register("confirmPassword")}
+                id="fullName"
+                disabled={readonly}
+                aria-invalid={!!errors.fullName}
+                aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                {...register("fullName")}
               />
-              <button
-                type="button"
-                onClick={() => setShowPwd2((v) => !v)}
-                className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                tabIndex={-1}
-                aria-label={t(showPwd2 ? "auth.login.hidePassword" : "auth.login.showPassword")}
-              >
-                {showPwd2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </Field>
-        )}
-        <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <span>{t("public.landing.form.passwordNotice")}</span>
-        </div>
-      </fieldset>
+            </Field>
+            <Field label={t("public.landing.form.phone")} id="phone" error={errors.phone?.message}>
+              <Input
+                id="phone"
+                disabled={readonly}
+                aria-invalid={!!errors.phone}
+                aria-describedby={errors.phone ? "phone-error" : undefined}
+                {...register("phone")}
+              />
+            </Field>
+          </fieldset>
 
-      {isReadonlyStatus && !editing && (
-        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <div className="flex-1">
-            <p className="text-foreground">
-              {t(
-                status === ClientActivationStatus.SUBMITTED
-                  ? "public.landing.form.pendingBanner"
-                  : "public.landing.form.processingNotice",
-              )}
-            </p>
-            {status === ClientActivationStatus.SUBMITTED && (
-              <a
-                href={SOCIAL_LINKS.whatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          <fieldset className="space-y-4 rounded-lg border border-border bg-surface p-4">
+            <legend className="px-1 text-sm font-semibold text-foreground">
+              {t("public.landing.form.snapAccount")}
+            </legend>
+            <Field
+              label={t("public.landing.form.username")}
+              id="username"
+              error={errors.username?.message}
+              flagged={isFlagged(AccountInformation.USERNAME)}
+            >
+              <Input
+                id="username"
+                disabled={readonly}
+                className={cn(isFlagged(AccountInformation.USERNAME) && "border-destructive")}
+                aria-invalid={!!errors.username || isFlagged(AccountInformation.USERNAME)}
+                aria-describedby={
+                  errors.username || isFlagged(AccountInformation.USERNAME)
+                    ? "username-error"
+                    : undefined
+                }
+                {...register("username")}
+              />
+            </Field>
+            <Field
+              label={t("public.landing.form.email")}
+              id="email"
+              error={errors.email?.message}
+              flagged={isFlagged(AccountInformation.EMAIL)}
+            >
+              <Input
+                id="email"
+                type="email"
+                disabled={readonly}
+                className={cn(isFlagged(AccountInformation.EMAIL) && "border-destructive")}
+                aria-invalid={!!errors.email || isFlagged(AccountInformation.EMAIL)}
+                aria-describedby={
+                  errors.email || isFlagged(AccountInformation.EMAIL) ? "email-error" : undefined
+                }
+                {...register("email")}
+              />
+            </Field>
+            <Field
+              label={t("public.landing.form.snapPhone")}
+              id="snapchatPhone"
+              error={errors.snapchatPhone?.message}
+            >
+              <Input
+                id="snapchatPhone"
+                disabled={readonly}
+                aria-invalid={!!errors.snapchatPhone}
+                aria-describedby={errors.snapchatPhone ? "snapchatPhone-error" : undefined}
+                {...register("snapchatPhone")}
+              />
+            </Field>
+            <Field
+              label={t("public.landing.form.password")}
+              id="password"
+              error={errors.password?.message}
+              flagged={isFlagged(AccountInformation.PASSWORD)}
+            >
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPwd ? "text" : "password"}
+                  disabled={readonly}
+                  className={cn(
+                    "pe-10",
+                    isFlagged(AccountInformation.PASSWORD) && "border-destructive",
+                  )}
+                  aria-invalid={!!errors.password || isFlagged(AccountInformation.PASSWORD)}
+                  aria-describedby={
+                    errors.password || isFlagged(AccountInformation.PASSWORD)
+                      ? "password-error"
+                      : undefined
+                  }
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={t(showPwd ? "auth.login.hidePassword" : "auth.login.showPassword")}
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </Field>
+            {editing && (
+              <Field
+                label={t("public.landing.form.confirmPassword")}
+                id="confirmPassword"
+                error={errors.confirmPassword?.message}
               >
-                <MessageCircle className="h-4 w-4" /> {t("common.actions.contactWhatsapp")}
-              </a>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPwd2 ? "text" : "password"}
+                    className="pe-10"
+                    aria-invalid={!!errors.confirmPassword}
+                    aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+                    {...register("confirmPassword")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd2((v) => !v)}
+                    className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                    aria-label={t(showPwd2 ? "auth.login.hidePassword" : "auth.login.showPassword")}
+                  >
+                    {showPwd2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </Field>
             )}
-          </div>
+            <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <span>{t("public.landing.form.passwordNotice")}</span>
+            </div>
+          </fieldset>
         </div>
-      )}
+
+        {isPending && !showInfo && <PendingOverlay onReveal={() => setShowInfo(true)} />}
+      </div>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        {isReadonlyStatus && !editing ? (
+        {isPending ? (
           canEdit && (
             <Button
               type="button"
