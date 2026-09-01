@@ -106,7 +106,7 @@
   "public.landing.support.callAria": { "en": "Appeler le support au {phone}", "fr": "Appeler le support au {phone}", "ar": "" },
   "public.landing.support.whatsappAction": { "en": "{whatsappPhone}", "fr": "{whatsappPhone}", "ar": "" },
   "public.landing.support.whatsappAria": { "en": "Contacter le support sur WhatsApp au {whatsappPhone}", "fr": "Contacter le support sur WhatsApp au {whatsappPhone}", "ar": "" },
-  "public.landing.pending.titleDarija": { "en": "راهنا نخدمو على طلبك", "fr": "راهنا نخدمو على طلبك", "ar": "" },
+  "public.landing.pending.titleDarija": { "en": "رانا نخدمو على طلبك", "fr": "راهنا نخدمو على طلبك", "ar": "" },
   "public.landing.pending.titleFrench": { "en": "Votre demande est en cours de traitement.", "fr": "Votre demande est en cours de traitement.", "ar": "" },
   "public.landing.pending.holdDarija": { "en": "ما تسكرش الصفحة، راح تتبدل وحدها كي نكملو.", "fr": "ما تسكرش الصفحة، راح تتبدل وحدها كي نكملو.", "ar": "" },
   "public.landing.pending.holdFrench": { "en": "Ne fermez pas la page, elle se met à jour automatiquement.", "fr": "Ne fermez pas la page, elle se met à jour automatiquement.", "ar": "" },
